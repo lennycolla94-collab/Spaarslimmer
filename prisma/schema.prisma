@@ -1,0 +1,210 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// USER MODEL
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String    // Gehashed met bcrypt
+  name          String?
+  role          String    @default("BC")
+  status        String    @default("ACTIVE")
+  
+  // MLM Hierarchy
+  sponsorId     String?
+  sponsor       User?     @relation("Sponsorship", fields: [sponsorId], references: [id])
+  downline      User[]    @relation("Sponsorship")
+  
+  // Metadata
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastLoginAt   DateTime?
+  
+  // Relations
+  leads         Lead[]
+  sales         Sale[]
+  calls         CallLog[]
+  commissions   Commission[]
+  queueItems    QueueItem[]
+  
+  @@index([sponsorId])
+  @@index([email])
+  @@index([role])
+}
+
+// LEAD MODEL
+model Lead {
+  id                String   @id @default(cuid())
+  
+  // Contact info (Encrypted)
+  phone             String
+  email             String?
+  ean               String?
+  phoneHash         String   // SHA-256 hash voor deduplicatie
+  
+  // Business info
+  companyName       String
+  niche             String?
+  address           String?
+  city              String?
+  province          String?
+  postalCode        String?
+  
+  // Provider info
+  currentProvider   String?
+  currentSupplier   String?
+  
+  // GDPR & Consent
+  consentEmail      Boolean  @default(false)
+  consentPhone      Boolean  @default(false)
+  consentWhatsapp   Boolean  @default(false)
+  lawfulBasis       String   @default("LEGITIMATE_INTEREST")
+  doNotCall         Boolean  @default(false)
+  gdprAcceptanceDate DateTime?
+  privacyPolicyVersion String?
+  
+  // Ownership
+  ownerId           String
+  owner             User     @relation(fields: [ownerId], references: [id])
+  
+  // Status
+  status            String   @default("NEW")
+  source            String?
+  
+  // Timestamps
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  
+  // Relations
+  sales             Sale[]
+  calls             CallLog[]
+  queueItems        QueueItem[]
+  
+  @@index([ownerId])
+  @@index([status])
+  @@index([province])
+  @@index([niche])
+  @@index([phoneHash])
+}
+
+// SALE MODEL
+model Sale {
+  id              String   @id @default(cuid())
+  leadId          String
+  lead            Lead     @relation(fields: [leadId], references: [id])
+  consultantId    String
+  consultant      User     @relation(fields: [consultantId], references: [id])
+  
+  // Product details
+  services        Service[]
+  
+  // Commissie berekening
+  totalRetail     Float
+  totalASP        Float
+  commissionAmount Float
+  
+  // Status
+  status          String   @default("PENDING")
+  activationDate  DateTime?
+  isNewCustomer   Boolean    @default(false)
+  hasPortability  Boolean    @default(false)
+  hasConvergence  Boolean    @default(false)
+  
+  // Policy tracking
+  policyVersion   String     @default("2024-Q1")
+  
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  
+  @@index([consultantId])
+  @@index([leadId])
+  @@index([status])
+}
+
+model Service {
+  id          String  @id @default(cuid())
+  saleId      String
+  sale        Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  type        String
+  plan        String
+  retailValue Float
+  aspValue    Float
+}
+
+// CALL LOG
+model CallLog {
+  id          String   @id @default(cuid())
+  leadId      String
+  lead        Lead     @relation(fields: [leadId], references: [id])
+  consultantId String
+  consultant  User     @relation(fields: [consultantId], references: [id])
+  
+  result      String
+  notes       String?
+  duration    Int?
+  calledAt    DateTime @default(now())
+  
+  @@index([leadId])
+  @@index([consultantId])
+  @@index([calledAt])
+}
+
+// QUEUE ITEM
+model QueueItem {
+  id          String   @id @default(cuid())
+  leadId      String
+  lead        Lead     @relation(fields: [leadId], references: [id])
+  assignedTo  String
+  consultant  User     @relation(fields: [assignedTo], references: [id])
+  
+  priority    Int      @default(0)
+  dueDate     DateTime?
+  status      String   @default("PENDING")
+  type        String   @default("CALL")
+  
+  createdAt   DateTime    @default(now())
+  
+  @@index([assignedTo])
+  @@index([status])
+  @@index([dueDate])
+}
+
+// COMMISSION
+model Commission {
+  id              String   @id @default(cuid())
+  consultantId    String
+  consultant      User     @relation(fields: [consultantId], references: [id])
+  saleId          String
+  amount          Float
+  type            String
+  status          String   @default("PENDING")
+  calculationDate DateTime @default(now())
+  paidDate        DateTime?
+  
+  @@index([consultantId])
+  @@index([status])
+}
+
+// AUDIT LOG
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String
+  action      String
+  entityType  String
+  entityId    String
+  oldValues   String?
+  newValues   String?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
