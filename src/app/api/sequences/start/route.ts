@@ -1,118 +1,88 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { 
-  createQuoteSequence, 
-  createActivationSequence, 
-  getSequenceDetails,
-  SequenceType 
-} from '@/lib/sequence-engine';
-
-const prisma = new PrismaClient();
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
-    
-    const { leadId, consultantId, sequenceType } = body;
-    
-    if (!leadId || !consultantId || !sequenceType) {
+    const { type, leadId } = body;
+
+    if (!type || !leadId) {
       return NextResponse.json(
-        { error: 'Missing required fields: leadId, consultantId, sequenceType' },
+        { error: 'Type and leadId are required' },
         { status: 400 }
       );
     }
-    
-    // Validate sequence type
-    if (!['quote', 'activation'].includes(sequenceType)) {
-      return NextResponse.json(
-        { error: 'Invalid sequenceType. Must be "quote" or "activation"' },
-        { status: 400 }
-      );
-    }
-    
-    // Check if lead exists
-    const lead = await prisma.lead.findUnique({
-      where: { id: leadId },
-      select: { 
-        id: true, 
-        companyName: true,
-        consultantId: true,
-        consentEmail: true,
-        consentWhatsApp: true,
-        consentPhone: true,
-      },
+
+    // Verify lead belongs to user
+    const lead = await prisma.lead.findFirst({
+      where: {
+        id: leadId,
+        ownerId: session.user.id
+      }
     });
-    
+
     if (!lead) {
       return NextResponse.json(
         { error: 'Lead not found' },
         { status: 404 }
       );
     }
-    
-    // Verify consultant owns this lead (or is admin - skip for now)
-    if (lead.consultantId !== consultantId) {
-      return NextResponse.json(
-        { error: 'Unauthorized - lead belongs to different consultant' },
-        { status: 403 }
-      );
-    }
-    
-    // Cancel any existing pending sequences for this lead
-    await prisma.queueItem.updateMany({
-      where: {
+
+    // Create follow-up tasks based on type
+    const tasks = [];
+
+    if (type === 'QUOTE_SENT') {
+      // Day 1: Email reminder
+      tasks.push({
         leadId,
-        consultantId,
-        status: 'pending',
-      },
-      data: {
-        status: 'cancelled',
-      },
-    });
-    
-    // Create sequence based on type
-    let queueItems;
-    if (sequenceType === 'quote') {
-      queueItems = await createQuoteSequence(leadId, consultantId);
-    } else {
-      queueItems = await createActivationSequence(leadId, consultantId);
-    }
-    
-    // Log sequence start
-    await prisma.callLog.create({
-      data: {
+        assignedTo: session.user.id,
+        type: 'EMAIL',
+        status: 'PENDING',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        priority: 1
+      });
+
+      // Day 3: WhatsApp
+      tasks.push({
         leadId,
-        consultantId,
-        result: 'conversation',
-        notes: `Started ${sequenceType} sequence. Created ${queueItems.length} queue items.`,
-      },
-    });
-    
-    // Get sequence details for response
-    const sequenceDetails = getSequenceDetails(sequenceType as SequenceType);
-    
+        assignedTo: session.user.id,
+        type: 'WHATSAPP',
+        status: 'PENDING',
+        dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+        priority: 1
+      });
+
+      // Day 7: Call
+      tasks.push({
+        leadId,
+        assignedTo: session.user.id,
+        type: 'CALL',
+        status: 'PENDING',
+        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        priority: 2
+      });
+    }
+
+    // Create queue items
+    for (const task of tasks) {
+      await prisma.queueItem.create({ data: task });
+    }
+
     return NextResponse.json({
       success: true,
-      sequenceType,
-      leadId,
-      companyName: lead.companyName,
-      itemsCreated: queueItems.length,
-      items: queueItems.map(item => ({
-        id: item.id,
-        type: item.type,
-        scheduledAt: item.scheduledAt,
-        priority: item.priority,
-        status: item.status,
-      })),
-      timeline: sequenceDetails.items.map(item => ({
-        type: item.type,
-        day: item.daysFromStart,
-        description: item.description,
-      })),
+      message: `Follow-up sequence started with ${tasks.length} tasks`
     });
-    
+
   } catch (error) {
-    console.error('Error starting sequence:', error);
+    console.error('Sequence start error:', error);
     return NextResponse.json(
       { error: 'Failed to start sequence' },
       { status: 500 }

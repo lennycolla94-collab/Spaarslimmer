@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 export default withAuth(
   function middleware(req) {
-    // Check if user is trying to access admin routes
+    // Admin routes protection
     if (req.nextUrl.pathname.startsWith('/admin')) {
       if (req.nextauth.token?.role !== 'ADMIN') {
         return NextResponse.redirect(new URL('/dashboard', req.url));
@@ -14,14 +14,12 @@ export default withAuth(
   {
     callbacks: {
       authorized({ req, token }) {
-        // Allow public routes
-        if (
-          req.nextUrl.pathname.startsWith('/login') ||
-          req.nextUrl.pathname.startsWith('/api/auth')
-        ) {
+        // Public routes - no auth needed
+        const publicPaths = ['/login', '/api/auth', '/_next', '/favicon.ico'];
+        if (publicPaths.some(path => req.nextUrl.pathname.startsWith(path))) {
           return true;
         }
-        // Require auth for all other routes
+        // All other routes require authentication
         return token !== null;
       }
     }
@@ -29,7 +27,5 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|public/).*)'
-  ]
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.).*)']
 };

@@ -2,163 +2,108 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { z } from 'zod';
-import { encryption, gdprHash } from '@/lib/encryption';
-import { parse } from 'csv-parse/sync';
+import crypto from 'crypto';
+import Papa from 'papaparse';
 
-// Validatie schema voor CSV rijen
-const LeadCSVSchema = z.object({
-  Bedrijfsnaam: z.string().min(1),
-  Niche: z.string().optional().default('Onbekend'),
-  TelefoonNummer: z.string().min(1),
-  Gemeente: z.string().optional(),
-  Email: z.string().email().optional().or(z.literal('')),
-  Adres: z.string().optional(),
-  Provincie: z.string().optional(),
-  'Niet bellen': z.string().optional().transform(v => v?.toLowerCase() === 'ja' || v?.toLowerCase() === 'true'),
-});
+function hashPhone(phone: string): string {
+  return crypto.createHash('sha256').update(phone).digest('hex');
+}
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
+    
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Niet geautoriseerd' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const formData = await req.formData();
+    const formData = await request.formData();
     const file = formData.get('file') as File;
-    
+
     if (!file) {
-      return NextResponse.json({ error: 'Geen bestand geüpload' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'No file uploaded' },
+        { status: 400 }
+      );
     }
 
-    // Alleen CSV toestaan
-    if (!file.name.endsWith('.csv')) {
-      return NextResponse.json({ error: 'Alleen CSV bestanden toegestaan' }, { status: 400 });
-    }
-
-    const text = await file.text();
+    const csvText = await file.text();
     
-    // Parse CSV
-    const { data, errors } = parse(text, {
+    const parseResult = Papa.parse(csvText, {
       header: true,
       skipEmptyLines: true,
-      transformHeader: (header: string) => header.trim(),
     });
 
-    if (errors.length > 0) {
-      return NextResponse.json({ 
-        error: 'CSV parse fout', 
-        details: errors.slice(0, 5) 
-      }, { status: 400 });
-    }
+    const leads = parseResult.data as any[];
 
     const results = {
-      success: 0,
-      skipped: 0,
-      errors: [] as string[],
+      imported: 0,
       duplicates: 0,
+      errors: [] as string[]
     };
 
-    // Normaliseer telefoonnummers en check duplicates
-    const rows = data as any[];
-    const normalizedPhones = rows.map(row => {
-      const phone = row.TelefoonNummer?.toString().trim() || '';
-      // Normaliseer naar +32 formaat
-      const cleaned = phone.replace(/[\s\-\.\(\)]/g, '');
-      if (cleaned.startsWith('0')) {
-        return '+32' + cleaned.substring(1);
-      }
-      return cleaned;
-    }).filter(Boolean);
-    
-    // Check duplicates via phoneHash (performance)
-    const phoneHashes = normalizedPhones.map(p => gdprHash(p));
-    
-    const existingLeads = await prisma.lead.findMany({
-      where: {
-        ownerId: session.user.id,
-        phoneHash: { in: phoneHashes },
-      },
-      select: { phoneHash: true },
-    });
-    
-    const existingHashes = new Set(existingLeads.map(l => l.phoneHash));
+    for (const lead of leads) {
+      try {
+        const phone = lead.TelefoonNummer || lead.phone || lead.telefoon;
+        const companyName = lead.Bedrijfsnaam || lead.companyName || lead.bedrijf;
 
-    // Process in batches van 100 voor database performance
-    const batchSize = 100;
-    
-    for (let i = 0; i < rows.length; i += batchSize) {
-      const batch = rows.slice(i, i + batchSize);
-      
-      const processedBatch = batch.map((row, idx) => {
-        try {
-          const validated = LeadCSVSchema.parse(row);
-          const phone = validated.TelefoonNummer.toString().trim();
-          
-          // Normaliseer
-          const cleaned = phone.replace(/[\s\-\.\(\)]/g, '');
-          const normalizedPhone = cleaned.startsWith('0') ? '+32' + cleaned.substring(1) : cleaned;
-          const phoneHash = gdprHash(normalizedPhone);
-          
-          // Skip duplicates
-          if (existingHashes.has(phoneHash)) {
-            results.duplicates++;
-            return null;
-          }
-          
-          // Voeg toe aan existing hashes om duplicates in zelfde import te voorkomen
-          existingHashes.add(phoneHash);
-          
-          return {
-            companyName: validated.Bedrijfsnaam,
-            niche: validated.Niche,
-            encryptedPhone: encryption.encrypt(normalizedPhone),
-            phoneHash: phoneHash,
-            encryptedEmail: validated.Email ? encryption.encrypt(validated.Email) : null,
-            city: validated.Gemeente || null,
-            address: validated.Adres || null,
-            province: validated.Provincie || null,
-            status: 'NEW',
-            doNotCall: validated['Niet bellen'] || false,
-            ownerId: session.user.id,
-            consentPhone: false,
-            consentEmail: false,
-            consentWhatsapp: false,
-            lawfulBasis: 'LEGITIMATE_INTEREST' as const,
-            source: 'csv_import',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
-        } catch (error) {
-          results.errors.push(`Rij ${i + idx + 2}: ${error instanceof Error ? error.message : 'Ongeldige data'}`);
-          return null;
+        if (!phone || !companyName) {
+          results.errors.push(`Missing phone or company name for row`);
+          continue;
         }
-      }).filter(Boolean);
 
-      if (processedBatch.length > 0) {
-        // Prisma SQLite/PostgreSQL createMany
-        await prisma.$transaction(
-          processedBatch.map(leadData => 
-            prisma.lead.create({ data: leadData as any })
-          )
-        );
-        results.success += processedBatch.length;
+        const cleanPhone = phone.toString().replace(/\s/g, '');
+        const phoneHash = hashPhone(cleanPhone);
+
+        // Check for duplicate
+        const existing = await prisma.lead.findFirst({
+          where: { phoneHash }
+        });
+
+        if (existing) {
+          results.duplicates++;
+          continue;
+        }
+
+        // Parse "Niet bellen" (Ja/Nee) naar boolean
+        const nietBellen = lead['Niet bellen'] || lead['niet_bellen'] || '';
+        const doNotCall = nietBellen.toString().toLowerCase() === 'ja' || 
+                          nietBellen.toString().toLowerCase() === 'yes' ||
+                          nietBellen.toString().toLowerCase() === 'true';
+
+        await prisma.lead.create({
+          data: {
+            companyName,
+            email: lead.Email || lead.email || '',
+            phone: cleanPhone,
+            phoneHash,
+            address: lead.Adres || lead.address || '',
+            city: lead.Gemeente || lead.city || '',
+            postalCode: lead.Postcode || lead.postalCode || '',
+            province: lead.Provincie || lead.province || 'Onbekend',
+            niche: lead.Niche || lead.niche || '',
+            currentProvider: lead.Provider || lead.provider || '',
+            status: 'NEW',
+            ownerId: session.user.id,
+            consentPhone: true,
+            doNotCall,
+            source: 'IMPORT',
+          }
+        });
+
+        results.imported++;
+      } catch (err) {
+        results.errors.push(`Failed to import: ${err}`);
       }
     }
 
-    return NextResponse.json({
-      message: 'Import voltooid',
-      imported: results.success,
-      duplicates: results.duplicates,
-      errors: results.errors.slice(0, 10),
-      total: rows.length,
-    });
+    return NextResponse.json(results);
 
   } catch (error) {
     console.error('Import error:', error);
-    return NextResponse.json({ 
-      error: 'Interne server fout' 
-    }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Import failed', details: (error as Error).message },
+      { status: 500 }
+    );
   }
 }

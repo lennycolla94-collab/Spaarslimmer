@@ -13,12 +13,22 @@ export async function GET() {
 
     const userId = session.user.id;
 
-    // Haal volgende lead op die:
-    // 1. Van deze user is
-    // 2. Niet doNotCall heeft
-    // 3. Phone consent heeft (of legitimate interest)
-    // 4. Niet recent gebeld (laatste 4 uur)
-    // 5. Status is NEW of CONTACTED
+    // Eerst: zoek leads die recent gebeld zijn
+    const recentCalls = await prisma.callLog.findMany({
+      where: {
+        consultantId: userId,
+        calledAt: {
+          gte: new Date(Date.now() - 4 * 60 * 60 * 1000) // 4 uur geleden
+        }
+      },
+      select: {
+        leadId: true
+      }
+    });
+
+    const recentlyCalledLeadIds = recentCalls.map(c => c.leadId);
+
+    // Zoek de volgende lead
     const nextLead = await prisma.lead.findFirst({
       where: {
         ownerId: userId,
@@ -30,24 +40,13 @@ export async function GET() {
         status: {
           in: ['NEW', 'CONTACTED']
         },
-        // Niet gebeld in laatste 4 uur
-        calls: {
-          none: {
-            calledAt: {
-              gte: new Date(Date.now() - 4 * 60 * 60 * 1000)
-            }
-          }
+        id: {
+          notIn: recentlyCalledLeadIds.length > 0 ? recentlyCalledLeadIds : ['never-match']
         }
       },
       orderBy: [
-        { createdAt: 'asc' } // Oudste eerst (FIFO)
-      ],
-      include: {
-        calls: {
-          orderBy: { calledAt: 'desc' },
-          take: 3 // Laatste 3 gesprekken tonen
-        }
-      }
+        { createdAt: 'asc' }
+      ]
     });
 
     if (!nextLead) {
@@ -57,8 +56,25 @@ export async function GET() {
       }, { status: 404 });
     }
 
-    // Decryptie gebeurt automatisch via Prisma middleware
-    return NextResponse.json(nextLead);
+    // Haal recente calls apart op
+    const calls = await prisma.callLog.findMany({
+      where: {
+        leadId: nextLead.id
+      },
+      orderBy: { calledAt: 'desc' },
+      take: 3
+    });
+
+    // Tel totaal aantal calls voor deze lead
+    const callCount = await prisma.callLog.count({
+      where: { leadId: nextLead.id }
+    });
+
+    return NextResponse.json({
+      ...nextLead,
+      calls,
+      callCount
+    });
     
   } catch (error) {
     console.error('Queue error:', error);

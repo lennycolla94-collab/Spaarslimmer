@@ -77,8 +77,9 @@ export function CSVUploader() {
   };
 
   const downloadTemplate = () => {
-    const headers = ['Bedrijfsnaam', 'Niche', 'TelefoonNummer', 'Gemeente', 'Email', 'Adres', 'Provincie', 'Niet bellen'];
-    const example = ['Voorbeeld BV', 'Energie', '0612345678', 'Amsterdam', 'info@voorbeeld.nl', 'Straat 1', 'Noord-Holland', 'Nee'];
+    // Kolommen zoals in de afbeelding
+    const headers = ['Bedrijfsnaam', 'Niche', 'Provider', 'TelefoonNummer', 'Adres', 'Postcode', 'Gemeente', 'Provincie', 'Email', 'Niet bellen'];
+    const example = ['Voorbeeld BV', 'Dakwerken', 'Orange', '48382829', 'Straat 1', '3870', 'Amsterdam', 'Noord-Holland', 'info@voorbeeld.nl', 'Nee'];
     
     const csv = [headers.join(','), example.join(',')].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -228,12 +229,12 @@ export function CSVUploader() {
               <p className="text-xs text-gray-600">Duplicaten</p>
             </div>
             <div className="p-3 bg-white rounded-lg shadow-sm">
-              <p className="text-2xl font-bold text-red-600">{result.errors.length}</p>
+              <p className="text-2xl font-bold text-red-600">{result.errors?.length || 0}</p>
               <p className="text-xs text-gray-600">Fouten</p>
             </div>
           </div>
 
-          {result.errors.length > 0 && (
+          {result.errors && result.errors.length > 0 && (
             <div className="mt-4">
               <p className="text-sm font-medium text-red-600 mb-2">
                 Fouten gevonden:

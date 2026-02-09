@@ -86,8 +86,8 @@ export default function LoginPage() {
         </form>
 
         <div className="mt-4 text-center text-sm text-gray-500">
-          <p>Demo accounts:</p>
-          <p>consultant@smartsn.be / demo123</p>
+          <p>Test account:</p>
+          <p className="font-medium">test@test.com / testsmart2026!</p>
         </div>
       </div>
     </div>

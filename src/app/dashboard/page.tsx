@@ -1,187 +1,203 @@
 'use client';
 
-import Link from 'next/link';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { DesignADashboard } from '@/components/dashboard/design-a';
+import { DesignBDashboard } from '@/components/dashboard/design-b';
+import { Button } from '@/components/ui/button';
+import { Palette, Sparkles, Check, Moon, Sun } from 'lucide-react';
 
-interface Stats {
-  total: number;
-  new: number;
-  contacted: number;
-  quoted: number;
-  sales: number;
-  lost: number;
-}
+type Design = 'A' | 'B';
+type ThemeMode = 'dark' | 'light';
 
 export default function DashboardPage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [design, setDesign] = useState<Design>('A');
+  const [themeMode, setThemeMode] = useState<ThemeMode>('dark');
+  const [showSelector, setShowSelector] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
+  // Load from localStorage on mount
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
+    const savedDesign = localStorage.getItem('dashboard-design') as Design;
+    const savedTheme = localStorage.getItem('dashboard-theme') as ThemeMode;
+    
+    if (savedDesign && (savedDesign === 'A' || savedDesign === 'B')) {
+      setDesign(savedDesign);
     }
+    if (savedTheme && (savedTheme === 'dark' || savedTheme === 'light')) {
+      setThemeMode(savedTheme);
+    }
+    setMounted(true);
+  }, []);
 
-    if (status === 'authenticated') {
-      fetchStats();
-    }
-  }, [status, router]);
-
-  const fetchStats = async () => {
-    try {
-      const response = await fetch('/api/stats');
-      if (response.ok) {
-        const data = await response.json();
-        setStats(data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch stats:', error);
-    } finally {
-      setLoading(false);
-    }
+  // Save to localStorage when changed
+  const handleSetDesign = (newDesign: Design) => {
+    setDesign(newDesign);
+    localStorage.setItem('dashboard-design', newDesign);
+    setShowSelector(false);
   };
 
-  if (status === 'loading' || loading) {
+  const handleSetThemeMode = (newMode: ThemeMode) => {
+    setThemeMode(newMode);
+    localStorage.setItem('dashboard-theme', newMode);
+  };
+
+  // Prevent hydration mismatch
+  if (!mounted) {
+    return <div className="min-h-screen bg-gray-100" />;
+  }
+
+  // Show dashboard
+  if (!showSelector) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-lg">Laden...</div>
-      </div>
+      <>
+        {design === 'A' ? (
+          <DesignADashboard themeMode={themeMode} onThemeChange={handleSetThemeMode} />
+        ) : (
+          <DesignBDashboard />
+        )}
+        <button
+          onClick={() => setShowSelector(true)}
+          className="fixed bottom-6 right-6 z-50 p-4 bg-white rounded-full shadow-xl border border-gray-200 hover:shadow-2xl transition-all"
+          title="Wissel design/thema"
+        >
+          <Palette className="w-6 h-6 text-orange-500" />
+        </button>
+      </>
     );
   }
 
-  if (!session) {
-    return null;
-  }
-
+  // Show design selector
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-indigo-600">SmartSN CRM</h1>
-          <div className="flex items-center gap-4">
-            <Link href="/leads" className="text-gray-600 hover:text-gray-900">
-              Mijn Leads
-            </Link>
-            <span className="text-gray-600">{session.user?.name}</span>
-            <span className="px-2 py-1 bg-indigo-100 text-indigo-800 rounded text-sm">
-              {session.user?.role}
-            </span>
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
+      <div className="max-w-5xl w-full">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            Kies je Dashboard Design
+          </h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Twee unieke designs, elk met hun eigen karakter. 
+            Kies je favoriete layout én thema (Dark/Light).
+          </p>
+        </div>
+
+        {/* Theme Mode Selector */}
+        <div className="flex justify-center mb-8">
+          <div className="bg-white rounded-2xl shadow-lg p-2 flex gap-2">
             <button
-              onClick={() => router.push('/api/auth/signout')}
-              className="text-sm text-gray-500 hover:text-gray-700"
+              onClick={() => handleSetThemeMode('light')}
+              className={`px-6 py-3 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
+                themeMode === 'light'
+                  ? 'bg-amber-100 text-amber-700 border-2 border-amber-300'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
             >
-              Uitloggen
+              <Sun className="w-5 h-5" />
+              Light Mode
+            </button>
+            <button
+              onClick={() => handleSetThemeMode('dark')}
+              className={`px-6 py-3 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
+                themeMode === 'dark'
+                  ? 'bg-slate-800 text-white border-2 border-slate-600'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <Moon className="w-5 h-5" />
+              Dark Mode
             </button>
           </div>
         </div>
-      </header>
 
-      {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Quick Actions */}
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Snelle Acties</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Link
-              href="/call-center"
-              className="bg-green-600 hover:bg-green-700 text-white p-6 rounded-lg shadow-md transition-colors flex items-center gap-4"
-            >
-              <span className="text-4xl">📞</span>
-              <div>
-                <div className="text-xl font-bold">Bel Centrum</div>
-                <div className="text-green-100">Start met bellen</div>
-              </div>
-            </Link>
-
-            <Link
-              href="/leads/import"
-              className="bg-blue-600 hover:bg-blue-700 text-white p-6 rounded-lg shadow-md transition-colors flex items-center gap-4"
-            >
-              <span className="text-4xl">📁</span>
-              <div>
-                <div className="text-xl font-bold">Import Leads</div>
-                <div className="text-blue-100">CSV upload</div>
-              </div>
-            </Link>
-
-            <Link
-              href="/leads"
-              className="bg-purple-600 hover:bg-purple-700 text-white p-6 rounded-lg shadow-md transition-colors flex items-center gap-4"
-            >
-              <span className="text-4xl">👥</span>
-              <div>
-                <div className="text-xl font-bold">Alle Leads</div>
-                <div className="text-purple-100">Bekijk lijst</div>
-              </div>
-            </Link>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Mijn Leads</h2>
-            <Link href="/leads" className="text-blue-600 hover:text-blue-800">
-              Bekijk alle →
-            </Link>
-          </div>
-          {stats ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              <div className="bg-white p-4 rounded-lg shadow text-center">
-                <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
-                <div className="text-sm text-gray-500">Totaal</div>
-              </div>
-              <div className="bg-white p-4 rounded-lg shadow text-center">
-                <div className="text-3xl font-bold text-blue-600">{stats.new}</div>
-                <div className="text-sm text-gray-500">Nieuw</div>
-              </div>
-              <div className="bg-white p-4 rounded-lg shadow text-center">
-                <div className="text-3xl font-bold text-yellow-600">{stats.contacted}</div>
-                <div className="text-sm text-gray-500">Gecontacteerd</div>
-              </div>
-              <div className="bg-white p-4 rounded-lg shadow text-center">
-                <div className="text-3xl font-bold text-purple-600">{stats.quoted}</div>
-                <div className="text-sm text-gray-500">Offerte</div>
-              </div>
-              <div className="bg-white p-4 rounded-lg shadow text-center">
-                <div className="text-3xl font-bold text-green-600">{stats.sales}</div>
-                <div className="text-sm text-gray-500">Verkoop</div>
-              </div>
-              <div className="bg-white p-4 rounded-lg shadow text-center">
-                <div className="text-3xl font-bold text-red-600">{stats.lost}</div>
-                <div className="text-sm text-gray-500">Verloren</div>
+        <div className="grid grid-cols-2 gap-8">
+          {/* Design A Card */}
+          <div 
+            onClick={() => handleSetDesign('A')}
+            className={`bg-white rounded-3xl shadow-xl overflow-hidden cursor-pointer hover:shadow-2xl transition-all hover:scale-105 group ${
+              design === 'A' ? 'ring-4 ring-orange-500' : ''
+            }`}
+          >
+            <div className={`h-56 relative ${
+              themeMode === 'dark' 
+                ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' 
+                : 'bg-gradient-to-br from-blue-500 to-cyan-400'
+            }`}>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center text-white">
+                  <Palette className="w-16 h-16 mx-auto mb-4 opacity-80" />
+                  <p className="text-2xl font-bold">Spaarslimmer Pro</p>
+                  <p className="text-sm opacity-80 mt-2">Gamification Focus</p>
+                </div>
               </div>
             </div>
-          ) : (
-            <div className="text-gray-500">Geen statistieken beschikbaar</div>
-          )}
-        </div>
-
-        {/* Conversion Rate */}
-        {stats && stats.total > 0 && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Conversie Ratio</h3>
-            <div className="flex items-center gap-4">
-              <div className="flex-1 bg-gray-200 rounded-full h-4">
-                <div 
-                  className="bg-green-600 h-4 rounded-full transition-all"
-                  style={{ width: `${(stats.sales / stats.total) * 100}%` }}
-                />
-              </div>
-              <span className="text-2xl font-bold text-green-600">
-                {((stats.sales / stats.total) * 100).toFixed(1)}%
-              </span>
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Design A</h3>
+              <ul className="space-y-2 text-gray-600">
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-green-500" />
+                  {themeMode === 'dark' ? 'Donkere sidebar' : 'Lichte sidebar met blauw accent'}
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-green-500" />
+                  Gamification: XP, levels, challenges
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-green-500" />
+                  Team Pulse activiteiten feed
+                </li>
+              </ul>
+              <Button 
+                className={`w-full mt-6 ${
+                  themeMode === 'dark' ? 'bg-slate-900 hover:bg-slate-800' : 'bg-blue-600 hover:bg-blue-700'
+                }`}
+                onClick={() => handleSetDesign('A')}
+              >
+                Kies Design A
+              </Button>
             </div>
-            <p className="text-sm text-gray-500 mt-2">
-              {stats.sales} verkopen uit {stats.total} leads
-            </p>
           </div>
-        )}
-      </main>
+
+          {/* Design B Card */}
+          <div 
+            onClick={() => handleSetDesign('B')}
+            className={`bg-white rounded-3xl shadow-xl overflow-hidden cursor-pointer hover:shadow-2xl transition-all hover:scale-105 group ${
+              design === 'B' ? 'ring-4 ring-orange-500' : ''
+            }`}
+          >
+            <div className="h-56 bg-gradient-to-br from-orange-500 via-orange-600 to-red-600 relative">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center text-white">
+                  <Sparkles className="w-16 h-16 mx-auto mb-4 opacity-80" />
+                  <p className="text-2xl font-bold">Smart Energy</p>
+                  <p className="text-sm text-orange-100 mt-2">Productiviteit Focus</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Design B</h3>
+              <ul className="space-y-2 text-gray-600">
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-green-500" />
+                  Moderne lichte sidebar met gradient
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-green-500" />
+                  Focus op doelen en voortgang
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-green-500" />
+                  Quick actions voor snelle toegang
+                </li>
+              </ul>
+              <Button 
+                className="w-full mt-6 bg-gradient-to-r from-orange-500 to-red-500 hover:opacity-90"
+                onClick={() => handleSetDesign('B')}
+              >
+                Kies Design B
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

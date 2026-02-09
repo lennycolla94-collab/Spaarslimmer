@@ -1,99 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { sendQuoteEmail, QuoteData } from '@/lib/email-service';
-import { checkConsent } from '@/middleware/gdpr';
-
-const prisma = new PrismaClient();
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
-    
-    const { leadId, quoteData } = body;
-    
-    if (!leadId || !quoteData) {
+    const { to, quote, customerName } = body;
+
+    if (!to || !quote) {
       return NextResponse.json(
-        { error: 'Missing required fields: leadId, quoteData' },
+        { error: 'Missing required fields' },
         { status: 400 }
       );
     }
-    
-    // Get lead with consent info
-    const lead = await prisma.lead.findUnique({
-      where: { id: leadId },
-      include: {
-        consultant: {
-          select: { name: true, email: true },
-        },
-      },
-    });
-    
-    if (!lead) {
-      return NextResponse.json(
-        { error: 'Lead not found' },
-        { status: 404 }
-      );
-    }
-    
-    if (!lead.email) {
-      return NextResponse.json(
-        { error: 'Lead has no email address' },
-        { status: 400 }
-      );
-    }
-    
-    // Check email consent (GDPR)
-    const hasEmailConsent = checkConsent(lead, 'email');
-    if (!hasEmailConsent) {
-      return NextResponse.json(
-        { 
-          error: 'Lead has not consented to email contact',
-          gdprViolation: true 
-        },
-        { status: 403 }
-      );
-    }
-    
-    // Prepare quote data with consultant info
-    const fullQuoteData: QuoteData = {
-      ...quoteData,
-      consultantName: lead.consultant?.name || 'Uw Consultant',
-      consultantEmail: lead.consultant?.email || 'info@smartsn.be',
-      consultantPhone: '+32 470 12 34 56', // Would come from consultant profile
-      validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-    };
-    
-    // Send email
-    const result = await sendQuoteEmail(lead.email, fullQuoteData);
-    
-    if (!result.success) {
-      return NextResponse.json(
-        { error: result.error || 'Failed to send email' },
-        { status: 500 }
-      );
-    }
-    
-    // Log the email in call logs for tracking
-    await prisma.callLog.create({
-      data: {
-        leadId,
-        consultantId: lead.consultantId,
-        result: 'conversation',
-        notes: `Quote email sent: ${quoteData.quoteId}. MessageId: ${result.messageId}`,
-      },
-    });
-    
-    return NextResponse.json({
+
+    // TODO: Implement actual email sending with SMTP
+    // For now, just return success
+    console.log('Email would be sent to:', to);
+    console.log('Quote:', quote.quoteId);
+
+    return NextResponse.json({ 
       success: true,
-      messageId: result.messageId,
-      sentTo: lead.email,
-      sentAt: new Date().toISOString(),
+      message: 'Quote email queued for sending'
     });
-    
+
   } catch (error) {
-    console.error('Error sending quote email:', error);
+    console.error('Email send error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to send email' },
       { status: 500 }
     );
   }

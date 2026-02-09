@@ -1,99 +1,166 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import crypto from 'crypto';
 
-// GET /api/leads - Haal leads op met filtering
+function hashPhone(phone: string): string {
+  return crypto.createHash('sha256').update(phone).digest('hex');
+}
+
 export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
-    
-    const province = searchParams.get('province');
-    const niche = searchParams.get('niche');
-    const provider = searchParams.get('provider');
-    const excludeDoNotCall = searchParams.get('excludeDoNotCall') === 'true';
-    
-    const where: any = {};
-    
-    if (province) {
-      where.province = province;
+    const status = searchParams.get('status');
+    const search = searchParams.get('search');
+
+    const where: any = {
+      ownerId: session.user.id
+    };
+
+    if (status) {
+      where.status = status;
     }
-    
-    if (niche) {
-      where.niche = niche;
+
+    if (search) {
+      where.OR = [
+        { companyName: { contains: search, mode: 'insensitive' } },
+        { city: { contains: search, mode: 'insensitive' } },
+      ];
     }
-    
-    if (provider) {
-      where.currentProvider = provider;
-    }
-    
-    if (excludeDoNotCall) {
-      where.doNotCall = false;
-    }
-    
+
     const leads = await prisma.lead.findMany({
       where,
-      include: {
-        consultant: {
-          select: { id: true, name: true, email: true },
-        },
-        _count: {
-          select: { callLogs: true },
-        },
-      },
       orderBy: { createdAt: 'desc' },
+      take: 100,
+      include: {
+        _count: {
+          select: { calls: true }
+        }
+      }
     });
-    
+
     return NextResponse.json(leads);
+
   } catch (error) {
-    console.error('Error fetching leads:', error);
-    return NextResponse.json({ error: 'Failed to fetch leads' }, { status: 500 });
+    console.error('Leads GET error:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch leads' },
+      { status: 500 }
+    );
   }
 }
 
-// POST /api/leads - Maak nieuwe lead aan
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
-    
-    // Check for duplicates on phone
-    const existingLead = await prisma.lead.findUnique({
-      where: { phone: body.phone },
-    });
-    
-    if (existingLead) {
+    const { companyName, phone, email, city, province, niche, currentProvider } = body;
+
+    if (!companyName || !phone) {
       return NextResponse.json(
-        { error: 'Lead with this phone number already exists' },
+        { error: 'Company name and phone are required' },
+        { status: 400 }
+      );
+    }
+
+    const cleanPhone = phone.replace(/\s/g, '');
+    const phoneHash = hashPhone(cleanPhone);
+
+    // Check duplicate
+    const existing = await prisma.lead.findFirst({
+      where: { phoneHash }
+    });
+
+    if (existing) {
+      return NextResponse.json(
+        { error: 'Lead with this phone already exists' },
         { status: 409 }
       );
     }
-    
+
     const lead = await prisma.lead.create({
       data: {
-        companyName: body.companyName,
-        niche: body.niche,
-        phone: body.phone,
-        email: body.email,
-        address: body.address,
-        city: body.city,
-        province: body.province,
-        currentProvider: body.currentProvider,
-        currentSupplier: body.currentSupplier,
-        consultantId: body.consultantId,
-        lawfulBasis: body.lawfulBasis || 'LEGITIMATE_INTEREST',
-        consentEmail: body.consentEmail || false,
-        consentWhatsApp: body.consentWhatsApp || false,
-        consentPhone: body.consentPhone || false,
-        doNotCall: body.doNotCall || false,
-      },
-      include: {
-        consultant: {
-          select: { id: true, name: true, email: true },
-        },
-      },
+        companyName,
+        email: email || '',
+        phone: cleanPhone,
+        phoneHash,
+        city: city || '',
+        province: province || '',
+        niche: niche || '',
+        currentProvider: currentProvider || '',
+        status: 'NEW',
+        ownerId: session.user.id,
+        consentPhone: true,
+        doNotCall: false,
+        source: 'MANUAL',
+      }
     });
-    
-    return NextResponse.json(lead, { status: 201 });
+
+    return NextResponse.json(lead);
+
   } catch (error) {
-    console.error('Error creating lead:', error);
-    return NextResponse.json({ error: 'Failed to create lead' }, { status: 500 });
+    console.error('Lead POST error:', error);
+    return NextResponse.json(
+      { error: 'Failed to create lead' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { id, ...updates } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Lead ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Verify ownership
+    const existingLead = await prisma.lead.findFirst({
+      where: { id, ownerId: session.user.id }
+    });
+
+    if (!existingLead) {
+      return NextResponse.json(
+        { error: 'Lead not found' },
+        { status: 404 }
+      );
+    }
+
+    const lead = await prisma.lead.update({
+      where: { id },
+      data: updates
+    });
+
+    return NextResponse.json(lead);
+
+  } catch (error) {
+    console.error('Lead PATCH error:', error);
+    return NextResponse.json(
+      { error: 'Failed to update lead' },
+      { status: 500 }
+    );
   }
 }
