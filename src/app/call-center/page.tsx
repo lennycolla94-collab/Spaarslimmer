@@ -745,11 +745,11 @@ function CallCenterContent() {
                     {/* Quick Actions */}
                     <div className="flex gap-2 pt-4 border-t border-gray-100">
                       <Link
-                        href={`/offers?lead=${currentLead.id}`}
+                        href={`/calculator?lead=${currentLead.id}`}
                         className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-orange-700 bg-orange-50 rounded-lg hover:bg-orange-100"
                       >
                         <FileText className="w-4 h-4" />
-                        Offerte Maken
+                        Prijs Berekenen
                       </Link>
                       <Link
                         href={`/appointments?lead=${currentLead.id}`}

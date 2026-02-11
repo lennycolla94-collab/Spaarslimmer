@@ -36,6 +36,8 @@ const mockAppointments = [
     id: '1', 
     leadName: 'Tech Solutions BV',
     contactName: 'Jan Janssen',
+    phone: '+32 471 23 45 67',
+    email: 'jan@tech.nl',
     type: 'HOME',
     date: '2025-02-15',
     time: '14:00',
@@ -47,6 +49,8 @@ const mockAppointments = [
     id: '2', 
     leadName: 'Bakkerij De Lekkernij',
     contactName: 'Maria Peeters',
+    phone: '+32 485 67 89 01',
+    email: 'info@delekkernij.be',
     type: 'ONLINE',
     date: '2025-02-16',
     time: '10:30',
@@ -58,6 +62,8 @@ const mockAppointments = [
     id: '3', 
     leadName: 'Constructie Groep',
     contactName: 'Peter Willems',
+    phone: '+32 496 12 34 56',
+    email: 'peter@constructie.be',
     type: 'OFFICE',
     date: '2025-02-18',
     time: '15:00',
@@ -85,6 +91,7 @@ const days = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
 export default function AppointmentsPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [openMenuIndex, setOpenMenuIndex] = useState<number | null>(null);
 
   const stats = {
     total: mockAppointments.length,
@@ -188,7 +195,7 @@ export default function AppointmentsPage() {
         {viewMode === 'list' ? (
           /* List View */
           <div className="space-y-4">
-            {mockAppointments.map((appointment) => {
+            {mockAppointments.map((appointment, index) => {
               const type = typeConfig[appointment.type as keyof typeof typeConfig];
               const status = statusConfig[appointment.status as keyof typeof statusConfig];
               const TypeIcon = type.icon;
@@ -254,16 +261,43 @@ export default function AppointmentsPage() {
                       </div>
 
                       {/* Actions */}
-                      <div className="flex items-center gap-2">
-                        <button className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors">
+                      <div className="flex items-center gap-2 relative">
+                        <button 
+                          onClick={() => window.location.href = `tel:${appointment.phone || ''}`}
+                          className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                        >
                           <Phone className="w-5 h-5" />
                         </button>
-                        <button className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors">
+                        <button 
+                          onClick={() => window.location.href = `mailto:${appointment.email || ''}`}
+                          className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                        >
                           <Mail className="w-5 h-5" />
                         </button>
-                        <button className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors">
-                          <MoreVertical className="w-5 h-5" />
-                        </button>
+                        <div className="relative">
+                          <button 
+                            onClick={() => setOpenMenuIndex(openMenuIndex === index ? null : index)}
+                            className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                          >
+                            <MoreVertical className="w-5 h-5" />
+                          </button>
+                          {openMenuIndex === index && (
+                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
+                              <button 
+                                onClick={() => { alert('Bewerken - in ontwikkeling'); setOpenMenuIndex(null); }}
+                                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                              >
+                                <span>✏️</span> Bewerken
+                              </button>
+                              <button 
+                                onClick={() => { alert('Verwijderen - in ontwikkeling'); setOpenMenuIndex(null); }}
+                                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                              >
+                                <span>🗑️</span> Verwijderen
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
