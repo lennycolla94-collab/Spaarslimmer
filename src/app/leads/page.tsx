@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   PageContainer, 
   PageHeader, 
@@ -52,7 +52,8 @@ const statusConfig = {
 };
 
 export default function LeadsPage() {
-  const [leads, setLeads] = useState(mockLeads);
+  const [leads, setLeads] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -64,6 +65,30 @@ export default function LeadsPage() {
     city: '',
     niche: '',
   });
+
+  // Fetch leads from API
+  useEffect(() => {
+    fetchLeads();
+  }, []);
+
+  const fetchLeads = async () => {
+    try {
+      const response = await fetch('/api/leads');
+      if (response.ok) {
+        const data = await response.json();
+        // Map _count.calls to calls for display
+        const mappedLeads = data.map((lead: any) => ({
+          ...lead,
+          calls: lead._count?.calls || 0,
+        }));
+        setLeads(mappedLeads);
+      }
+    } catch (error) {
+      console.error('Failed to fetch leads:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter leads
   const filteredLeads = leads.filter(lead => {
@@ -88,26 +113,32 @@ export default function LeadsPage() {
     sold: leads.filter(l => l.status === 'SALE_MADE').length,
   };
 
-  const handleAddLead = () => {
+  const handleAddLead = async () => {
     if (!newLead.contactName || !newLead.phone) return;
     
-    const lead = {
-      id: Date.now().toString(),
-      companyName: newLead.companyName || 'Onbekend Bedrijf',
-      contactName: newLead.contactName,
-      email: newLead.email || '',
-      phone: newLead.phone,
-      city: newLead.city || '',
-      status: 'NEW',
-      niche: newLead.niche || '',
-      lastContact: null,
-      calls: 0,
-      doNotCall: false,
-    };
-    
-    setLeads([lead, ...leads]);
-    setNewLead({ companyName: '', contactName: '', phone: '', email: '', city: '', niche: '' });
-    setShowAddModal(false);
+    try {
+      const response = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyName: newLead.companyName || 'Onbekend Bedrijf',
+          contactName: newLead.contactName,
+          email: newLead.email || '',
+          phone: newLead.phone,
+          city: newLead.city || '',
+          niche: newLead.niche || '',
+        }),
+      });
+
+      if (response.ok) {
+        const savedLead = await response.json();
+        setLeads([savedLead, ...leads]);
+        setNewLead({ companyName: '', contactName: '', phone: '', email: '', city: '', niche: '' });
+        setShowAddModal(false);
+      }
+    } catch (error) {
+      console.error('Failed to add lead:', error);
+    }
   };
 
   return (
@@ -211,12 +242,19 @@ export default function LeadsPage() {
         </div>
 
         {/* Leads Grid */}
-        {filteredLeads.length === 0 ? (
+        {loading ? (
+          <SmartCard className="p-12">
+            <div className="flex flex-col items-center justify-center">
+              <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+              <p className="text-gray-600">Leads laden...</p>
+            </div>
+          </SmartCard>
+        ) : filteredLeads.length === 0 ? (
           <SmartCard>
             <EmptyState
               icon={<Users className="w-10 h-10" />}
               title="Geen leads gevonden"
-              description={searchQuery ? "Pas je zoekopdracht aan." : "Voeg je eerste lead toe om te beginnen."}
+              description={searchQuery ? "Pas je zoekopdracht aan." : "Voeg je eerste lead toe of importeer via CSV."}
               action={
                 <ActionButton onClick={() => setShowAddModal(true)} variant="primary" icon={<Plus className="w-4 h-4" />}>
                   Lead Toevoegen
