@@ -26,7 +26,8 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
-  MoreVertical
+  MoreVertical,
+  ArrowLeft
 } from 'lucide-react';
 
 // Mock data
@@ -110,9 +111,14 @@ export default function AppointmentsPage() {
         subtitle="Beheer je meetings en huisbezoeken"
         icon={<Calendar className="w-6 h-6 text-white" />}
         action={
-          <ActionButton variant="primary" icon={<Plus className="w-4 h-4" />}>
-            Nieuwe Afspraak
-          </ActionButton>
+          <div className="flex gap-2">
+            <ActionButton href="/dashboard" variant="secondary" icon={<ArrowLeft className="w-4 h-4" />}>
+              Dashboard
+            </ActionButton>
+            <ActionButton variant="primary" icon={<Plus className="w-4 h-4" />}>
+              Nieuwe Afspraak
+            </ActionButton>
+          </div>
         }
         stats={[
           { label: 'Totaal', value: stats.total.toString() },

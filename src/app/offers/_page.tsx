@@ -26,6 +26,7 @@ import {
   Calendar,
   MoreVertical,
   ArrowRight,
+  ArrowLeft,
   Euro,
   Users
 } from 'lucide-react';
@@ -117,9 +118,14 @@ export default function OffersPage() {
         subtitle="Beheer je offertes en converteer naar sales"
         icon={<FileText className="w-6 h-6 text-white" />}
         action={
-          <ActionButton href="/leads" variant="primary" icon={<Plus className="w-4 h-4" />}>
-            Nieuwe Offerte
-          </ActionButton>
+          <div className="flex gap-2">
+            <ActionButton href="/dashboard" variant="secondary" icon={<ArrowLeft className="w-4 h-4" />}>
+              Dashboard
+            </ActionButton>
+            <ActionButton href="/leads" variant="primary" icon={<Plus className="w-4 h-4" />}>
+              Nieuwe Offerte
+            </ActionButton>
+          </div>
         }
         stats={[
           { label: 'Totaal Offertes', value: stats.total.toString() },

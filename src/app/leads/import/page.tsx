@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { CSVUploader } from '@/components/import/csv-uploader';
+import Link from 'next/link';
 
 export default async function ImportLeadsPage() {
   const session = await getServerSession(authOptions);
@@ -12,6 +13,19 @@ export default async function ImportLeadsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
+      {/* Back Button */}
+      <div className="max-w-2xl mx-auto mb-4">
+        <Link 
+          href="/leads"
+          className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Terug naar Leads
+        </Link>
+      </div>
+
       <div className="max-w-2xl mx-auto">
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           {/* Header */}

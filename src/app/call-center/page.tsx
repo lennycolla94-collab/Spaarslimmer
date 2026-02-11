@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
   PageContainer, 
@@ -174,6 +174,7 @@ const callOutcomes = [
   { value: 'NOT_INTERESTED', label: 'Geen Interesse', color: 'red', icon: XCircle },
   { value: 'DNCM', label: 'DNCM - Niet Bellen!', color: 'rose', icon: PhoneOff },
   { value: 'CALLBACK', label: 'Terugbellen', color: 'blue', icon: Clock },
+  { value: 'APPOINTMENT', label: 'Afspraak Maken', color: 'purple', icon: Calendar },
   { value: 'NO_ANSWER', label: 'Geen Antwoord', color: 'gray', icon: PhoneOff },
   { value: 'QUOTED', label: 'Offerte Verstuurd', color: 'purple', icon: FileText },
   { value: 'SALE', label: 'Verkoop!', color: 'orange', icon: Target },
@@ -181,6 +182,7 @@ const callOutcomes = [
 
 function CallCenterContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const initialLeadId = searchParams.get('lead');
   
   // State
@@ -350,7 +352,12 @@ function CallCenterContent() {
     setQueue(updatedQueue);
 
     // Handle outcome
-    if (selectedOutcome === 'NO_ANSWER' && isQueueRunning) {
+    if (selectedOutcome === 'APPOINTMENT') {
+      // Redirect to appointments page to schedule
+      setShowOutcomeModal(false);
+      router.push('/appointments');
+      return;
+    } else if (selectedOutcome === 'NO_ANSWER' && isQueueRunning) {
       // Auto advance to next after no answer
       setShowOutcomeModal(false);
       setTimeout(() => {

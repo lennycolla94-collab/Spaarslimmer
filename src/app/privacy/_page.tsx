@@ -1,7 +1,7 @@
 'use client';
 
-import { PageContainer, PageHeader, SmartCard } from '@/components/design-system/page-container';
-import { Shield, Mail, Phone, Download, UserX } from 'lucide-react';
+import { PageContainer, PageHeader, SmartCard, ActionButton } from '@/components/design-system/page-container';
+import { Shield, Mail, Phone, Download, UserX, ArrowLeft } from 'lucide-react';
 
 export default function PrivacyPage() {
   return (
@@ -10,6 +10,11 @@ export default function PrivacyPage() {
         title="Privacybeleid"
         subtitle="Jouw privacy is belangrijk voor ons"
         icon={<Shield className="w-6 h-6 text-white" />}
+        action={
+          <ActionButton href="/dashboard" variant="secondary" icon={<ArrowLeft className="w-4 h-4" />}>
+            Dashboard
+          </ActionButton>
+        }
       />
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

@@ -30,6 +30,7 @@ import {
   Search,
   Filter,
   ArrowRight,
+  ArrowLeft,
   X
 } from 'lucide-react';
 
@@ -117,6 +118,9 @@ export default function LeadsPage() {
         icon={<Users className="w-6 h-6 text-white" />}
         action={
           <div className="flex gap-2">
+            <ActionButton href="/dashboard" variant="secondary" icon={<ArrowLeft className="w-4 h-4" />}>
+              Dashboard
+            </ActionButton>
             <ActionButton onClick={() => setShowAddModal(true)} variant="primary" icon={<Plus className="w-4 h-4" />}>
               Lead Toevoegen
             </ActionButton>

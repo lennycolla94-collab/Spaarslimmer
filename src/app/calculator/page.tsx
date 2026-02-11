@@ -28,6 +28,7 @@ import {
   Zap,
   CheckCircle2,
   ArrowRight,
+  ArrowLeft,
   Euro,
   Users,
   Gift
@@ -53,6 +54,12 @@ export default function CalculatorPage() {
   const [mobileLines, setMobileLines] = useState<MobileLine[]>([]);
   const [tvPlan, setTvPlan] = useState('');
   const [currentMonthlyCost, setCurrentMonthlyCost] = useState('');
+  
+  // Extras
+  const [hasVasteLijn, setHasVasteLijn] = useState(false);
+  const [hasMyComfort, setHasMyComfort] = useState(false);
+  const [wifiBoosters, setWifiBoosters] = useState(0);
+  const [extraDecoders, setExtraDecoders] = useState(0);
 
   const hasInternet = !!internetPlan;
   const hasMobile = mobileLines.length > 0;
@@ -66,13 +73,13 @@ export default function CalculatorPage() {
       hasMobile,
       mobileLines,
       tvPlan: (tvPlan as any) || 'NONE',
-      hasVasteLijn: false,
-      hasMyComfort: false,
-      wifiBoosters: 0,
-      extraDecoders: 0,
+      hasVasteLijn,
+      hasMyComfort,
+      wifiBoosters,
+      extraDecoders,
       currentMonthlyCost: parseFloat(currentMonthlyCost) || 0,
     });
-  }, [internetPlan, isSecondAddress, mobileLines, tvPlan, currentMonthlyCost, hasInternet, hasMobile]);
+  }, [internetPlan, isSecondAddress, mobileLines, tvPlan, currentMonthlyCost, hasInternet, hasMobile, hasVasteLijn, hasMyComfort, wifiBoosters, extraDecoders]);
 
   const addMobileLine = () => {
     setMobileLines([...mobileLines, { plan: 'MEDIUM', isPortability: false }]);
@@ -143,6 +150,11 @@ export default function CalculatorPage() {
         title="Prijs Calculator"
         subtitle="Bereken de perfecte prijs voor je klant"
         icon={<Calculator className="w-6 h-6 text-white" />}
+        action={
+          <ActionButton href="/dashboard" variant="secondary" icon={<ArrowLeft className="w-4 h-4" />}>
+            Dashboard
+          </ActionButton>
+        }
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -356,6 +368,123 @@ export default function CalculatorPage() {
                 </div>
               </div>
             </SmartCard>
+
+            {/* Extras */}
+            {hasInternet && (
+              <SmartCard className="border-l-4 border-l-yellow-500">
+                <div className="p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-yellow-100 rounded-xl flex items-center justify-center">
+                      <Zap className="w-5 h-5 text-yellow-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">Extras & Opties</h3>
+                      <p className="text-sm text-gray-500">Voeg extra diensten toe</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Vaste Lijn */}
+                    <label className="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={hasVasteLijn}
+                          onChange={(e) => setHasVasteLijn(e.target.checked)}
+                          className="w-5 h-5 text-orange-600 rounded-lg"
+                        />
+                        <div>
+                          <div className="font-medium text-gray-900">Vaste Lijn</div>
+                          <div className="text-sm text-gray-500">Onbeperkt bellen in België</div>
+                        </div>
+                      </div>
+                      <span className="font-semibold text-gray-900">€12/maand</span>
+                    </label>
+
+                    {/* My Comfort */}
+                    <label className="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={hasMyComfort}
+                          onChange={(e) => setHasMyComfort(e.target.checked)}
+                          className="w-5 h-5 text-orange-600 rounded-lg"
+                        />
+                        <div>
+                          <div className="font-medium text-gray-900">My Comfort</div>
+                          <div className="text-sm text-gray-500">
+                            {internetPlan === 'GIGA' ? '€5/maand (gratis bij Giga)' : '€10/maand'}
+                          </div>
+                        </div>
+                      </div>
+                      <span className="font-semibold text-gray-900">
+                        {internetPlan === 'GIGA' ? '€5/maand' : '€10/maand'}
+                      </span>
+                    </label>
+
+                    {/* WiFi Boosters */}
+                    <div className="p-4 bg-gray-50 rounded-xl">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <div className="font-medium text-gray-900">WiFi Boosters</div>
+                          <div className="text-sm text-gray-500">€3 per booster</div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => setWifiBoosters(Math.max(0, wifiBoosters - 1))}
+                            className="w-8 h-8 bg-white border border-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-100"
+                          >
+                            -
+                          </button>
+                          <span className="w-8 text-center font-semibold">{wifiBoosters}</span>
+                          <button
+                            onClick={() => setWifiBoosters(wifiBoosters + 1)}
+                            className="w-8 h-8 bg-white border border-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-100"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                      {wifiBoosters > 0 && (
+                        <p className="text-sm text-orange-600 font-medium">
+                          + €{wifiBoosters * 3}/maand
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Extra Decoders */}
+                    <div className="p-4 bg-gray-50 rounded-xl">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <div className="font-medium text-gray-900">Extra TV Decoders</div>
+                          <div className="text-sm text-gray-500">€9 per decoder</div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => setExtraDecoders(Math.max(0, extraDecoders - 1))}
+                            className="w-8 h-8 bg-white border border-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-100"
+                          >
+                            -
+                          </button>
+                          <span className="w-8 text-center font-semibold">{extraDecoders}</span>
+                          <button
+                            onClick={() => setExtraDecoders(extraDecoders + 1)}
+                            className="w-8 h-8 bg-white border border-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-100"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                      {extraDecoders > 0 && (
+                        <p className="text-sm text-orange-600 font-medium">
+                          + €{extraDecoders * 9}/maand
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </SmartCard>
+            )}
           </div>
 
           {/* Right Column - Results */}
@@ -435,6 +564,20 @@ export default function CalculatorPage() {
                         <div className="flex justify-between items-center py-2 border-b border-gray-100">
                           <span className="text-gray-600">TV</span>
                           <span className="font-semibold">{formatEuro(result.tvPrice)}</span>
+                        </div>
+                      )}
+                      {result.addonsPrice > 0 && (
+                        <div className="py-2 border-b border-gray-100">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Extras</span>
+                            <span className="font-semibold">{formatEuro(result.addonsPrice)}</span>
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1 space-y-1">
+                            {hasVasteLijn && <div>• Vaste lijn €12</div>}
+                            {hasMyComfort && <div>• My Comfort {internetPlan === 'GIGA' ? '€5' : '€10'}</div>}
+                            {wifiBoosters > 0 && <div>• {wifiBoosters}x WiFi Booster €{wifiBoosters * 3}</div>}
+                            {extraDecoders > 0 && <div>• {extraDecoders}x Extra Decoder €{extraDecoders * 9}</div>}
+                          </div>
                         </div>
                       )}
                       {result.secondAddressDiscount > 0 && (
