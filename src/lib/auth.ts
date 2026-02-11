@@ -16,6 +16,16 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
+        // TEMP: Hardcoded test user for Vercel deployment
+        if (credentials.email === 'test@test.com' && credentials.password === 'testsmart2026!') {
+          return {
+            id: 'test-user-123',
+            email: 'test@test.com',
+            name: 'Test Consultant',
+            role: 'BC'
+          };
+        }
+
         const user = await prisma.user.findUnique({
           where: { email: credentials.email }
         });
