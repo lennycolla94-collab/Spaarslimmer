@@ -1,9 +1,16 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+
+const prisma = new PrismaClient();
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
+    // First, ensure database is connected
+    await prisma.$connect();
+    
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email: 'test@test.com' }
@@ -87,5 +94,7 @@ export async function GET() {
       error: 'Seed failed',
       details: (error as Error).message 
     }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
   }
 }
