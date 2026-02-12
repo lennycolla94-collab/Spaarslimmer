@@ -9,131 +9,105 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     
     // Temporarily allow any authenticated user to fix the database
-    // TODO: Change back to admin only after fixing
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Fix 1: Add missing contactname column if it doesn't exist
-    await prisma.$executeRaw`
-      DO $$
-      BEGIN
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                       WHERE table_name = 'Lead' AND column_name = 'contactname') THEN
-          ALTER TABLE "Lead" ADD COLUMN "contactname" TEXT;
-        END IF;
-      END $$;
-    `;
+    const results: string[] = [];
 
-    // Fix 2: Rename companyName to companyname if needed
-    await prisma.$executeRaw`
-      DO $$
-      BEGIN
-        IF EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'Lead' AND column_name = 'companyName') THEN
-          ALTER TABLE "Lead" RENAME COLUMN "companyName" TO "companyname";
-        END IF;
-      END $$;
-    `;
+    // Helper function to check if column exists
+    const columnExists = async (columnName: string): Promise<boolean> => {
+      try {
+        const result: any = await prisma.$queryRaw`
+          SELECT column_name 
+          FROM information_schema.columns 
+          WHERE table_name = 'Lead' AND column_name = ${columnName}
+        `;
+        return result && result.length > 0;
+      } catch {
+        return false;
+      }
+    };
 
-    // Fix 3: Rename phoneHash to phonehash if needed
-    await prisma.$executeRaw`
-      DO $$
-      BEGIN
-        IF EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'Lead' AND column_name = 'phoneHash') THEN
-          ALTER TABLE "Lead" RENAME COLUMN "phoneHash" TO "phonehash";
-        END IF;
-      END $$;
-    `;
+    // Add contactname column if it doesn't exist
+    const hasContactName = await columnExists('contactname');
+    if (!hasContactName) {
+      try {
+        await prisma.$executeRaw`ALTER TABLE "Lead" ADD COLUMN "contactname" TEXT`;
+        results.push('Added contactname column');
+      } catch (e: any) {
+        results.push(`contactname: ${e.message}`);
+      }
+    } else {
+      results.push('contactname already exists');
+    }
 
-    // Fix 4: Rename other columns
-    await prisma.$executeRaw`
-      DO $$
-      BEGIN
-        -- postalCode -> postalcode
-        IF EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'Lead' AND column_name = 'postalCode') THEN
-          ALTER TABLE "Lead" RENAME COLUMN "postalCode" TO "postalcode";
-        END IF;
+    // Check other potentially missing columns
+    const columnsToCheck = [
+      'ean', 'address', 'niche', 'postalcode', 'currentprovider', 
+      'currentsupplier', 'consentemail', 'consentwhatsapp', 
+      'lawfulbasis', 'gdpracceptancedate', 'privacypolicyversion', 'source'
+    ];
 
-        -- currentProvider -> currentprovider
-        IF EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'Lead' AND column_name = 'currentProvider') THEN
-          ALTER TABLE "Lead" RENAME COLUMN "currentProvider" TO "currentprovider";
-        END IF;
-
-        -- currentSupplier -> currentsupplier
-        IF EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'Lead' AND column_name = 'currentSupplier') THEN
-          ALTER TABLE "Lead" RENAME COLUMN "currentSupplier" TO "currentsupplier";
-        END IF;
-
-        -- consentEmail -> consentemail
-        IF EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'Lead' AND column_name = 'consentEmail') THEN
-          ALTER TABLE "Lead" RENAME COLUMN "consentEmail" TO "consentemail";
-        END IF;
-
-        -- consentPhone -> consentphone
-        IF EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'Lead' AND column_name = 'consentPhone') THEN
-          ALTER TABLE "Lead" RENAME COLUMN "consentPhone" TO "consentphone";
-        END IF;
-
-        -- consentWhatsapp -> consentwhatsapp
-        IF EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'Lead' AND column_name = 'consentWhatsapp') THEN
-          ALTER TABLE "Lead" RENAME COLUMN "consentWhatsapp" TO "consentwhatsapp";
-        END IF;
-
-        -- lawfulBasis -> lawfulbasis
-        IF EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'Lead' AND column_name = 'lawfulBasis') THEN
-          ALTER TABLE "Lead" RENAME COLUMN "lawfulBasis" TO "lawfulbasis";
-        END IF;
-
-        -- doNotCall -> donotcall
-        IF EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'Lead' AND column_name = 'doNotCall') THEN
-          ALTER TABLE "Lead" RENAME COLUMN "doNotCall" TO "donotcall";
-        END IF;
-
-        -- gdprAcceptanceDate -> gdpracceptancedate
-        IF EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'Lead' AND column_name = 'gdprAcceptanceDate') THEN
-          ALTER TABLE "Lead" RENAME COLUMN "gdprAcceptanceDate" TO "gdpracceptancedate";
-        END IF;
-
-        -- privacyPolicyVersion -> privacypolicyversion
-        IF EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'Lead' AND column_name = 'privacyPolicyVersion') THEN
-          ALTER TABLE "Lead" RENAME COLUMN "privacyPolicyVersion" TO "privacypolicyversion";
-        END IF;
-
-        -- createdAt -> createdat
-        IF EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'Lead' AND column_name = 'createdAt') THEN
-          ALTER TABLE "Lead" RENAME COLUMN "createdAt" TO "createdat";
-        END IF;
-
-        -- updatedAt -> updatedat
-        IF EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'Lead' AND column_name = 'updatedAt') THEN
-          ALTER TABLE "Lead" RENAME COLUMN "updatedAt" TO "updatedat";
-        END IF;
-      END $$;
-    `;
+    for (const col of columnsToCheck) {
+      const exists = await columnExists(col);
+      if (!exists) {
+        try {
+          // Add column with appropriate type
+          let dataType = 'TEXT';
+          if (col === 'consentemail' || col === 'consentwhatsapp') {
+            dataType = 'BOOLEAN DEFAULT false';
+          }
+          await prisma.$executeRawUnsafe(`ALTER TABLE "Lead" ADD COLUMN "${col}" ${dataType}`);
+          results.push(`Added ${col} column`);
+        } catch (e: any) {
+          results.push(`${col}: ${e.message}`);
+        }
+      } else {
+        results.push(`${col} already exists`);
+      }
+    }
 
     return NextResponse.json({ 
       success: true, 
-      message: 'Database columns fixed successfully' 
+      message: 'Database check completed',
+      results
     });
 
   } catch (error: any) {
     console.error('Database fix error:', error);
     return NextResponse.json({ 
       error: 'Failed to fix database', 
+      details: error.message 
+    }, { status: 500 });
+  }
+}
+
+// GET method to check current status
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Get all columns in Lead table
+    const columns: any = await prisma.$queryRaw`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'Lead'
+      ORDER BY ordinal_position
+    `;
+
+    return NextResponse.json({
+      columns: columns.map((c: any) => c.column_name)
+    });
+
+  } catch (error: any) {
+    console.error('Database check error:', error);
+    return NextResponse.json({ 
+      error: 'Failed to check database', 
       details: error.message 
     }, { status: 500 });
   }
