@@ -3,12 +3,11 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
-// This endpoint fixes the database column names to match the Prisma schema
+// This endpoint fixes the database by removing duplicate camelCase columns
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     
-    // Temporarily allow any authenticated user to fix the database
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -29,48 +28,61 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    // Add contactname column if it doesn't exist
-    const hasContactName = await columnExists('contactname');
-    if (!hasContactName) {
-      try {
-        await prisma.$executeRaw`ALTER TABLE "Lead" ADD COLUMN "contactname" TEXT`;
-        results.push('Added contactname column');
-      } catch (e: any) {
-        results.push(`contactname: ${e.message}`);
-      }
-    } else {
-      results.push('contactname already exists');
-    }
-
-    // Check other potentially missing columns
-    const columnsToCheck = [
-      'ean', 'address', 'niche', 'postalcode', 'currentprovider', 
-      'currentsupplier', 'consentemail', 'consentwhatsapp', 
-      'lawfulbasis', 'gdpracceptancedate', 'privacypolicyversion', 'source'
+    // List of duplicate camelCase columns to remove (keeping lowercase versions)
+    const columnsToRemove = [
+      'contactName',      // keep contactname
+      'postalCode',       // keep postalcode  
+      'currentProvider',  // keep currentprovider
+      'currentSupplier',  // keep currentsupplier
+      'consentEmail',     // keep consentemail
+      'consentPhone',     // keep consentphone
+      'consentWhatsapp',  // keep consentwhatsapp
+      'lawfulBasis',      // keep lawfulbasis
+      'doNotCall',        // keep donotcall
+      'gdprAcceptanceDate', // keep gdpracceptancedate
+      'privacyPolicyVersion', // keep privacypolicyversion
+      'createdAt',        // keep createdat
+      'updatedAt',        // keep updatedat
+      'companyName',      // keep companyname
+      'phoneHash',        // keep phonehash
+      'ownerId',          // keep ownerid
     ];
 
-    for (const col of columnsToCheck) {
+    for (const col of columnsToRemove) {
       const exists = await columnExists(col);
-      if (!exists) {
+      if (exists) {
         try {
-          // Add column with appropriate type
-          let dataType = 'TEXT';
-          if (col === 'consentemail' || col === 'consentwhatsapp') {
-            dataType = 'BOOLEAN DEFAULT false';
-          }
-          await prisma.$executeRawUnsafe(`ALTER TABLE "Lead" ADD COLUMN "${col}" ${dataType}`);
-          results.push(`Added ${col} column`);
+          await prisma.$executeRawUnsafe(`ALTER TABLE "Lead" DROP COLUMN "${col}"`);
+          results.push(`Removed duplicate column: ${col}`);
         } catch (e: any) {
-          results.push(`${col}: ${e.message}`);
+          results.push(`Failed to remove ${col}: ${e.message}`);
         }
       } else {
-        results.push(`${col} already exists`);
+        results.push(`Column ${col} does not exist (already removed or never existed)`);
+      }
+    }
+
+    // Add missing columns if needed
+    const columnsToAdd = [
+      { name: 'contactname', type: 'TEXT' },
+      { name: 'ean', type: 'TEXT' },
+    ];
+
+    for (const col of columnsToAdd) {
+      const exists = await columnExists(col.name);
+      if (!exists) {
+        try {
+          await prisma.$executeRawUnsafe(`ALTER TABLE "Lead" ADD COLUMN "${col.name}" ${col.type}`);
+          results.push(`Added missing column: ${col.name}`);
+        } catch (e: any) {
+          results.push(`Failed to add ${col.name}: ${e.message}`);
+        }
       }
     }
 
     return NextResponse.json({ 
       success: true, 
-      message: 'Database check completed',
+      message: 'Database fix completed',
       results
     });
 
@@ -101,7 +113,8 @@ export async function GET(request: NextRequest) {
     `;
 
     return NextResponse.json({
-      columns: columns.map((c: any) => c.column_name)
+      columns: columns.map((c: any) => c.column_name),
+      warning: 'Database has duplicate columns (both camelCase and lowercase). Run POST to fix.'
     });
 
   } catch (error: any) {
