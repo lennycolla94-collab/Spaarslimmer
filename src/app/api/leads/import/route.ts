@@ -43,54 +43,71 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Geen data' }, { status: 400 });
     }
 
-    // Test eerst 1 rij
-    const testRow = rows[0];
-    const rawPhone = testRow.TelefoonNummer || testRow.Telefoon || testRow.telefoon || testRow.phone;
-    const companyName = testRow.Bedrijfsnaam || testRow.Bedrijf || testRow.bedrijf;
-    
-    if (!rawPhone || !companyName) {
-      return NextResponse.json({ 
-        error: 'Missing data in first row',
-        phone: rawPhone,
-        company: companyName
-      }, { status: 400 });
-    }
+    const results = {
+      imported: 0,
+      errors: [] as string[]
+    };
 
-    const cleanPhone = rawPhone.toString().replace(/\D/g, '');
-    const phoneHash = crypto.createHash('sha256').update(cleanPhone).digest('hex');
-
-    // Probeer 1 lead te maken
-    try {
-      const lead = await prisma.lead.create({
-        data: {
-          companyName: companyName.toString().trim(),
-          phone: cleanPhone,
-          phoneHash: phoneHash,
-          status: 'NEW',
-          ownerId: session.user.id,
-          source: 'IMPORT',
-          doNotCall: false,
-          consentPhone: true,
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      
+      try {
+        const rawPhone = row.TelefoonNummer || row.Telefoon || row.telefoon || row.phone;
+        const companyName = row.Bedrijfsnaam || row.Bedrijf || row.bedrijf;
+        
+        if (!rawPhone || !companyName) {
+          results.errors.push(`Rij ${i + 1}: Missing phone or company`);
+          continue;
         }
-      });
-      
-      return NextResponse.json({
-        success: true,
-        message: 'Test lead created',
-        leadId: lead.id,
-        totalRows: rows.length
-      });
-      
-    } catch (dbErr: any) {
-      return NextResponse.json({ 
-        error: 'DB Error on first row',
-        code: dbErr.code,
-        message: dbErr.message,
-        meta: dbErr.meta
-      }, { status: 500 });
+
+        const cleanPhone = rawPhone.toString().replace(/\D/g, '');
+        
+        if (cleanPhone.length < 7) {
+          results.errors.push(`Rij ${i + 1}: Phone too short: ${cleanPhone}`);
+          continue;
+        }
+
+        // Genereer hash - FORCEER dat het een string is
+        const hash = crypto.createHash('sha256');
+        hash.update(cleanPhone);
+        const phoneHash = hash.digest('hex');
+        
+        // EXTRA CHECK: zorg dat hash echt een string is
+        if (typeof phoneHash !== 'string' || phoneHash.length === 0) {
+          results.errors.push(`Rij ${i + 1}: Hash generation failed`);
+          continue;
+        }
+
+        const nietBellen = row['Niet bellen'] || '';
+        const doNotCall = nietBellen.toString().toLowerCase().trim() === 'ja';
+
+        // Log voor debugging
+        console.log(`Row ${i + 1}: phone=${cleanPhone}, hash=${phoneHash.substring(0, 10)}...`);
+
+        // Insert
+        await prisma.lead.create({
+          data: {
+            companyName: companyName.toString().trim(),
+            phone: cleanPhone,
+            phoneHash: phoneHash, // EXPLICIET als string
+            status: 'NEW',
+            ownerId: session.user.id,
+            source: 'IMPORT',
+            doNotCall: doNotCall,
+            consentPhone: true,
+          }
+        });
+
+        results.imported++;
+      } catch (err: any) {
+        results.errors.push(`Rij ${i + 1}: ${err.message}`);
+      }
     }
+
+    return NextResponse.json(results);
 
   } catch (error: any) {
+    console.error('Import error:', error);
     return NextResponse.json(
       { error: 'Import failed', message: error.message },
       { status: 500 }
