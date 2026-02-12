@@ -74,8 +74,8 @@ export async function POST(request: NextRequest) {
         const phoneHash = crypto.createHash('sha256').update(cleanPhone).digest('hex');
         
         // Check duplicate
-        const existing = await prisma.lead.findUnique({
-          where: { phoneHash }
+        const existing = await prisma.lead.findFirst({
+          where: { phoneHash: phoneHash }
         });
 
         if (existing) {
