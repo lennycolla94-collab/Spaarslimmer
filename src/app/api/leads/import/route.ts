@@ -34,23 +34,42 @@ export async function POST(request: NextRequest) {
       csvText = csvText.substring(1);
     }
     
+    // DEBUG: Log eerste 500 karakters
+    console.log('DEBUG - Raw text (first 500 chars):', csvText.substring(0, 500));
+    
     // Detecteer of het een TSV (tab) of CSV (komma) bestand is
     const firstLine = csvText.split('\n')[0];
-    const delimiter = firstLine.includes('\t') ? '\t' : ',';
+    console.log('DEBUG - First line:', firstLine);
+    
+    const tabCount = (firstLine.match(/\t/g) || []).length;
+    const commaCount = (firstLine.match(/,/g) || []).length;
+    const delimiter = tabCount > commaCount ? '\t' : ',';
+    
+    console.log('DEBUG - Tabs:', tabCount, 'Commas:', commaCount, 'Using delimiter:', JSON.stringify(delimiter));
     
     const parseResult = Papa.parse(csvText, {
       header: true,
       skipEmptyLines: true,
       delimiter: delimiter,
+      transformHeader: (header) => header.trim(), // Trim alle headers
     });
 
     const leads = parseResult.data as any[];
     
-    // DEBUG: Log eerste rij om kolomnamen te zien
-    if (leads.length > 0) {
-      console.log('DEBUG - Eerste rij:', JSON.stringify(leads[0]));
-      console.log('DEBUG - Kolomnamen:', Object.keys(leads[0]));
+    console.log('DEBUG - Total rows:', leads.length);
+    
+    if (leads.length === 0) {
+      return NextResponse.json({ 
+        error: 'Geen data gevonden in bestand',
+        imported: 0,
+        duplicates: 0,
+        errors: ['Bestand bevat geen rijen'] 
+      }, { status: 400 });
     }
+    
+    // DEBUG: Log eerste rij
+    console.log('DEBUG - Eerste rij:', JSON.stringify(leads[0]));
+    console.log('DEBUG - Kolomnamen:', Object.keys(leads[0]));
 
     const results = {
       imported: 0,
@@ -58,24 +77,31 @@ export async function POST(request: NextRequest) {
       errors: [] as string[]
     };
 
-    for (const rawLead of leads) {
+    for (let i = 0; i < leads.length; i++) {
+      const lead = leads[i];
+      
       try {
-        // Normaliseer kolomnamen: verwijder spaties en lowercase
-        const lead: any = {};
-        for (const [key, value] of Object.entries(rawLead)) {
-          const cleanKey = key.trim();
-          lead[cleanKey] = value;
+        // Haal waarden op met verschillende mogelijke kolomnamen
+        const phone = lead.TelefoonNummer || lead.Telefoon || lead.phone || lead.telefoon || lead.telefoonnummer;
+        const companyName = lead.Bedrijfsnaam || lead.Bedrijf || lead.companyName || lead.bedrijf || lead.bedrijfsnaam;
+
+        if (!phone) {
+          results.errors.push(`Rij ${i + 1}: Geen telefoonnummer gevonden`);
+          continue;
         }
         
-        const phone = lead.TelefoonNummer || lead.Telefoon || lead.phone || lead.telefoon;
-        const companyName = lead.Bedrijfsnaam || lead.Bedrijf || lead.companyName || lead.bedrijf;
-
-        if (!phone || !companyName) {
-          results.errors.push(`Missing phone or company name for row`);
+        if (!companyName) {
+          results.errors.push(`Rij ${i + 1}: Geen bedrijfsnaam gevonden`);
           continue;
         }
 
         const cleanPhone = phone.toString().replace(/\s/g, '');
+        
+        if (cleanPhone.length < 8) {
+          results.errors.push(`Rij ${i + 1}: Telefoonnummer te kort (${cleanPhone})`);
+          continue;
+        }
+        
         const phoneHash = hashPhone(cleanPhone);
 
         // Check for duplicate
@@ -89,23 +115,25 @@ export async function POST(request: NextRequest) {
         }
 
         // Parse "Niet bellen" (Ja/Nee) naar boolean
-        const nietBellen = lead['Niet bellen'] || lead['niet_bellen'] || '';
+        const nietBellen = lead['Niet bellen'] || lead['niet_bellen'] || lead.NietBellen || '';
         const doNotCall = nietBellen.toString().toLowerCase() === 'ja' || 
                           nietBellen.toString().toLowerCase() === 'yes' ||
                           nietBellen.toString().toLowerCase() === 'true';
 
         await prisma.lead.create({
           data: {
-            companyName,
+            companyName: companyName.toString().trim(),
+            contactName: lead.Contact || lead.contact || '',
             email: lead.Email || lead.email || '',
             phone: cleanPhone,
             phoneHash,
-            address: lead.Adres || lead.address || '',
-            city: lead.Gemeente || lead.city || '',
-            postalCode: lead.Postcode || lead.postalCode || '',
-            province: lead.Provincie || lead.province || 'Onbekend',
-            niche: lead.Niche || lead.niche || '',
+            address: lead.Adres || lead.adres || lead.adress || '',
+            city: lead.Gemeente || lead.gemeente || lead.city || '',
+            postalCode: lead.Postcode || lead.postcode || lead.postalCode || '',
+            province: lead.Provincie || lead.provincie || lead.province || 'Onbekend',
+            niche: lead.Niche || lead.niche || lead.Branche || lead.branche || '',
             currentProvider: lead.Provider || lead.provider || '',
+            currentSupplier: lead.Leverancier || lead.leverancier || '',
             status: 'NEW',
             ownerId: session.user.id,
             consentPhone: true,
@@ -115,17 +143,22 @@ export async function POST(request: NextRequest) {
         });
 
         results.imported++;
-      } catch (err) {
-        results.errors.push(`Failed to import: ${err}`);
+      } catch (err: any) {
+        results.errors.push(`Rij ${i + 1}: ${err.message || 'Onbekende fout'}`);
       }
     }
 
-    return NextResponse.json(results);
+    return NextResponse.json({
+      imported: results.imported,
+      duplicates: results.duplicates,
+      errors: results.errors.slice(0, 10), // Max 10 errors tonen
+      totalErrors: results.errors.length
+    });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Import error:', error);
     return NextResponse.json(
-      { error: 'Import failed', details: (error as Error).message },
+      { error: 'Import failed', details: error.message },
       { status: 500 }
     );
   }
