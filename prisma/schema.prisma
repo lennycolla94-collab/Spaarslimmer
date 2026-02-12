@@ -202,6 +202,7 @@ model Appointment {
   appointmentTime String    @map("appointmenttime")
   notes           String?
   status          String    @default("SCHEDULED") // SCHEDULED, COMPLETED, CANCELLED
+  googleEventId   String?   @map("googleeventid")  // Voor Google Calendar sync
   createdAt       DateTime  @default(now()) @map("createdat")
   updatedAt       DateTime  @updatedAt @map("updatedat")
   
