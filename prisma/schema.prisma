@@ -46,28 +46,29 @@ model Lead {
   phone             String
   email             String?
   ean               String?
-  phoneHash         String   @map("phonehash") // SHA-256 hash voor deduplicatie
+  phoneHash         String   @map("phonehash")
   
   // Business info
-  companyName       String
+  companyName       String   @map("companyname")
+  contactName       String?  @map("contactname")
   niche             String?
-  address           String?
-  city              String?
-  province          String?
-  postalCode        String?
+  address           String?  @map("address")
+  city              String?  @map("city")
+  province          String?  @map("province")
+  postalCode        String?  @map("postalcode")
   
   // Provider info
-  currentProvider   String?
-  currentSupplier   String?
+  currentProvider   String?  @map("currentprovider")
+  currentSupplier   String?  @map("currentsupplier")
   
   // GDPR & Consent
-  consentEmail      Boolean  @default(false)
-  consentPhone      Boolean  @default(false)
-  consentWhatsapp   Boolean  @default(false)
-  lawfulBasis       String   @default("LEGITIMATE_INTEREST")
-  doNotCall         Boolean  @default(false)
-  gdprAcceptanceDate DateTime?
-  privacyPolicyVersion String?
+  consentEmail      Boolean  @default(false) @map("consentemail")
+  consentPhone      Boolean  @default(false) @map("consentphone")
+  consentWhatsapp   Boolean  @default(false) @map("consentwhatsapp")
+  lawfulBasis       String   @default("LEGITIMATE_INTEREST") @map("lawfulbasis")
+  doNotCall         Boolean  @default(false) @map("donotcall")
+  gdprAcceptanceDate DateTime? @map("gdpracceptancedate")
+  privacyPolicyVersion String? @map("privacypolicyversion")
   
   // Ownership
   ownerId           String
@@ -78,8 +79,8 @@ model Lead {
   source            String?
   
   // Timestamps
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime   @updatedAt
+  createdAt         DateTime   @default(now()) @map("createdat")
+  updatedAt         DateTime   @updatedAt @map("updatedat")
   
   // Relations
   sales             Sale[]
@@ -91,6 +92,7 @@ model Lead {
   @@index([province])
   @@index([niche])
   @@index([phoneHash])
+  @@map("Lead")
 }
 
 // SALE MODEL
