@@ -46,7 +46,7 @@ model Lead {
   phone             String
   email             String?
   ean               String?
-  phoneHash         String   // SHA-256 hash voor deduplicatie
+  phoneHash         String   @map("phonehash") // SHA-256 hash voor deduplicatie
   
   // Business info
   companyName       String
