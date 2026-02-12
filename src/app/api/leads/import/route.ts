@@ -29,14 +29,9 @@ export async function POST(request: NextRequest) {
     const firstLine = csvText.split('\n')[0];
     const semiCount = (firstLine.match(/;/g) || []).length;
     const commaCount = (firstLine.match(/,/g) || []).length;
-    const tabCount = (firstLine.match(/\t/g) || []).length;
     
     let delimiter = ',';
-    if (tabCount > 0) delimiter = '\t';
-    else if (semiCount > commaCount) delimiter = ';';
-    
-    console.log('First line:', firstLine.substring(0, 100));
-    console.log('Delimiter:', JSON.stringify(delimiter));
+    if (semiCount > commaCount) delimiter = ';';
     
     // Parse CSV
     const parseResult = Papa.parse(csvText, {
@@ -44,9 +39,6 @@ export async function POST(request: NextRequest) {
       skipEmptyLines: true,
       delimiter: delimiter,
     });
-    
-    console.log('Columns:', parseResult.meta.fields);
-    console.log('First row:', JSON.stringify(parseResult.data[0]));
 
     const rows = parseResult.data as any[];
     if (rows.length === 0) {
@@ -54,7 +46,11 @@ export async function POST(request: NextRequest) {
     }
 
     let imported = 0;
+    let duplicates = 0;
     let errors = [] as string[];
+
+    // Verzamel alle phoneHashes uit CSV
+    const phoneHashesInFile = new Set<string>();
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -67,7 +63,6 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // Schoon telefoonnummer (alleen cijfers)
       const cleanPhone = rawPhone.toString().replace(/\D/g, '');
       
       if (cleanPhone.length < 7) {
@@ -75,23 +70,50 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // Hash als string
-      const phoneHash: string = crypto.createHash('sha256').update(cleanPhone).digest('hex');
+      const phoneHash = crypto.createHash('sha256').update(cleanPhone).digest('hex');
+      
+      // Check duplicate in huidige file
+      if (phoneHashesInFile.has(phoneHash)) {
+        duplicates++;
+        continue;
+      }
+      phoneHashesInFile.add(phoneHash);
+
+      // Check duplicate in database
+      const existing = await prisma.lead.findFirst({
+        where: { phoneHash }
+      });
+      
+      if (existing) {
+        duplicates++;
+        continue;
+      }
 
       try {
-        // ALLEEN verplichte velden
-        await prisma.$executeRaw`
-          INSERT INTO "Lead" ("id", "companyName", "phone", "phoneHash", "status", "ownerId", "source", "doNotCall", "consentPhone", "createdAt", "updatedAt")
-          VALUES (gen_random_uuid(), ${companyName}, ${cleanPhone}, ${phoneHash}, 'NEW', ${session.user.id}, 'IMPORT', false, true, NOW(), NOW())
-          ON CONFLICT ("phoneHash") DO NOTHING
-        `;
+        // Insert zonder ON CONFLICT
+        await prisma.lead.create({
+          data: {
+            companyName: companyName.toString().trim(),
+            phone: cleanPhone,
+            phoneHash: phoneHash,
+            status: 'NEW',
+            ownerId: session.user.id,
+            source: 'IMPORT',
+            doNotCall: false,
+            consentPhone: true,
+          }
+        });
         imported++;
       } catch (dbErr: any) {
-        errors.push(`Rij ${i + 1}: ${dbErr.message}`);
+        if (dbErr.code === 'P2002') {
+          duplicates++; // Duplicate key
+        } else {
+          errors.push(`Rij ${i + 1}: ${dbErr.message}`);
+        }
       }
     }
 
-    return NextResponse.json({ imported, errors: errors.slice(0, 5) });
+    return NextResponse.json({ imported, duplicates, errors: errors.slice(0, 5) });
 
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
