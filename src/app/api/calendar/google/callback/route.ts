@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 
+// Force dynamic rendering (uses headers/session)
+export const dynamic = 'force-dynamic';
+
 // GET - Handle Google OAuth callback
 export async function GET(request: NextRequest) {
   try {

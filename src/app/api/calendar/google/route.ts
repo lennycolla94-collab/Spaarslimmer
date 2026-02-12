@@ -3,6 +3,9 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
+// Force dynamic rendering (uses headers/session)
+export const dynamic = 'force-dynamic';
+
 // Google Calendar API integratie
 const GOOGLE_CALENDAR_API = 'https://www.googleapis.com/calendar/v3';
 
