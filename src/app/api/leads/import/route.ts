@@ -46,11 +46,10 @@ export async function POST(request: NextRequest) {
 
     const results = {
       imported: 0,
-      duplicates: 0,
       errors: [] as string[]
     };
 
-    // Import één voor één (veiliger voor nu)
+    // Import één voor één
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       
@@ -59,7 +58,7 @@ export async function POST(request: NextRequest) {
         const companyName = row.Bedrijfsnaam || row.Bedrijf || row.bedrijf;
         
         if (!rawPhone || !companyName) {
-          results.errors.push(`Rij ${i + 1}: Missing phone or company`);
+          results.errors.push(`Rij ${i + 1}: Missing data`);
           continue;
         }
 
@@ -70,44 +69,47 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // Hash genereren
+        // Genereer hash
         const phoneHash = crypto.createHash('sha256').update(cleanPhone).digest('hex');
-        
-        // Check duplicate
-        const existing = await prisma.lead.findFirst({
-          where: { phoneHash: phoneHash }
-        });
-
-        if (existing) {
-          results.duplicates++;
-          continue;
-        }
 
         // Parse "Niet bellen"
         const nietBellen = row['Niet bellen'] || '';
         const doNotCall = nietBellen.toString().toLowerCase().trim() === 'ja';
 
-        // Insert één lead
-        await prisma.lead.create({
-          data: {
-            companyName: companyName.toString().trim(),
-            phone: cleanPhone,
-            phoneHash: phoneHash,
-            status: 'NEW',
-            ownerId: session.user.id,
-            source: 'IMPORT',
-            doNotCall: doNotCall,
-            consentPhone: true,
+        // Insert met try/catch per rij
+        try {
+          await prisma.lead.create({
+            data: {
+              companyName: companyName.toString().trim(),
+              phone: cleanPhone,
+              phoneHash: phoneHash,
+              status: 'NEW',
+              ownerId: session.user.id,
+              source: 'IMPORT',
+              doNotCall: doNotCall,
+              consentPhone: true,
+            }
+          });
+          results.imported++;
+        } catch (dbErr: any) {
+          // Als duplicate, negeren
+          if (dbErr.code === 'P2002') {
+            // Duplicate - skip
+          } else {
+            results.errors.push(`Rij ${i + 1}: DB error`);
           }
-        });
-
-        results.imported++;
+        }
       } catch (err: any) {
         results.errors.push(`Rij ${i + 1}: ${err.message}`);
       }
     }
 
-    return NextResponse.json(results);
+    return NextResponse.json({
+      imported: results.imported,
+      duplicates: 0,
+      errors: results.errors.slice(0, 10),
+      totalErrors: results.errors.length
+    });
 
   } catch (error: any) {
     console.error('Import error:', error);
