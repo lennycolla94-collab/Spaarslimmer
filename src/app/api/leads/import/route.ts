@@ -6,6 +6,8 @@ import crypto from 'crypto';
 import Papa from 'papaparse';
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -18,6 +20,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file' }, { status: 400 });
     }
 
+    // Parse CSV
     let csvText = await file.text();
     if (csvText.charCodeAt(0) === 0xFEFF) {
       csvText = csvText.substring(1);
@@ -33,78 +36,99 @@ export async function POST(request: NextRequest) {
     });
 
     const rows = parseResult.data as any[];
+    const MAX_ROWS = 500; // Limiet om timeout te voorkomen
+    
+    if (rows.length > MAX_ROWS) {
+      return NextResponse.json({ 
+        error: `Bestand te groot. Maximum ${MAX_ROWS} leads per import. Jouw bestand heeft ${rows.length} leads. Split het bestand in kleinere delen.`
+      }, { status: 400 });
+    }
+
     let imported = 0;
     let duplicates = 0;
-    let errors = [] as string[];
+    const errors: string[] = [];
 
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
+    // Process in smaller batches
+    const BATCH_SIZE = 50;
+    
+    for (let batchStart = 0; batchStart < rows.length; batchStart += BATCH_SIZE) {
+      const batch = rows.slice(batchStart, batchStart + BATCH_SIZE);
       
-      try {
-        const rawPhone = row['TelefoonNummer'];
-        const companyName = row['Bedrijfsnaam']?.toString().trim();
+      // Process batch in parallel
+      await Promise.all(batch.map(async (row, idx) => {
+        const rowNum = batchStart + idx + 1;
         
-        if (!rawPhone || !companyName || companyName === '') {
-          errors.push(`Rij ${i + 1}: Mist telefoonnummer of bedrijfsnaam`);
-          continue;
+        try {
+          const rawPhone = row['TelefoonNummer'];
+          const companyName = row['Bedrijfsnaam']?.toString().trim();
+          
+          if (!rawPhone || !companyName || companyName === '') {
+            errors.push(`Rij ${rowNum}: Mist telefoonnummer of bedrijfsnaam`);
+            return;
+          }
+
+          const cleanPhone = rawPhone.toString().replace(/\D/g, '');
+          if (cleanPhone.length < 7) {
+            errors.push(`Rij ${rowNum}: Telefoon te kort`);
+            return;
+          }
+
+          const phoneHash = crypto.createHash('sha256').update(cleanPhone).digest('hex');
+
+          // Check duplicate
+          const existing: any = await prisma.$queryRaw`SELECT id FROM "Lead" WHERE phonehash = ${phoneHash} LIMIT 1`;
+          
+          if (existing && existing.length > 0) {
+            duplicates++;
+            return;
+          }
+
+          // Insert
+          const safeCompanyName = companyName || 'Onbekend Bedrijf';
+          
+          await prisma.$executeRaw`
+            INSERT INTO "Lead" (
+              id, companyname, phone, phonehash, status, 
+              ownerid, source, consentphone, donotcall,
+              createdat, updatedat
+            ) VALUES (
+              gen_random_uuid(), 
+              ${safeCompanyName}, 
+              ${cleanPhone}, 
+              ${phoneHash}, 
+              'NEW', 
+              ${session.user.id}, 
+              'IMPORT', 
+              true, 
+              false,
+              NOW(), 
+              NOW()
+            )
+          `;
+          imported++;
+          
+        } catch (err: any) {
+          console.error(`Row ${rowNum} error:`, err);
+          errors.push(`Rij ${rowNum}: ${err.message}`);
         }
-
-        const cleanPhone = rawPhone.toString().replace(/\D/g, '');
-        if (cleanPhone.length < 7) {
-          errors.push(`Rij ${i + 1}: Telefoon te kort`);
-          continue;
-        }
-
-        const phoneHash = crypto.createHash('sha256').update(cleanPhone).digest('hex');
-
-        // Check duplicate met raw SQL
-        const existing: any = await prisma.$queryRaw`SELECT id FROM "Lead" WHERE phonehash = ${phoneHash} LIMIT 1`;
-        
-        if (existing && existing.length > 0) {
-          duplicates++;
-          continue;
-        }
-
-        // Insert met raw SQL - alle velden in juiste volgorde
-        // Fallback voor companyName indien leeg
-        const safeCompanyName = companyName && companyName.trim() !== '' ? companyName.trim() : 'Onbekend Bedrijf';
-        
-        await prisma.$executeRaw`
-          INSERT INTO "Lead" (
-            id, companyname, phone, phonehash, status, 
-            ownerid, source, consentphone, donotcall,
-            createdat, updatedat
-          ) VALUES (
-            gen_random_uuid(), 
-            ${safeCompanyName}, 
-            ${cleanPhone}, 
-            ${phoneHash}, 
-            'NEW', 
-            ${session.user.id}, 
-            'IMPORT', 
-            true, 
-            false,
-            NOW(), 
-            NOW()
-          )
-        `;
-        imported++;
-        
-      } catch (err: any) {
-        console.error(`Row ${i+1} error:`, err);
-        errors.push(`Rij ${i + 1}: ${err.message}`);
-      }
+      }));
     }
+
+    const duration = Date.now() - startTime;
+    console.log(`Import completed: ${imported}/${rows.length} in ${duration}ms`);
 
     return NextResponse.json({ 
       imported, 
       duplicates,
       errors: errors.slice(0, 5),
-      totalRows: rows.length
+      totalRows: rows.length,
+      duration: `${duration}ms`
     });
 
   } catch (error: any) {
     console.error('IMPORT ERROR:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ 
+      error: error.message
+    }, { status: 500 });
   }
 }
