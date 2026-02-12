@@ -6,6 +6,7 @@ import crypto from 'crypto';
 import Papa from 'papaparse';
 
 function hashPhone(phone: string): string {
+  if (!phone) return '';
   return crypto.createHash('sha256').update(phone).digest('hex');
 }
 
@@ -21,20 +22,17 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File;
 
     if (!file) {
-      return NextResponse.json(
-        { error: 'No file uploaded' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
     let csvText = await file.text();
     
-    // Verwijder BOM (Byte Order Mark) als deze aanwezig is
+    // Verwijder BOM
     if (csvText.charCodeAt(0) === 0xFEFF) {
       csvText = csvText.substring(1);
     }
     
-    // Detecteer delimiter: TSV (tab), semicolon (;) of CSV (komma)
+    // Detecteer delimiter
     const firstLine = csvText.split('\n')[0];
     const tabCount = (firstLine.match(/\t/g) || []).length;
     const commaCount = (firstLine.match(/,/g) || []).length;
@@ -58,7 +56,7 @@ export async function POST(request: NextRequest) {
     
     if (rows.length === 0) {
       return NextResponse.json({ 
-        error: 'Geen data gevonden in bestand',
+        error: 'Geen data gevonden',
         imported: 0,
         duplicates: 0,
         errors: ['Bestand bevat geen rijen'] 
@@ -75,28 +73,37 @@ export async function POST(request: NextRequest) {
       const row = rows[i];
       
       try {
-        // Map Dutch column names to database fields
-        const phone = row.TelefoonNummer || row.Telefoon || row.phone || row.telefoon || row.telefoonnummer;
-        const companyName = row.Bedrijfsnaam || row.Bedrijf || row.companyName || row.bedrijf || row.bedrijfsnaam;
-
+        // Haal telefoonnummer op
+        let phone = row.TelefoonNummer || row.Telefoon || row.telefoon || row.phone;
+        
         if (!phone) {
           results.errors.push(`Rij ${i + 1}: Geen telefoonnummer gevonden`);
           continue;
         }
+
+        // Haal bedrijfsnaam op
+        let companyName = row.Bedrijfsnaam || row.Bedrijf || row.bedrijf || row.company;
         
         if (!companyName) {
           results.errors.push(`Rij ${i + 1}: Geen bedrijfsnaam gevonden`);
           continue;
         }
 
-        const cleanPhone = phone.toString().replace(/\s/g, '');
+        // Schoon telefoonnummer op
+        const cleanPhone = phone.toString().replace(/\s/g, '').replace(/\D/g, '');
         
-        if (cleanPhone.length < 8) {
+        if (cleanPhone.length < 7) {
           results.errors.push(`Rij ${i + 1}: Telefoonnummer te kort (${cleanPhone})`);
           continue;
         }
         
+        // Genereer hash
         const phoneHash = hashPhone(cleanPhone);
+        
+        if (!phoneHash) {
+          results.errors.push(`Rij ${i + 1}: Kan hash niet genereren`);
+          continue;
+        }
 
         // Check for duplicate
         const existing = await prisma.lead.findFirst({
@@ -108,31 +115,21 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // Parse "Niet bellen" (Ja/Nee) naar boolean
-        const nietBellen = row['Niet bellen'] || row['niet_bellen'] || row.NietBellen || '';
-        const doNotCall = nietBellen.toString().toLowerCase() === 'ja' || 
-                          nietBellen.toString().toLowerCase() === 'yes' ||
-                          nietBellen.toString().toLowerCase() === 'true';
+        // Parse "Niet bellen"
+        const nietBellen = row['Niet bellen'] || '';
+        const doNotCall = nietBellen.toString().toLowerCase().trim() === 'ja';
 
-        // Create the lead with properly mapped fields
+        // Create the lead
         await prisma.lead.create({
           data: {
             companyName: companyName.toString().trim(),
             phone: cleanPhone,
-            phoneHash,
-            email: row.Email || row.email || '',
-            niche: row.Niche || row.niche || row.Branche || row.branche || '',
-            address: row.Adres || row.adres || row.adress || row.Address || '',
-            city: row.Gemeente || row.gemeente || row.city || row.City || '',
-            postalCode: row.Postcode || row.postcode || row.postalCode || '',
-            province: row.Provincie || row.provincie || row.province || 'Onbekend',
-            currentProvider: row.Provider || row.provider || '',
-            currentSupplier: row.Leverancier || row.leverancier || '',
+            phoneHash: phoneHash,
             status: 'NEW',
             ownerId: session.user.id,
-            consentPhone: true,
-            doNotCall,
             source: 'IMPORT',
+            doNotCall: doNotCall,
+            consentPhone: true,
           }
         });
 
