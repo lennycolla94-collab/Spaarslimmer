@@ -18,14 +18,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file' }, { status: 400 });
     }
 
-    const csvText = await file.text();
+    let csvText = await file.text();
+    
+    // Verwijder BOM
+    if (csvText.charCodeAt(0) === 0xFEFF) {
+      csvText = csvText.substring(1);
+    }
+    
+    // Detecteer delimiter
+    const firstLine = csvText.split('\n')[0];
+    const semiCount = (firstLine.match(/;/g) || []).length;
+    const commaCount = (firstLine.match(/,/g) || []).length;
+    const tabCount = (firstLine.match(/\t/g) || []).length;
+    
+    let delimiter = ',';
+    if (tabCount > 0) delimiter = '\t';
+    else if (semiCount > commaCount) delimiter = ';';
+    
+    console.log('First line:', firstLine.substring(0, 100));
+    console.log('Delimiter:', JSON.stringify(delimiter));
     
     // Parse CSV
     const parseResult = Papa.parse(csvText, {
       header: true,
       skipEmptyLines: true,
-      delimiter: ';',
+      delimiter: delimiter,
     });
+    
+    console.log('Columns:', parseResult.meta.fields);
+    console.log('First row:', JSON.stringify(parseResult.data[0]));
 
     const rows = parseResult.data as any[];
     if (rows.length === 0) {
