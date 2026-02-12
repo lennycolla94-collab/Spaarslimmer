@@ -42,10 +42,10 @@ export async function POST(request: NextRequest) {
       
       try {
         const rawPhone = row['TelefoonNummer'];
-        const companyName = row['Bedrijfsnaam'];
+        const companyName = row['Bedrijfsnaam']?.toString().trim();
         
-        if (!rawPhone || !companyName) {
-          errors.push(`Rij ${i + 1}: Mist data`);
+        if (!rawPhone || !companyName || companyName === '') {
+          errors.push(`Rij ${i + 1}: Mist telefoonnummer of bedrijfsnaam`);
           continue;
         }
 
@@ -66,6 +66,9 @@ export async function POST(request: NextRequest) {
         }
 
         // Insert met raw SQL - alle velden in juiste volgorde
+        // Fallback voor companyName indien leeg
+        const safeCompanyName = companyName && companyName.trim() !== '' ? companyName.trim() : 'Onbekend Bedrijf';
+        
         await prisma.$executeRaw`
           INSERT INTO "Lead" (
             id, companyname, phone, phonehash, status, 
@@ -73,7 +76,7 @@ export async function POST(request: NextRequest) {
             "createdAt", "updatedAt"
           ) VALUES (
             gen_random_uuid(), 
-            ${companyName}, 
+            ${safeCompanyName}, 
             ${cleanPhone}, 
             ${phoneHash}, 
             'NEW', 
