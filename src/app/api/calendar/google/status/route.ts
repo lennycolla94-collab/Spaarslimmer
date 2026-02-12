@@ -35,13 +35,19 @@ function getGoogleAuthUrl() {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const redirectUri = `${process.env.NEXTAUTH_URL}/api/calendar/google/callback`;
   
+  console.log('Generating Google Auth URL:', {
+    clientId: clientId ? 'SET' : 'NOT SET',
+    redirectUri,
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+  });
+  
   const params = new URLSearchParams({
     client_id: clientId || '',
     redirect_uri: redirectUri,
     scope: 'https://www.googleapis.com/auth/calendar.events',
     response_type: 'code',
-    access_type: 'offline', // Belangrijk: refresh token krijgen
-    prompt: 'consent', // Altijd toestemming vragen (voor refresh token)
+    access_type: 'offline',
+    prompt: 'consent',
   });
 
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
