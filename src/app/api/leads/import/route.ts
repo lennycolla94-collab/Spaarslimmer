@@ -34,13 +34,8 @@ export async function POST(request: NextRequest) {
       csvText = csvText.substring(1);
     }
     
-    // DEBUG: Log eerste 500 karakters
-    console.log('DEBUG - Raw text (first 500 chars):', csvText.substring(0, 500));
-    
     // Detecteer delimiter: TSV (tab), semicolon (;) of CSV (komma)
     const firstLine = csvText.split('\n')[0];
-    console.log('DEBUG - First line:', firstLine);
-    
     const tabCount = (firstLine.match(/\t/g) || []).length;
     const commaCount = (firstLine.match(/,/g) || []).length;
     const semiCount = (firstLine.match(/;/g) || []).length;
@@ -51,22 +46,17 @@ export async function POST(request: NextRequest) {
     } else if (tabCount > commaCount) {
       delimiter = '\t';
     }
-    console.log('DEBUG - Tabs:', tabCount, 'Commas:', commaCount, 'Semicolons:', semiCount, 'Using:', JSON.stringify(delimiter));
-    
-    console.log('DEBUG - Tabs:', tabCount, 'Commas:', commaCount, 'Using delimiter:', JSON.stringify(delimiter));
     
     const parseResult = Papa.parse(csvText, {
       header: true,
       skipEmptyLines: true,
       delimiter: delimiter,
-      transformHeader: (header) => header.trim(), // Trim alle headers
+      transformHeader: (header) => header.trim(),
     });
 
-    const leads = parseResult.data as any[];
+    const rows = parseResult.data as any[];
     
-    console.log('DEBUG - Total rows:', leads.length);
-    
-    if (leads.length === 0) {
+    if (rows.length === 0) {
       return NextResponse.json({ 
         error: 'Geen data gevonden in bestand',
         imported: 0,
@@ -74,10 +64,6 @@ export async function POST(request: NextRequest) {
         errors: ['Bestand bevat geen rijen'] 
       }, { status: 400 });
     }
-    
-    // DEBUG: Log eerste rij
-    console.log('DEBUG - Eerste rij:', JSON.stringify(leads[0]));
-    console.log('DEBUG - Kolomnamen:', Object.keys(leads[0]));
 
     const results = {
       imported: 0,
@@ -85,13 +71,13 @@ export async function POST(request: NextRequest) {
       errors: [] as string[]
     };
 
-    for (let i = 0; i < leads.length; i++) {
-      const lead = leads[i];
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
       
       try {
-        // Haal waarden op met verschillende mogelijke kolomnamen
-        const phone = lead.TelefoonNummer || lead.Telefoon || lead.phone || lead.telefoon || lead.telefoonnummer;
-        const companyName = lead.Bedrijfsnaam || lead.Bedrijf || lead.companyName || lead.bedrijf || lead.bedrijfsnaam;
+        // Map Dutch column names to database fields
+        const phone = row.TelefoonNummer || row.Telefoon || row.phone || row.telefoon || row.telefoonnummer;
+        const companyName = row.Bedrijfsnaam || row.Bedrijf || row.companyName || row.bedrijf || row.bedrijfsnaam;
 
         if (!phone) {
           results.errors.push(`Rij ${i + 1}: Geen telefoonnummer gevonden`);
@@ -123,25 +109,25 @@ export async function POST(request: NextRequest) {
         }
 
         // Parse "Niet bellen" (Ja/Nee) naar boolean
-        const nietBellen = lead['Niet bellen'] || lead['niet_bellen'] || lead.NietBellen || '';
+        const nietBellen = row['Niet bellen'] || row['niet_bellen'] || row.NietBellen || '';
         const doNotCall = nietBellen.toString().toLowerCase() === 'ja' || 
                           nietBellen.toString().toLowerCase() === 'yes' ||
                           nietBellen.toString().toLowerCase() === 'true';
 
+        // Create the lead with properly mapped fields
         await prisma.lead.create({
           data: {
             companyName: companyName.toString().trim(),
-            contactName: lead.Contact || lead.contact || '',
-            email: lead.Email || lead.email || '',
             phone: cleanPhone,
             phoneHash,
-            address: lead.Adres || lead.adres || lead.adress || '',
-            city: lead.Gemeente || lead.gemeente || lead.city || '',
-            postalCode: lead.Postcode || lead.postcode || lead.postalCode || '',
-            province: lead.Provincie || lead.provincie || lead.province || 'Onbekend',
-            niche: lead.Niche || lead.niche || lead.Branche || lead.branche || '',
-            currentProvider: lead.Provider || lead.provider || '',
-            currentSupplier: lead.Leverancier || lead.leverancier || '',
+            email: row.Email || row.email || '',
+            niche: row.Niche || row.niche || row.Branche || row.branche || '',
+            address: row.Adres || row.adres || row.adress || row.Address || '',
+            city: row.Gemeente || row.gemeente || row.city || row.City || '',
+            postalCode: row.Postcode || row.postcode || row.postalCode || '',
+            province: row.Provincie || row.provincie || row.province || 'Onbekend',
+            currentProvider: row.Provider || row.provider || '',
+            currentSupplier: row.Leverancier || row.leverancier || '',
             status: 'NEW',
             ownerId: session.user.id,
             consentPhone: true,
@@ -159,7 +145,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       imported: results.imported,
       duplicates: results.duplicates,
-      errors: results.errors.slice(0, 10), // Max 10 errors tonen
+      errors: results.errors.slice(0, 10),
       totalErrors: results.errors.length
     });
 
