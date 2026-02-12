@@ -25,6 +25,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
+    // Limiteer bestandsgrootte (max 1000 rijen voor nu)
+    if (file.size > 1024 * 1024) { // 1MB
+      return NextResponse.json({ 
+        error: 'Bestand te groot. Max 1MB (ongeveer 1000 leads) per import.' 
+      }, { status: 400 });
+    }
+
     let csvText = await file.text();
     
     // Verwijder BOM
@@ -63,87 +70,108 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const results = {
-      imported: 0,
-      duplicates: 0,
-      errors: [] as string[]
-    };
+    // Limiteer tot max 1000 rijen per keer
+    if (rows.length > 1000) {
+      return NextResponse.json({ 
+        error: 'Te veel rijen. Max 1000 leads per import. Splits je bestand.' 
+      }, { status: 400 });
+    }
+
+    // Haal alle bestaande phoneHashes op in ÉÉN query (veel sneller)
+    const phonesToCheck = rows
+      .map(row => {
+        const phone = row.TelefoonNummer || row.Telefoon || row.telefoon || row.phone;
+        if (!phone) return null;
+        const cleanPhone = phone.toString().replace(/\s/g, '').replace(/\D/g, '');
+        if (cleanPhone.length < 7) return null;
+        return hashPhone(cleanPhone);
+      })
+      .filter(Boolean) as string[];
+
+    const existingLeads = await prisma.lead.findMany({
+      where: { phoneHash: { in: phonesToCheck } },
+      select: { phoneHash: true }
+    });
+
+    const existingHashes = new Set(existingLeads.map(l => l.phoneHash));
+
+    // Bereid leads voor
+    const leadsToCreate: any[] = [];
+    const errors: string[] = [];
+    let duplicateCount = 0;
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       
       try {
-        // Haal telefoonnummer op
-        let phone = row.TelefoonNummer || row.Telefoon || row.telefoon || row.phone;
+        const phone = row.TelefoonNummer || row.Telefoon || row.telefoon || row.phone;
         
         if (!phone) {
-          results.errors.push(`Rij ${i + 1}: Geen telefoonnummer gevonden`);
+          errors.push(`Rij ${i + 1}: Geen telefoonnummer`);
           continue;
         }
 
-        // Haal bedrijfsnaam op
-        let companyName = row.Bedrijfsnaam || row.Bedrijf || row.bedrijf || row.company;
+        const companyName = row.Bedrijfsnaam || row.Bedrijf || row.bedrijf || row.company;
         
         if (!companyName) {
-          results.errors.push(`Rij ${i + 1}: Geen bedrijfsnaam gevonden`);
+          errors.push(`Rij ${i + 1}: Geen bedrijfsnaam`);
           continue;
         }
 
-        // Schoon telefoonnummer op
         const cleanPhone = phone.toString().replace(/\s/g, '').replace(/\D/g, '');
         
         if (cleanPhone.length < 7) {
-          results.errors.push(`Rij ${i + 1}: Telefoonnummer te kort (${cleanPhone})`);
+          errors.push(`Rij ${i + 1}: Telefoonnummer te kort`);
           continue;
         }
         
-        // Genereer hash
         const phoneHash = hashPhone(cleanPhone);
         
-        if (!phoneHash) {
-          results.errors.push(`Rij ${i + 1}: Kan hash niet genereren`);
+        if (existingHashes.has(phoneHash)) {
+          duplicateCount++;
           continue;
         }
 
-        // Check for duplicate
-        const existing = await prisma.lead.findFirst({
-          where: { phoneHash }
-        });
-
-        if (existing) {
-          results.duplicates++;
-          continue;
-        }
-
-        // Parse "Niet bellen"
         const nietBellen = row['Niet bellen'] || '';
         const doNotCall = nietBellen.toString().toLowerCase().trim() === 'ja';
 
-        // Create the lead
-        await prisma.lead.create({
-          data: {
-            companyName: companyName.toString().trim(),
-            phone: cleanPhone,
-            phoneHash: phoneHash,
-            status: 'NEW',
-            ownerId: session.user.id,
-            source: 'IMPORT',
-            doNotCall: doNotCall,
-            consentPhone: true,
-          }
+        leadsToCreate.push({
+          companyName: companyName.toString().trim(),
+          phone: cleanPhone,
+          phoneHash: phoneHash,
+          status: 'NEW',
+          ownerId: session.user.id,
+          source: 'IMPORT',
+          doNotCall: doNotCall,
+          consentPhone: true,
+          email: row.Email || '',
+          niche: row.Niche || '',
+          address: row.Adres || '',
+          city: row.Gemeente || '',
+          postalCode: row.Postcode || '',
+          province: row.Provincie || 'Onbekend',
+          currentProvider: row.Provider || '',
         });
-
-        results.imported++;
       } catch (err: any) {
-        results.errors.push(`Rij ${i + 1}: ${err.message || 'Onbekende fout'}`);
+        errors.push(`Rij ${i + 1}: ${err.message}`);
       }
     }
 
+    // Bulk insert alle leads in ÉÉN query!
+    let importedCount = 0;
+    if (leadsToCreate.length > 0) {
+      const result = await prisma.lead.createMany({
+        data: leadsToCreate,
+        skipDuplicates: true,
+      });
+      importedCount = result.count;
+    }
+
     return NextResponse.json({
-      imported: results.imported,
-      duplicates: results.duplicates,
-      errors: results.errors.slice(0, 10),
-      totalErrors: results.errors.length
+      imported: importedCount,
+      duplicates: duplicateCount,
+      errors: errors.slice(0, 10),
+      totalErrors: errors.length
     });
 
   } catch (error: any) {
