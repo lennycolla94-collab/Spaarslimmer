@@ -6,7 +6,9 @@ import crypto from 'crypto';
 import Papa from 'papaparse';
 
 function hashPhone(phone: string): string {
-  if (!phone) return '';
+  if (!phone || phone.length === 0) {
+    throw new Error('Cannot hash empty phone');
+  }
   return crypto.createHash('sha256').update(phone).digest('hex');
 }
 
@@ -25,10 +27,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
-    // Limiteer bestandsgrootte (max 1000 rijen voor nu)
-    if (file.size > 1024 * 1024) { // 1MB
+    // Limiteer bestandsgrootte
+    if (file.size > 1024 * 1024) {
       return NextResponse.json({ 
-        error: 'Bestand te groot. Max 1MB (ongeveer 1000 leads) per import.' 
+        error: 'Bestand te groot. Max 1MB per import.' 
       }, { status: 400 });
     }
 
@@ -70,47 +72,30 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Limiteer tot max 1000 rijen per keer
     if (rows.length > 1000) {
       return NextResponse.json({ 
-        error: 'Te veel rijen. Max 1000 leads per import. Splits je bestand.' 
+        error: 'Te veel rijen. Max 1000 leads per import.' 
       }, { status: 400 });
     }
-
-    // Haal alle bestaande phoneHashes op in ÉÉN query (veel sneller)
-    const phonesToCheck = rows
-      .map(row => {
-        const phone = row.TelefoonNummer || row.Telefoon || row.telefoon || row.phone;
-        if (!phone) return null;
-        const cleanPhone = phone.toString().replace(/\s/g, '').replace(/\D/g, '');
-        if (cleanPhone.length < 7) return null;
-        return hashPhone(cleanPhone);
-      })
-      .filter(Boolean) as string[];
-
-    const existingLeads = await prisma.lead.findMany({
-      where: { phoneHash: { in: phonesToCheck } },
-      select: { phoneHash: true }
-    });
-
-    const existingHashes = new Set(existingLeads.map(l => l.phoneHash));
 
     // Bereid leads voor
     const leadsToCreate: any[] = [];
     const errors: string[] = [];
-    let duplicateCount = 0;
+    const phoneHashes: string[] = [];
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       
       try {
-        const phone = row.TelefoonNummer || row.Telefoon || row.telefoon || row.phone;
+        // Haal telefoonnummer op
+        const rawPhone = row.TelefoonNummer || row.Telefoon || row.telefoon || row.phone;
         
-        if (!phone) {
+        if (!rawPhone) {
           errors.push(`Rij ${i + 1}: Geen telefoonnummer`);
           continue;
         }
 
+        // Haal bedrijfsnaam op
         const companyName = row.Bedrijfsnaam || row.Bedrijf || row.bedrijf || row.company;
         
         if (!companyName) {
@@ -118,20 +103,26 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        const cleanPhone = phone.toString().replace(/\s/g, '').replace(/\D/g, '');
+        // Schoon telefoonnummer op (alleen cijfers)
+        const cleanPhone = rawPhone.toString().replace(/\D/g, '');
         
         if (cleanPhone.length < 7) {
-          errors.push(`Rij ${i + 1}: Telefoonnummer te kort`);
+          errors.push(`Rij ${i + 1}: Telefoonnummer te kort (${cleanPhone})`);
           continue;
         }
         
+        // Genereer hash
         const phoneHash = hashPhone(cleanPhone);
         
-        if (existingHashes.has(phoneHash)) {
-          duplicateCount++;
+        // Check of hash geldig is
+        if (!phoneHash || phoneHash.length === 0) {
+          errors.push(`Rij ${i + 1}: Kan hash niet genereren`);
           continue;
         }
 
+        phoneHashes.push(phoneHash);
+
+        // Parse "Niet bellen"
         const nietBellen = row['Niet bellen'] || '';
         const doNotCall = nietBellen.toString().toLowerCase().trim() === 'ja';
 
@@ -144,20 +135,43 @@ export async function POST(request: NextRequest) {
           source: 'IMPORT',
           doNotCall: doNotCall,
           consentPhone: true,
-          email: row.Email || '',
-          niche: row.Niche || '',
-          address: row.Adres || '',
-          city: row.Gemeente || '',
-          postalCode: row.Postcode || '',
-          province: row.Provincie || 'Onbekend',
-          currentProvider: row.Provider || '',
+          email: row.Email || row.email || '',
+          niche: row.Niche || row.niche || '',
+          address: row.Adres || row.adres || '',
+          city: row.Gemeente || row.gemeente || '',
+          postalCode: row.Postcode || row.postcode || '',
+          province: row.Provincie || row.provincie || 'Onbekend',
+          currentProvider: row.Provider || row.provider || '',
         });
       } catch (err: any) {
         errors.push(`Rij ${i + 1}: ${err.message}`);
       }
     }
 
-    // Bulk insert alle leads in ÉÉN query!
+    // Check duplicates in database
+    let duplicateCount = 0;
+    if (phoneHashes.length > 0) {
+      const existingLeads = await prisma.lead.findMany({
+        where: { phoneHash: { in: phoneHashes } },
+        select: { phoneHash: true }
+      });
+
+      const existingHashes = new Set(existingLeads.map(l => l.phoneHash));
+      
+      // Filter out duplicates
+      const uniqueLeads = leadsToCreate.filter(lead => {
+        if (existingHashes.has(lead.phoneHash)) {
+          duplicateCount++;
+          return false;
+        }
+        return true;
+      });
+
+      leadsToCreate.length = 0;
+      leadsToCreate.push(...uniqueLeads);
+    }
+
+    // Bulk insert
     let importedCount = 0;
     if (leadsToCreate.length > 0) {
       const result = await prisma.lead.createMany({
