@@ -7,7 +7,7 @@ interface ImportResult {
   imported: number;
   duplicates: number;
   errors: string[];
-  total: number;
+  totalRows: number;
 }
 
 export function CSVUploader() {
@@ -18,6 +18,7 @@ export function CSVUploader() {
   const [error, setError] = useState<string | null>(null);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
+    console.log('Files dropped:', acceptedFiles);
     if (acceptedFiles.length > 0) {
       const selectedFile = acceptedFiles[0];
       if (selectedFile.name.endsWith('.csv')) {
@@ -38,46 +39,73 @@ export function CSVUploader() {
   });
 
   const handleUpload = async () => {
-    if (!file) return;
+    if (!file) {
+      console.log('No file selected');
+      return;
+    }
 
+    console.log('Starting upload for file:', file.name, 'Size:', file.size);
     setUploading(true);
     setProgress(0);
     setError(null);
+    setResult(null);
 
     try {
       const formData = new FormData();
       formData.append('file', file);
 
-      // Simuleer progress
+      // Simuleer progress (sneller voor kleine bestanden)
       const progressInterval = setInterval(() => {
-        setProgress(prev => Math.min(prev + 10, 90));
-      }, 200);
+        setProgress(prev => {
+          if (prev >= 90) return prev;
+          return prev + (prev < 50 ? 5 : 2);
+        });
+      }, 100);
+
+      console.log('Sending fetch request...');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 min timeout
 
       const response = await fetch('/api/leads/import', {
         method: 'POST',
         body: formData,
+        signal: controller.signal,
       });
 
+      clearTimeout(timeoutId);
       clearInterval(progressInterval);
+      
+      console.log('Response received:', response.status);
       setProgress(100);
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+        console.log('Response data:', data);
+      } catch (parseError) {
+        console.error('Failed to parse response:', parseError);
+        throw new Error('Ongeldige response van server');
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || 'Upload mislukt');
+        throw new Error(data.error || data.details || `Upload mislukt (${response.status})`);
       }
 
       setResult(data);
 
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Onbekende fout');
+    } catch (err: any) {
+      console.error('Upload error:', err);
+      if (err.name === 'AbortError') {
+        setError('Upload duurde te lang. Probeer een kleiner bestand of probeer het later opnieuw.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Onbekende fout');
+      }
     } finally {
       setUploading(false);
     }
   };
 
   const downloadTemplate = () => {
-    // Kolommen zoals in de afbeelding
     const headers = ['Bedrijfsnaam', 'Niche', 'Provider', 'TelefoonNummer', 'Adres', 'Postcode', 'Gemeente', 'Provincie', 'Email', 'Niet bellen'];
     const example = ['Voorbeeld BV', 'Dakwerken', 'Orange', '48382829', 'Straat 1', '3870', 'Amsterdam', 'Noord-Holland', 'info@voorbeeld.nl', 'Nee'];
     
@@ -88,58 +116,75 @@ export function CSVUploader() {
     a.href = url;
     a.download = 'lead_import_template.csv';
     a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const reset = () => {
+    setFile(null);
+    setResult(null);
+    setError(null);
+    setProgress(0);
+    setUploading(false);
   };
 
   return (
     <div className="space-y-6">
       {/* Dropzone */}
-      <div
-        {...getRootProps()}
-        className={`
-          border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all
-          ${isDragActive 
-            ? 'border-blue-500 bg-blue-50' 
-            : 'border-gray-300 hover:border-gray-400'
-          }
-          ${file ? 'bg-green-50 border-green-500' : ''}
-        `}
-      >
-        <input {...getInputProps()} />
-        
-        <div className="flex flex-col items-center gap-3">
-          {file ? (
-            <>
-              <div className="p-3 bg-green-100 rounded-full">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <div>
-                <p className="font-medium text-green-700">{file.name}</p>
-                <p className="text-sm text-green-600">
-                  {(file.size / 1024).toFixed(1)} KB • Klik om te wijzigen
-                </p>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="p-3 bg-gray-100 rounded-full">
-                <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-              </div>
-              <div>
-                <p className="font-medium text-gray-700">
-                  {isDragActive ? 'Drop het CSV bestand hier' : 'Sleep CSV bestand hier of klik om te selecteren'}
-                </p>
-                <p className="text-sm text-gray-500 mt-1">
-                  Ondersteunt: .csv (max 10MB)
-                </p>
-              </div>
-            </>
-          )}
+      {!file && (
+        <div
+          {...getRootProps()}
+          className={`
+            border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all
+            ${isDragActive 
+              ? 'border-blue-500 bg-blue-50' 
+              : 'border-gray-300 hover:border-gray-400'
+            }
+          `}
+        >
+          <input {...getInputProps()} />
+          
+          <div className="flex flex-col items-center gap-3">
+            <div className="p-3 bg-gray-100 rounded-full">
+              <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-medium text-gray-700">
+                {isDragActive ? 'Drop het CSV bestand hier' : 'Sleep CSV bestand hier of klik om te selecteren'}
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                Ondersteunt: .csv (max 10MB)
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Selected File */}
+      {file && !result && (
+        <div className="border-2 border-green-500 bg-green-50 rounded-xl p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-green-100 rounded-full">
+              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <p className="font-medium text-green-700">{file.name}</p>
+              <p className="text-sm text-green-600">{(file.size / 1024).toFixed(1)} KB</p>
+            </div>
+            {!uploading && (
+              <button 
+                onClick={reset}
+                className="text-green-700 hover:text-green-800 underline text-sm"
+              >
+                Wijzigen
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Template download */}
       <div className="flex justify-between items-center text-sm">
@@ -159,7 +204,7 @@ export function CSVUploader() {
         <button 
           onClick={handleUpload} 
           disabled={uploading}
-          className="w-full h-12 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium flex items-center justify-center gap-2"
+          className="w-full h-12 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
         >
           {uploading ? (
             <>
@@ -172,7 +217,7 @@ export function CSVUploader() {
           ) : (
             <>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
               </svg>
               Importeer {file.name}
             </>
@@ -190,7 +235,7 @@ export function CSVUploader() {
             />
           </div>
           <p className="text-center text-sm text-gray-600">
-            {progress < 100 ? 'CSV verwerken...' : 'Opslaan in database...'}
+            {progress < 100 ? 'CSV verwerken...' : 'Bijna klaar...'}
           </p>
         </div>
       )}
@@ -198,11 +243,20 @@ export function CSVUploader() {
       {/* Error */}
       {error && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-          <div className="flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex items-start gap-2">
+            <svg className="w-5 h-5 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span>{error}</span>
+            <div>
+              <p className="font-medium">Import mislukt</p>
+              <p className="text-sm">{error}</p>
+              <button 
+                onClick={reset}
+                className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+              >
+                Probeer opnieuw
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -250,14 +304,20 @@ export function CSVUploader() {
             </div>
           )}
 
-          {result.imported > 0 && (
+          <div className="flex gap-3 mt-4">
             <a 
               href="/leads"
-              className="block w-full mt-4 py-2 px-4 border border-gray-300 rounded-lg text-center hover:bg-gray-100 transition-colors"
+              className="flex-1 py-2 px-4 bg-blue-600 text-white rounded-lg text-center hover:bg-blue-700 transition-colors"
             >
-              Bekijk geïmporteerde leads →
+              Bekijk leads →
             </a>
-          )}
+            <button 
+              onClick={reset}
+              className="py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              Nieuwe import
+            </button>
+          </div>
         </div>
       )}
     </div>
