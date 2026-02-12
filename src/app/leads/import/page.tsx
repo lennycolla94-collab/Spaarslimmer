@@ -45,10 +45,12 @@ export default async function ImportLeadsPage() {
         <div className="mt-6 bg-white rounded-lg shadow p-4">
           <h3 className="font-semibold text-gray-900 mb-2">💡 Tips</h3>
           <ul className="text-sm text-gray-600 space-y-1">
+            <li>• <strong>Vereist:</strong> Bedrijfsnaam, TelefoonNummer</li>
+            <li>• <strong>Optioneel:</strong> Contactpersoon, Niche, Adres, Postcode, Gemeente, Provincie, Email, HuidigeProvider</li>
             <li>• Gebruik het template voor de juiste kolomnamen</li>
-            <li>• Telefoonnummers worden automatisch geformatteerd</li>
+            <li>• CSV moet <strong>; (puntkomma)</strong> gescheiden zijn (Excel formaat)</li>
             <li>• Duplicaten (zelfde telefoonnummer) worden overgeslagen</li>
-            <li>• Maximaal 10.000 leads per import</li>
+            <li>• Maximaal <strong>500 leads</strong> per import</li>
           </ul>
         </div>
       </div>

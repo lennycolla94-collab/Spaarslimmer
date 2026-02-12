@@ -106,16 +106,63 @@ export function CSVUploader() {
   };
 
   const downloadTemplate = () => {
-    const headers = ['Bedrijfsnaam', 'Niche', 'Provider', 'TelefoonNummer', 'Adres', 'Postcode', 'Gemeente', 'Provincie', 'Email', 'Niet bellen'];
-    const example = ['Voorbeeld BV', 'Dakwerken', 'Orange', '48382829', 'Straat 1', '3870', 'Amsterdam', 'Noord-Holland', 'info@voorbeeld.nl', 'Nee'];
+    // CSV Template met alle ondersteunde kolommen
+    const headers = [
+      'Bedrijfsnaam',      // Vereist - Naam van het bedrijf
+      'TelefoonNummer',    // Vereist - Tel nr (bijv: 0467055788)
+      'Contactpersoon',    // Optioneel - Naam contactpersoon
+      'Niche',             // Optioneel - Branche/Sector
+      'Adres',             // Optioneel - Straat + huisnummer
+      'Postcode',          // Optioneel - Postcode
+      'Gemeente',          // Optioneel - Stad/Gemeente
+      'Provincie',         // Optioneel - Provincie
+      'Email',             // Optioneel - E-mailadres
+      'HuidigeProvider',   // Optioneel - Provider (Orange, Telenet, etc.)
+    ];
     
-    const csv = [headers.join(','), example.join(',')].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+    // Voorbeeld data
+    const example1 = [
+      'Bakkerij De Gouden Korst',
+      '0467055788',
+      'Jan Janssen',
+      'Horeca',
+      'Marktstraat 12',
+      '3500',
+      'Hasselt',
+      'Limburg',
+      'info@degoudenkorst.be',
+      'Orange'
+    ];
+    
+    const example2 = [
+      'IT Solutions BV',
+      '0493212121',
+      'Pieter Peeters',
+      'Technologie',
+      'Stationslaan 45',
+      '3000',
+      'Leuven',
+      'Vlaams-Brabant',
+      'contact@itsolutions.be',
+      'Telenet'
+    ];
+    
+    // Maak CSV met BOM voor Excel compatibiliteit
+    const BOM = '\uFEFF';
+    const csv = [
+      headers.join(';'),
+      example1.join(';'),
+      example2.join(';')
+    ].join('\n');
+    
+    const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = 'lead_import_template.csv';
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
   };
 
@@ -195,7 +242,7 @@ export function CSVUploader() {
           Download CSV template
         </button>
         <span className="text-gray-500">
-          Vereiste kolommen: Bedrijfsnaam, TelefoonNummer
+          CSV met ; scheidingsteken (Excel)
         </span>
       </div>
 

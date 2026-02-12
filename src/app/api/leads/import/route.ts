@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
         const rowNum = batchStart + idx + 1;
         
         try {
+          // Vereiste velden
           const rawPhone = row['TelefoonNummer'];
           const companyName = row['Bedrijfsnaam']?.toString().trim();
           
@@ -83,13 +84,23 @@ export async function POST(request: NextRequest) {
             return;
           }
 
-          // Insert
+          // Optionele velden
+          const contactName = row['Contactpersoon']?.toString().trim() || null;
+          const niche = row['Niche']?.toString().trim() || null;
+          const address = row['Adres']?.toString().trim() || null;
+          const postalCode = row['Postcode']?.toString().trim() || null;
+          const city = row['Gemeente']?.toString().trim() || null;
+          const province = row['Provincie']?.toString().trim() || null;
+          const email = row['Email']?.toString().trim() || null;
+          const currentProvider = row['HuidigeProvider']?.toString().trim() || null;
+          
           const safeCompanyName = companyName || 'Onbekend Bedrijf';
           
           await prisma.$executeRaw`
             INSERT INTO "Lead" (
               id, companyname, phone, phonehash, status, 
               ownerid, source, consentphone, donotcall,
+              contactname, niche, address, postalcode, city, province, email, currentprovider,
               createdat, updatedat
             ) VALUES (
               gen_random_uuid(), 
@@ -101,6 +112,14 @@ export async function POST(request: NextRequest) {
               'IMPORT', 
               true, 
               false,
+              ${contactName},
+              ${niche},
+              ${address},
+              ${postalCode},
+              ${city},
+              ${province},
+              ${email},
+              ${currentProvider},
               NOW(), 
               NOW()
             )
