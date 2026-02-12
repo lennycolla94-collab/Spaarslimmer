@@ -27,7 +27,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const csvText = await file.text();
+    let csvText = await file.text();
+    
+    // Verwijder BOM (Byte Order Mark) als deze aanwezig is
+    if (csvText.charCodeAt(0) === 0xFEFF) {
+      csvText = csvText.substring(1);
+    }
     
     // Detecteer of het een TSV (tab) of CSV (komma) bestand is
     const firstLine = csvText.split('\n')[0];
@@ -53,10 +58,17 @@ export async function POST(request: NextRequest) {
       errors: [] as string[]
     };
 
-    for (const lead of leads) {
+    for (const rawLead of leads) {
       try {
-        const phone = lead.TelefoonNummer || lead.phone || lead.telefoon;
-        const companyName = lead.Bedrijfsnaam || lead.companyName || lead.bedrijf;
+        // Normaliseer kolomnamen: verwijder spaties en lowercase
+        const lead: any = {};
+        for (const [key, value] of Object.entries(rawLead)) {
+          const cleanKey = key.trim();
+          lead[cleanKey] = value;
+        }
+        
+        const phone = lead.TelefoonNummer || lead.Telefoon || lead.phone || lead.telefoon;
+        const companyName = lead.Bedrijfsnaam || lead.Bedrijf || lead.companyName || lead.bedrijf;
 
         if (!phone || !companyName) {
           results.errors.push(`Missing phone or company name for row`);
