@@ -75,14 +75,23 @@ export async function POST(request: NextRequest) {
         const rowNum = batchStart + idx + 1;
         
         try {
-          // Helper functie om kolom waarde te vinden (case insensitive)
+          // Helper functie om kolom waarde te vinden (case insensitive + trim)
           const getValue = (...possibleNames: string[]): string | undefined => {
+            // Eerst: normalize alle keys in de row (trim lowercase)
+            const normalizedRow: Record<string, string> = {};
+            for (const [key, value] of Object.entries(row)) {
+              const normalizedKey = key.trim().toLowerCase().replace(/\s+/g, '');
+              normalizedRow[normalizedKey] = value;
+            }
+            
             for (const name of possibleNames) {
-              // Exact match
+              const normalizedName = name.trim().toLowerCase().replace(/\s+/g, '');
+              // Try normalized match
+              if (normalizedRow[normalizedName] !== undefined) {
+                return normalizedRow[normalizedName];
+              }
+              // Try exact match as fallback
               if (row[name] !== undefined) return row[name];
-              // Case insensitive match
-              const key = Object.keys(row).find(k => k.toLowerCase() === name.toLowerCase());
-              if (key) return row[key];
             }
             return undefined;
           };
@@ -96,9 +105,10 @@ export async function POST(request: NextRequest) {
             return;
           }
 
-          const cleanPhone = rawPhone.toString().replace(/\D/g, '');
-          if (cleanPhone.length < 7) {
-            errors.push(`Rij ${rowNum}: Telefoon te kort`);
+          // Telefoon: verwijder alle niet-cijfers en spaties
+          const cleanPhone = rawPhone.toString().replace(/\D/g, '').replace(/\s/g, '');
+          if (cleanPhone.length < 9) {  // Belgische nummers zijn 10 cijfers
+            errors.push(`Rij ${rowNum}: Telefoonnummer te kort (${cleanPhone.length} cijfers)`);
             return;
           }
 
@@ -115,11 +125,14 @@ export async function POST(request: NextRequest) {
           // Optionele velden (flexibele kolomnamen)
           const contactName = getValue('Contactpersoon', 'contactpersoon', 'Contact', 'contact', 'Contactpers', 'contactpers')?.toString().trim() || null;
           const niche = getValue('Niche', 'niche', 'Sector', 'sector', 'Branche', 'branche', 'Industrie', 'industrie')?.toString().trim() || null;
-          const address = getValue('Adres', 'adres', 'Adress', 'adress', 'Straat', 'straat', 'Address', 'address')?.toString().trim() || null;
+          // Combineer Adres en Straat als beide bestaan
+          const adresValue = getValue('Adres', 'adres', 'Adress', 'adress', 'Address', 'address');
+          const straatValue = getValue('Straat', 'straat', 'Street', 'street');
+          const address = (adresValue || straatValue)?.toString().trim() || null;
           const postalCode = getValue('Postcode', 'postcode', 'Post code', 'post code', 'Zip', 'zip', 'Zipcode', 'zipcode')?.toString().trim() || null;
           const city = getValue('Gemeente', 'gemeente', 'Stad', 'stad', 'City', 'city', 'Plaats', 'plaats')?.toString().trim() || null;
           const province = getValue('Provincie', 'provincie', 'Province', 'province', 'State', 'state')?.toString().trim() || null;
-          const email = getValue('Email', 'email', 'E-mail', 'e-mail', 'Mail', 'mail', 'E-mailadres', 'e-mailadres')?.toString().trim() || null;
+          const email = getValue('Email', 'email', 'E-mail', 'e-mail', 'Mail', 'mail', 'E-mailadres', 'e-mailadres', 'E-mailAdress', 'e-mailadress', 'EmailAdress', 'emailadress')?.toString().trim() || null;
           const currentProvider = getValue('HuidigeProvider', 'huidigeprovider', 'Provider', 'provider', 'Huidige provider', 'huidige provider', 'Leverancier', 'leverancier')?.toString().trim() || null;
           
           const safeCompanyName = companyName || 'Onbekend Bedrijf';
