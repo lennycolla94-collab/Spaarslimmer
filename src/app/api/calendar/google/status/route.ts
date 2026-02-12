@@ -11,7 +11,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
+    // Test met verschillende env vars
+    const clientIdFromOAuth = process.env.GOOGLE_CLIENT_ID?.trim();
+    const clientIdFromAgenda = process.env.GOOGLE_AGENDA_SECRET?.trim();
+    
+    // Gebruik degene die werkt
+    const clientId = clientIdFromOAuth || clientIdFromAgenda || '';
+    
+    console.log('Env vars check:', {
+      hasOAuthId: !!clientIdFromOAuth,
+      hasAgendaSecret: !!clientIdFromAgenda,
+      using: clientId ? (clientIdFromOAuth ? 'GOOGLE_CLIENT_ID' : 'GOOGLE_AGENDA_SECRET') : 'NONE'
+    });
     const redirectUri = `${process.env.NEXTAUTH_URL}/api/calendar/google/callback`;
     
     let authUrl = '#';
