@@ -29,9 +29,14 @@ export async function POST(request: NextRequest) {
 
     const csvText = await file.text();
     
+    // Detecteer of het een TSV (tab) of CSV (komma) bestand is
+    const firstLine = csvText.split('\n')[0];
+    const delimiter = firstLine.includes('\t') ? '\t' : ',';
+    
     const parseResult = Papa.parse(csvText, {
       header: true,
       skipEmptyLines: true,
+      delimiter: delimiter,
     });
 
     const leads = parseResult.data as any[];
