@@ -27,16 +27,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
-    // Limiteer bestandsgrootte
     if (file.size > 1024 * 1024) {
-      return NextResponse.json({ 
-        error: 'Bestand te groot. Max 1MB per import.' 
-      }, { status: 400 });
+      return NextResponse.json({ error: 'Bestand te groot. Max 1MB.' }, { status: 400 });
     }
 
     let csvText = await file.text();
     
-    // Verwijder BOM
     if (csvText.charCodeAt(0) === 0xFEFF) {
       csvText = csvText.substring(1);
     }
@@ -54,6 +50,8 @@ export async function POST(request: NextRequest) {
       delimiter = '\t';
     }
     
+    console.log('DELIMITER:', JSON.stringify(delimiter));
+    
     const parseResult = Papa.parse(csvText, {
       header: true,
       skipEmptyLines: true,
@@ -62,32 +60,22 @@ export async function POST(request: NextRequest) {
     });
 
     const rows = parseResult.data as any[];
+    console.log('ROWS:', rows.length);
     
     if (rows.length === 0) {
-      return NextResponse.json({ 
-        error: 'Geen data gevonden',
-        imported: 0,
-        duplicates: 0,
-        errors: ['Bestand bevat geen rijen'] 
-      }, { status: 400 });
+      return NextResponse.json({ error: 'Geen data' }, { status: 400 });
     }
 
-    if (rows.length > 1000) {
-      return NextResponse.json({ 
-        error: 'Te veel rijen. Max 1000 leads per import.' 
-      }, { status: 400 });
-    }
+    // Toon eerste rij
+    console.log('FIRST ROW:', JSON.stringify(rows[0]));
 
-    // Bereid leads voor
     const leadsToCreate: any[] = [];
     const errors: string[] = [];
-    const phoneHashes: string[] = [];
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       
       try {
-        // Haal telefoonnummer op
         const rawPhone = row.TelefoonNummer || row.Telefoon || row.telefoon || row.phone;
         
         if (!rawPhone) {
@@ -95,38 +83,36 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // Haal bedrijfsnaam op
-        const companyName = row.Bedrijfsnaam || row.Bedrijf || row.bedrijf || row.company;
+        const companyName = row.Bedrijfsnaam || row.Bedrijf || row.bedrijf;
         
         if (!companyName) {
           errors.push(`Rij ${i + 1}: Geen bedrijfsnaam`);
           continue;
         }
 
-        // Schoon telefoonnummer op (alleen cijfers)
+        // Schoon telefoonnummer
         const cleanPhone = rawPhone.toString().replace(/\D/g, '');
         
         if (cleanPhone.length < 7) {
-          errors.push(`Rij ${i + 1}: Telefoonnummer te kort (${cleanPhone})`);
+          errors.push(`Rij ${i + 1}: Telefoon te kort (${cleanPhone})`);
           continue;
         }
         
         // Genereer hash
         const phoneHash = hashPhone(cleanPhone);
         
-        // Check of hash geldig is
-        if (!phoneHash || phoneHash.length === 0) {
-          errors.push(`Rij ${i + 1}: Kan hash niet genereren`);
+        // EXTRA CHECK: zorg dat hash niet leeg is
+        if (!phoneHash || phoneHash === '') {
+          errors.push(`Rij ${i + 1}: Hash is leeg!`);
           continue;
         }
 
-        phoneHashes.push(phoneHash);
+        console.log(`Row ${i + 1}: phone=${cleanPhone}, hash=${phoneHash.substring(0, 10)}...`);
 
-        // Parse "Niet bellen"
         const nietBellen = row['Niet bellen'] || '';
         const doNotCall = nietBellen.toString().toLowerCase().trim() === 'ja';
 
-        leadsToCreate.push({
+        const leadData = {
           companyName: companyName.toString().trim(),
           phone: cleanPhone,
           phoneHash: phoneHash,
@@ -135,61 +121,60 @@ export async function POST(request: NextRequest) {
           source: 'IMPORT',
           doNotCall: doNotCall,
           consentPhone: true,
-          email: row.Email || row.email || '',
-          niche: row.Niche || row.niche || '',
-          address: row.Adres || row.adres || '',
-          city: row.Gemeente || row.gemeente || '',
-          postalCode: row.Postcode || row.postcode || '',
-          province: row.Provincie || row.provincie || 'Onbekend',
-          currentProvider: row.Provider || row.provider || '',
-        });
+        };
+
+        // Check of phoneHash echt in het object zit
+        if (!leadData.phoneHash) {
+          errors.push(`Rij ${i + 1}: phoneHash missing in object`);
+          continue;
+        }
+
+        leadsToCreate.push(leadData);
       } catch (err: any) {
         errors.push(`Rij ${i + 1}: ${err.message}`);
       }
     }
 
-    // Check duplicates in database
-    let duplicateCount = 0;
-    if (phoneHashes.length > 0) {
-      const existingLeads = await prisma.lead.findMany({
-        where: { phoneHash: { in: phoneHashes } },
-        select: { phoneHash: true }
-      });
+    console.log('LEADS TO CREATE:', leadsToCreate.length);
+    console.log('FIRST LEAD:', JSON.stringify(leadsToCreate[0]));
 
-      const existingHashes = new Set(existingLeads.map(l => l.phoneHash));
-      
-      // Filter out duplicates
-      const uniqueLeads = leadsToCreate.filter(lead => {
-        if (existingHashes.has(lead.phoneHash)) {
-          duplicateCount++;
-          return false;
-        }
-        return true;
-      });
-
-      leadsToCreate.length = 0;
-      leadsToCreate.push(...uniqueLeads);
+    // Check voor null phoneHash
+    const nullHashLeads = leadsToCreate.filter(l => !l.phoneHash);
+    if (nullHashLeads.length > 0) {
+      console.error('FOUND LEADS WITH NULL phoneHash:', nullHashLeads.length);
+      return NextResponse.json({ 
+        error: 'Debug: Null phoneHash found', 
+        count: nullHashLeads.length 
+      }, { status: 500 });
     }
 
     // Bulk insert
     let importedCount = 0;
     if (leadsToCreate.length > 0) {
-      const result = await prisma.lead.createMany({
-        data: leadsToCreate,
-        skipDuplicates: true,
-      });
-      importedCount = result.count;
+      try {
+        const result = await prisma.lead.createMany({
+          data: leadsToCreate,
+          skipDuplicates: true,
+        });
+        importedCount = result.count;
+      } catch (dbError: any) {
+        console.error('DB ERROR:', dbError);
+        return NextResponse.json({ 
+          error: 'Database error', 
+          details: dbError.message 
+        }, { status: 500 });
+      }
     }
 
     return NextResponse.json({
       imported: importedCount,
-      duplicates: duplicateCount,
+      duplicates: 0,
       errors: errors.slice(0, 10),
       totalErrors: errors.length
     });
 
   } catch (error: any) {
-    console.error('Import error:', error);
+    console.error('IMPORT ERROR:', error);
     return NextResponse.json(
       { error: 'Import failed', details: error.message },
       { status: 500 }
