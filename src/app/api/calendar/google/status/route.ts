@@ -11,7 +11,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
+    // TEST: Hardcoded Client ID om te verifiëren dat de env var het probleem is
+    const envClientId = process.env.GOOGLE_CLIENT_ID?.trim();
+    const hardcodedClientId = '141912898123-tcjnrs44h99ni3itpd9ecjoanv239lu.apps.googleusercontent.com';
+    
+    // Gebruik hardcoded versie voor test
+    const clientId = hardcodedClientId;
     const redirectUri = `${process.env.NEXTAUTH_URL}/api/calendar/google/callback`;
     
     let authUrl = '#';
