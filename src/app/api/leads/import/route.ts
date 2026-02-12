@@ -40,6 +40,12 @@ export async function POST(request: NextRequest) {
     });
 
     const leads = parseResult.data as any[];
+    
+    // DEBUG: Log eerste rij om kolomnamen te zien
+    if (leads.length > 0) {
+      console.log('DEBUG - Eerste rij:', JSON.stringify(leads[0]));
+      console.log('DEBUG - Kolomnamen:', Object.keys(leads[0]));
+    }
 
     const results = {
       imported: 0,
