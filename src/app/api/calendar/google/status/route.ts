@@ -13,49 +13,39 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // In productie: check database of user een Google refresh token heeft
-    // Voor nu: check localStorage via client-side (deze API is placeholder)
+    // Test: return de Client ID direct zodat we kunnen zien wat er gebeurt
+    const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
+    const redirectUri = `${process.env.NEXTAUTH_URL}/api/calendar/google/callback`;
+    
+    // Bouw de URL
+    let authUrl = '#';
+    if (clientId) {
+      const params = new URLSearchParams({
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        scope: 'https://www.googleapis.com/auth/calendar.events',
+        response_type: 'code',
+        access_type: 'offline',
+        prompt: 'consent',
+      });
+      authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+    }
     
     return NextResponse.json({ 
-      connected: false, // User moet eerst OAuth doen
-      authUrl: getGoogleAuthUrl()
+      connected: false,
+      authUrl: authUrl,
+      debug: {
+        hasClientId: !!clientId,
+        clientIdLength: clientId?.length || 0,
+        clientIdPreview: clientId ? `${clientId.slice(0, 10)}...${clientId.slice(-10)}` : null,
+        redirectUri: redirectUri,
+      }
     });
 
   } catch (error: any) {
-    console.error('Calendar status error:', error);
     return NextResponse.json(
-      { error: 'Failed to check calendar status' },
+      { error: 'Failed to check calendar status', message: error.message },
       { status: 500 }
     );
   }
-}
-
-// Helper functie om Google OAuth URL te genereren
-function getGoogleAuthUrl() {
-  // Trim de client ID (kan spaties/newlines bevatten bij copy-paste)
-  const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
-  const redirectUri = `${process.env.NEXTAUTH_URL}/api/calendar/google/callback`;
-  
-  console.log('Google OAuth Debug:', {
-    clientIdLength: clientId?.length,
-    clientIdStart: clientId?.slice(0, 10),
-    clientIdEnd: clientId?.slice(-10),
-    redirectUri,
-  });
-  
-  if (!clientId) {
-    console.error('GOOGLE_CLIENT_ID is not set!');
-    return '#';
-  }
-  
-  const params = new URLSearchParams({
-    client_id: clientId,
-    redirect_uri: redirectUri,
-    scope: 'https://www.googleapis.com/auth/calendar.events',
-    response_type: 'code',
-    access_type: 'offline',
-    prompt: 'consent',
-  });
-
-  return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }
