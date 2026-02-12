@@ -15,7 +15,7 @@ export default withAuth(
     callbacks: {
       authorized({ req, token }) {
         // Public routes - no auth needed
-        const publicPaths = ['/login', '/api/auth', '/api/seed', '/_next', '/favicon.ico'];
+        const publicPaths = ['/login', '/api/auth', '/api/seed', '/api/migrate', '/_next', '/favicon.ico'];
         if (publicPaths.some(path => req.nextUrl.pathname.startsWith(path))) {
           return true;
         }
