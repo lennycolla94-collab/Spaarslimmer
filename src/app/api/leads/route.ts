@@ -35,23 +35,28 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    const leads = await prisma.lead.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-      include: {
-        _count: {
-          select: { calls: true }
-        }
-      }
-    });
+    // Use raw query to avoid relation issues
+    const userId = session.user.id;
+    const leads: any = await prisma.$queryRaw`
+      SELECT 
+        id, companyname, phone, email, phonehash,
+        contactname, niche, address, city, province, postalcode,
+        currentprovider, currentsupplier,
+        consentemail, consentphone, consentwhatsapp, lawfulbasis,
+        donotcall, status, source, ownerid,
+        createdat, updatedat
+      FROM "Lead"
+      WHERE ownerid = ${userId}
+      ORDER BY createdat DESC
+      LIMIT 100
+    `;
 
     return NextResponse.json(leads);
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Leads GET error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch leads' },
+      { error: 'Failed to fetch leads', details: error.message },
       { status: 500 }
     );
   }
