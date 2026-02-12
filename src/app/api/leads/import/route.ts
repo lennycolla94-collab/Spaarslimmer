@@ -37,13 +37,21 @@ export async function POST(request: NextRequest) {
     // DEBUG: Log eerste 500 karakters
     console.log('DEBUG - Raw text (first 500 chars):', csvText.substring(0, 500));
     
-    // Detecteer of het een TSV (tab) of CSV (komma) bestand is
+    // Detecteer delimiter: TSV (tab), semicolon (;) of CSV (komma)
     const firstLine = csvText.split('\n')[0];
     console.log('DEBUG - First line:', firstLine);
     
     const tabCount = (firstLine.match(/\t/g) || []).length;
     const commaCount = (firstLine.match(/,/g) || []).length;
-    const delimiter = tabCount > commaCount ? '\t' : ',';
+    const semiCount = (firstLine.match(/;/g) || []).length;
+    
+    let delimiter = ',';
+    if (semiCount > commaCount && semiCount > tabCount) {
+      delimiter = ';';
+    } else if (tabCount > commaCount) {
+      delimiter = '\t';
+    }
+    console.log('DEBUG - Tabs:', tabCount, 'Commas:', commaCount, 'Semicolons:', semiCount, 'Using:', JSON.stringify(delimiter));
     
     console.log('DEBUG - Tabs:', tabCount, 'Commas:', commaCount, 'Using delimiter:', JSON.stringify(delimiter));
     
