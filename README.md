@@ -14,7 +14,7 @@ docker run --name smartsn-db -e POSTGRES_PASSWORD=password -p 5432:5432 -d postg
 docker exec smartsn-db createdb -U postgres smartsn_crm
 ```
 
-### 2. Environment  Variables
+### 2. Environment Variables
 
 ```bash
 # .env
