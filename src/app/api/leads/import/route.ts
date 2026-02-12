@@ -23,7 +23,6 @@ export async function POST(request: NextRequest) {
       csvText = csvText.substring(1);
     }
     
-    // Parse met auto-detect
     const firstLine = csvText.split('\n')[0];
     const delimiter = (firstLine.match(/;/g) || []).length > (firstLine.match(/,/g) || []).length ? ';' : ',';
     
@@ -35,6 +34,7 @@ export async function POST(request: NextRequest) {
 
     const rows = parseResult.data as any[];
     let imported = 0;
+    let duplicates = 0;
     let errors = [] as string[];
 
     for (let i = 0; i < rows.length; i++) {
@@ -57,27 +57,51 @@ export async function POST(request: NextRequest) {
 
         const phoneHash = crypto.createHash('sha256').update(cleanPhone).digest('hex');
 
-        // Check duplicate
-        const existing = await prisma.$queryRaw`SELECT id FROM "Lead" WHERE phonehash = ${phoneHash} LIMIT 1`;
-        if (Array.isArray(existing) && existing.length > 0) {
-          continue; // Skip duplicate
+        // Check duplicate met raw SQL
+        const existing: any = await prisma.$queryRaw`SELECT id FROM "Lead" WHERE phonehash = ${phoneHash} LIMIT 1`;
+        
+        if (existing && existing.length > 0) {
+          duplicates++;
+          continue;
         }
 
-        // Insert met raw SQL - ALLEEN de 3 verplichte velden
+        // Insert met raw SQL - alle velden in juiste volgorde
         await prisma.$executeRaw`
-          INSERT INTO "Lead" (id, companyname, phone, phonehash, status, "ownerId", source, "consentPhone", "createdAt", "updatedAt")
-          VALUES (gen_random_uuid(), ${companyName}, ${cleanPhone}, ${phoneHash}, 'NEW', ${session.user.id}, 'IMPORT', true, NOW(), NOW())
+          INSERT INTO "Lead" (
+            id, companyname, phone, phonehash, status, 
+            "ownerId", source, "consentPhone", "doNotCall",
+            "createdAt", "updatedAt"
+          ) VALUES (
+            gen_random_uuid(), 
+            ${companyName}, 
+            ${cleanPhone}, 
+            ${phoneHash}, 
+            'NEW', 
+            ${session.user.id}, 
+            'IMPORT', 
+            true, 
+            false,
+            NOW(), 
+            NOW()
+          )
         `;
         imported++;
         
       } catch (err: any) {
+        console.error(`Row ${i+1} error:`, err);
         errors.push(`Rij ${i + 1}: ${err.message}`);
       }
     }
 
-    return NextResponse.json({ imported, errors: errors.slice(0, 5) });
+    return NextResponse.json({ 
+      imported, 
+      duplicates,
+      errors: errors.slice(0, 5),
+      totalRows: rows.length
+    });
 
   } catch (error: any) {
+    console.error('IMPORT ERROR:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
