@@ -51,7 +51,7 @@ export interface QuoteWizardInput {
       isPortability: boolean;
       isSoHo: boolean;
     }>;
-    tv?: 'TV_LIFE' | 'TV' | 'TV_PLUS' | null;
+    tv?: 'NONE' | 'TV_LIFE' | 'TV' | 'TV_PLUS' | null;
     energie?: {
       type: 'RESIDENTIEEL' | 'SOHO';
       hasEbilling: boolean;

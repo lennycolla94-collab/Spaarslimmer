@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
             const normalizedRow: Record<string, string> = {};
             for (const [key, value] of Object.entries(row)) {
               const normalizedKey = key.trim().toLowerCase().replace(/\s+/g, '');
-              normalizedRow[normalizedKey] = value;
+              normalizedRow[normalizedKey] = String(value || '');
             }
             
             for (const name of possibleNames) {

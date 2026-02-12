@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { QuoteWizardInput } from '@/lib/quote-wizard';
-import { InternetPlan, MobilePlan, TVPlan } from '@/lib/tariff-engine';
+import { InternetPlan, MobilePlan, TVPlan, MobileLine } from '@/lib/tariff-engine';
 import { Plus, Trash2, Wifi, Smartphone, Tv } from 'lucide-react';
 
 interface Step2ProductsProps {
@@ -124,9 +124,9 @@ export function Step2Products({ data, onChange }: Step2ProductsProps) {
     });
   };
 
-  const updateMobileLine = (index: number, updates: Partial<{ plan: string; isPortability: boolean; isSoHo: boolean }>) => {
+  const updateMobileLine = (index: number, updates: Partial<{ plan: MobilePlan; isPortability: boolean; isSoHo: boolean }>) => {
     const newMobile = [...data.products.mobile];
-    newMobile[index] = { ...newMobile[index], ...updates };
+    newMobile[index] = { ...newMobile[index], ...updates } as MobileLine;
     onChange({
       products: {
         ...data.products,

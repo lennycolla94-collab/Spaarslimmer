@@ -597,8 +597,7 @@ export default function CalculatorPage() {
                   <ActionButton 
                     href="/leads" 
                     variant="primary" 
-                    size="lg" 
-                    className="w-full justify-center"
+                    size="lg"
                     icon={<ArrowRight className="w-5 h-5" />}
                   >
                     Maak Offerte

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { calculateCompleteDeal, CONSULTANT_RANK } from '@/lib/calculator';
-import { PRODUCT_TYPE } from '@/lib/constants';
+import { calculateCompleteDeal } from '@/lib/calculator';
+import { PRODUCT_TYPE, CONSULTANT_RANK } from '@/lib/constants';
 
 export async function POST(request: NextRequest) {
   try {
