@@ -51,7 +51,34 @@ export async function GET(request: NextRequest) {
       LIMIT 100
     `;
 
-    return NextResponse.json(leads);
+    // Convert snake_case/lowercase to camelCase for frontend compatibility
+    const camelCaseLeads = leads.map((lead: any) => ({
+      id: lead.id,
+      companyName: lead.companyname,
+      phone: lead.phone,
+      email: lead.email,
+      phoneHash: lead.phonehash,
+      contactName: lead.contactname,
+      niche: lead.niche,
+      address: lead.address,
+      city: lead.city,
+      province: lead.province,
+      postalCode: lead.postalcode,
+      currentProvider: lead.currentprovider,
+      currentSupplier: lead.currentsupplier,
+      consentEmail: lead.consentemail,
+      consentPhone: lead.consentphone,
+      consentWhatsapp: lead.consentwhatsapp,
+      lawfulBasis: lead.lawfulbasis,
+      doNotCall: lead.donotcall,
+      status: lead.status,
+      source: lead.source,
+      ownerId: lead.ownerid,
+      createdAt: lead.createdat,
+      updatedAt: lead.updatedat,
+    }));
+
+    return NextResponse.json(camelCaseLeads);
 
   } catch (error: any) {
     console.error('Leads GET error:', error);
