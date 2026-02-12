@@ -193,6 +193,24 @@ model Commission {
   @@index([status])
 }
 
+// APPOINTMENTS
+model Appointment {
+  id              String    @id @default(cuid())
+  leadId          String    @map("leadid")
+  type            String    // 'PHONE' or 'PHYSICAL'
+  appointmentDate String    @map("appointmentdate")
+  appointmentTime String    @map("appointmenttime")
+  notes           String?
+  status          String    @default("SCHEDULED") // SCHEDULED, COMPLETED, CANCELLED
+  createdAt       DateTime  @default(now()) @map("createdat")
+  updatedAt       DateTime  @updatedAt @map("updatedat")
+  
+  @@index([leadId])
+  @@index([appointmentDate])
+  @@index([status])
+  @@map("appointments")
+}
+
 // AUDIT LOG
 model AuditLog {
   id          String   @id @default(cuid())

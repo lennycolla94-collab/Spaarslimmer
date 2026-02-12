@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
@@ -10,6 +10,7 @@ import {
   EmptyState,
   Badge,
 } from '@/components/design-system/page-container';
+import { useTranslation } from '@/components/language-provider';
 import { 
   Phone, 
   PhoneOff,
@@ -36,10 +37,11 @@ import {
   Check,
   X,
   Edit2,
-  Save
+  Save,
+  CalendarDays,
+  MapPinned
 } from 'lucide-react';
 
-// Types
 interface Lead {
   id: string;
   companyName: string;
@@ -78,20 +80,222 @@ const callOutcomes = [
   { value: 'SALE', label: 'Verkoop!', color: 'orange', icon: Target },
 ];
 
+// Appointment Modal Component
+function AppointmentModal({ lead, isOpen, onClose }: { lead: any; isOpen: boolean; onClose: () => void }) {
+  const { t } = useTranslation();
+  const [step, setStep] = useState(1);
+  const [appointmentType, setAppointmentType] = useState<'phone' | 'physical' | null>(null);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedTime, setSelectedTime] = useState('');
+  const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const dates = Array.from({ length: 14 }, (_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() + i);
+    return date;
+  });
+
+  const timeSlots = [
+    '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+    '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'
+  ];
+
+  if (!isOpen || !lead) return null;
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await fetch('/api/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leadId: lead.id,
+          type: appointmentType,
+          date: selectedDate,
+          time: selectedTime,
+          notes,
+        }),
+      });
+      onClose();
+      setStep(1);
+      setAppointmentType(null);
+      setSelectedDate('');
+      setSelectedTime('');
+      setNotes('');
+    } catch (error) {
+      console.error('Failed to save appointment:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+      <SmartCard className="w-full max-w-lg animate-in">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center">
+                <CalendarDays className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Afspraak Maken</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{lead.companyName}</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+              <X className="w-6 h-6 text-slate-500" />
+            </button>
+          </div>
+
+          {step === 1 && (
+            <div className="space-y-4">
+              <p className="text-slate-700 dark:text-slate-300 font-medium">Type afspraak:</p>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => { setAppointmentType('phone'); setStep(2); }}
+                  className={`p-6 rounded-2xl border-2 text-center transition-all ${
+                    appointmentType === 'phone' 
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/20' 
+                      : 'border-slate-200 dark:border-slate-700 hover:border-blue-300'
+                  }`}
+                >
+                  <Phone className="w-8 h-8 mx-auto mb-3 text-blue-500" />
+                  <p className="font-semibold text-slate-800 dark:text-white">Telefonisch</p>
+                </button>
+                <button
+                  onClick={() => { setAppointmentType('physical'); setStep(2); }}
+                  className={`p-6 rounded-2xl border-2 text-center transition-all ${
+                    appointmentType === 'physical' 
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/20' 
+                      : 'border-slate-200 dark:border-slate-700 hover:border-blue-300'
+                  }`}
+                >
+                  <MapPinned className="w-8 h-8 mx-auto mb-3 text-blue-500" />
+                  <p className="font-semibold text-slate-800 dark:text-white">Fysiek bezoek</p>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 2 && appointmentType === 'physical' && (
+            <div className="space-y-4">
+              <p className="text-slate-700 dark:text-slate-300 font-medium">Adres verifiëren:</p>
+              <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                <p className="font-semibold text-slate-900 dark:text-white">{lead.companyName}</p>
+                <p className="text-slate-600 dark:text-slate-400">{lead.address || '-'}</p>
+                <p className="text-slate-600 dark:text-slate-400">{lead.postalCode} {lead.city}</p>
+                <p className="text-slate-600 dark:text-slate-400 mt-2">E-mail: {lead.email || '-'}</p>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setStep(1)} className="flex-1 px-4 py-2.5 text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 rounded-xl">
+                  Terug
+                </button>
+                <button onClick={() => setStep(3)} className="flex-1 px-4 py-2.5 text-white bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl">
+                  Bevestigen & Doorgaan
+                </button>
+              </div>
+            </div>
+          )}
+
+          {(step === 3 || (step === 2 && appointmentType === 'phone')) && (
+            <div className="space-y-4">
+              <div>
+                <p className="text-slate-700 dark:text-slate-300 font-medium mb-3">Selecteer datum:</p>
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {dates.map((date) => (
+                    <button
+                      key={date.toISOString()}
+                      onClick={() => setSelectedDate(date.toISOString().split('T')[0])}
+                      className={`flex-shrink-0 p-3 rounded-xl text-center min-w-[70px] transition-all ${
+                        selectedDate === date.toISOString().split('T')[0]
+                          ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
+                      }`}
+                    >
+                      <p className="text-xs uppercase">{date.toLocaleDateString('nl-BE', { weekday: 'short' })}</p>
+                      <p className="text-lg font-bold">{date.getDate()}</p>
+                      <p className="text-xs">{date.toLocaleDateString('nl-BE', { month: 'short' })}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {selectedDate && (
+                <div>
+                  <p className="text-slate-700 dark:text-slate-300 font-medium mb-3">Selecteer tijd:</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {timeSlots.map((time) => (
+                      <button
+                        key={time}
+                        onClick={() => setSelectedTime(time)}
+                        className={`p-2 rounded-lg text-sm font-medium transition-all ${
+                          selectedTime === time
+                            ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-md'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
+                        }`}
+                      >
+                        {time}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <p className="text-slate-700 dark:text-slate-300 font-medium mb-2">Notities:</p>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Extra informatie voor de afspraak..."
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white h-20 resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button 
+                  onClick={() => appointmentType === 'physical' ? setStep(2) : setStep(1)} 
+                  className="flex-1 px-4 py-2.5 text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 rounded-xl"
+                >
+                  Terug
+                </button>
+                <button 
+                  onClick={handleSave} 
+                  disabled={!selectedDate || !selectedTime || saving}
+                  className="flex-1 px-4 py-2.5 text-white bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl hover:shadow-lg disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                >
+                  <Check className="w-4 h-4" />
+                  {saving ? '...' : 'Inplannen'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </SmartCard>
+    </div>
+  );
+}
+
 function CallCenterContent() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const router = useRouter();
   const initialLeadId = searchParams.get('lead');
   
-  // State
+  // Persist call state across tab changes
   const [leads, setLeads] = useState<Lead[]>([]);
   const [filteredLeads, setFilteredLeads] = useState<Lead[]>([]);
   const [currentLead, setCurrentLead] = useState<Lead | null>(null);
   const [isQueueRunning, setIsQueueRunning] = useState(false);
   const [queueIndex, setQueueIndex] = useState(0);
+  
+  // Call state - PERSISTED across tab switches
   const [isCalling, setIsCalling] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [callNotes, setCallNotes] = useState('');
+  const callTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
   const [selectedOutcome, setSelectedOutcome] = useState('');
   const [showOutcomeModal, setShowOutcomeModal] = useState(false);
   const [showQueueComplete, setShowQueueComplete] = useState(false);
@@ -101,24 +305,80 @@ function CallCenterContent() {
   const [callHistory, setCallHistory] = useState<CallLog[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editedLead, setEditedLead] = useState<Partial<Lead>>({});
+  const [showAppointmentModal, setShowAppointmentModal] = useState(false);
 
-  // Fetch leads from database
+  // Fetch leads
   useEffect(() => {
     fetchLeads();
   }, []);
+
+  // Restore call state if page refreshed during call
+  useEffect(() => {
+    const savedCallState = sessionStorage.getItem('callCenter_state');
+    if (savedCallState) {
+      const state = JSON.parse(savedCallState);
+      if (state.isCalling) {
+        setIsCalling(true);
+        setCallDuration(state.callDuration || 0);
+        setCallNotes(state.callNotes || '');
+        if (state.currentLeadId) {
+          // Will restore lead after fetch
+        }
+      }
+    }
+  }, []);
+
+  // Save call state
+  useEffect(() => {
+    if (isCalling) {
+      sessionStorage.setItem('callCenter_state', JSON.stringify({
+        isCalling,
+        callDuration,
+        callNotes,
+        currentLeadId: currentLead?.id
+      }));
+    } else {
+      sessionStorage.removeItem('callCenter_state');
+    }
+  }, [isCalling, callDuration, callNotes, currentLead]);
+
+  // Timer - only runs when isCalling is true, continues across tab switches
+  useEffect(() => {
+    if (isCalling) {
+      callTimerRef.current = setInterval(() => {
+        setCallDuration(prev => prev + 1);
+      }, 1000);
+    } else {
+      if (callTimerRef.current) {
+        clearInterval(callTimerRef.current);
+        callTimerRef.current = null;
+      }
+    }
+    return () => {
+      if (callTimerRef.current) {
+        clearInterval(callTimerRef.current);
+      }
+    };
+  }, [isCalling]);
 
   const fetchLeads = async () => {
     try {
       const response = await fetch('/api/leads');
       if (response.ok) {
         const data = await response.json();
-        // Filter out DNCM leads
         const callableLeads = data.filter((l: any) => !l.doNotCall && l.status !== 'NOT_INTERESTED');
         setLeads(callableLeads);
         setFilteredLeads(callableLeads);
         
-        // If lead ID in URL, set as current
-        if (initialLeadId) {
+        // Restore lead if in call
+        const savedState = sessionStorage.getItem('callCenter_state');
+        if (savedState) {
+          const state = JSON.parse(savedState);
+          if (state.currentLeadId) {
+            const lead = callableLeads.find((l: Lead) => l.id === state.currentLeadId);
+            if (lead) setCurrentLead(lead);
+          }
+        } else if (initialLeadId) {
           const lead = callableLeads.find((l: Lead) => l.id === initialLeadId);
           if (lead) {
             setCurrentLead(lead);
@@ -161,25 +421,13 @@ function CallCenterContent() {
         l.city?.toLowerCase().includes(query) ||
         l.niche?.toLowerCase().includes(query) ||
         l.phone?.includes(query) ||
-        l.email?.toLowerCase().includes(query) ||
-        l.currentProvider?.toLowerCase().includes(query)
+        l.email?.toLowerCase().includes(query)
       );
       setFilteredLeads(results);
     } else {
       setFilteredLeads(leads);
     }
   }, [searchQuery, leads]);
-
-  // Timer for call duration
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isCalling) {
-      interval = setInterval(() => {
-        setCallDuration(prev => prev + 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isCalling]);
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -199,6 +447,9 @@ function CallCenterContent() {
 
   // Skip to next
   const skipToNext = () => {
+    // Don't skip if in active call
+    if (isCalling) return;
+    
     if (queueIndex < leads.length - 1) {
       const nextIndex = queueIndex + 1;
       setQueueIndex(nextIndex);
@@ -230,7 +481,6 @@ function CallCenterContent() {
     if (!currentLead || !selectedOutcome) return;
 
     try {
-      // Save call log
       await fetch('/api/calls', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -242,7 +492,6 @@ function CallCenterContent() {
         }),
       });
 
-      // Handle DNCM
       if (selectedOutcome === 'DNCM') {
         await fetch('/api/leads', {
           method: 'PATCH',
@@ -253,23 +502,18 @@ function CallCenterContent() {
             status: 'NOT_INTERESTED'
           })
         });
-        
-        // Remove from leads list
         const updatedLeads = leads.filter(l => l.id !== currentLead.id);
         setLeads(updatedLeads);
         setFilteredLeads(updatedLeads);
       }
 
-      // Refresh leads
       fetchLeads();
 
-      // Reset
       setShowOutcomeModal(false);
       setCallNotes('');
       setSelectedOutcome('');
       setCallDuration(0);
 
-      // Continue queue or close
       if (isQueueRunning && selectedOutcome === 'NO_ANSWER') {
         setTimeout(skipToNext, 500);
       } else if (isQueueRunning) {
@@ -277,20 +521,19 @@ function CallCenterContent() {
       } else {
         setCurrentLead(null);
       }
-
     } catch (error) {
       console.error('Failed to save call:', error);
     }
   };
 
-  // Select lead
+  // Select lead - ONLY if not in active call
   const selectLead = (lead: Lead) => {
+    if (isCalling) return; // Prevent switching during call
     setCurrentLead(lead);
     fetchCallHistory(lead.id);
     setIsQueueRunning(false);
   };
 
-  // Save lead edits
   const handleSaveLead = async () => {
     if (!currentLead || !editedLead) return;
     
@@ -312,9 +555,29 @@ function CallCenterContent() {
     }
   };
 
-  // Get queue (NEW leads first)
   const queueLeads = leads.filter(l => l.status === 'NEW');
   const callbackLeads = leads.filter(l => l.status === 'CONTACTED' || l.status === 'QUOTED');
+
+  // Active call banner
+  const ActiveCallBanner = () => {
+    if (!isCalling || !currentLead) return null;
+    
+    return (
+      <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-4 animate-pulse">
+        <Phone className="w-5 h-5 animate-bounce" />
+        <div>
+          <p className="font-semibold text-sm">Gesprek bezig met {currentLead.companyName}</p>
+          <p className="text-lg font-bold font-mono">{formatDuration(callDuration)}</p>
+        </div>
+        <button 
+          onClick={handleEndCall}
+          className="ml-4 p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors"
+        >
+          <PhoneOff className="w-5 h-5" />
+        </button>
+      </div>
+    );
+  };
 
   if (loading) {
     return (
@@ -328,12 +591,14 @@ function CallCenterContent() {
 
   return (
     <PageContainer>
+      <ActiveCallBanner />
+      
       <PageHeader
         title="Call Center"
         subtitle={isQueueRunning 
           ? `Queue: ${queueIndex + 1} van ${queueLeads.length} leads` 
           : currentLead 
-            ? `${currentLead.companyName} - ${currentLead.contactName || 'Geen contact'}`
+            ? `${currentLead.companyName}`
             : 'Bel je leads en volg op'
         }
         icon={<Phone className="w-6 h-6 text-white" />}
@@ -401,7 +666,17 @@ function CallCenterContent() {
 
                 <div className="space-y-2 max-h-96 overflow-y-auto">
                   {queueLeads.map((lead, index) => (
-                    <div key={lead.id} onClick={() => selectLead(lead)} className={`p-3 rounded-xl cursor-pointer transition-all ${currentLead?.id === lead.id ? 'bg-orange-50 border-2 border-orange-300' : 'bg-gray-50 border border-gray-200 hover:border-orange-300'}`}>
+                    <div 
+                      key={lead.id} 
+                      onClick={() => selectLead(lead)} 
+                      className={`p-3 rounded-xl cursor-pointer transition-all ${
+                        currentLead?.id === lead.id 
+                          ? 'bg-orange-50 border-2 border-orange-300' 
+                          : isCalling 
+                            ? 'opacity-50 cursor-not-allowed' 
+                            : 'bg-gray-50 border border-gray-200 hover:border-orange-300'
+                      }`}
+                    >
                       <p className="font-medium text-gray-900 text-sm">{lead.companyName}</p>
                       <p className="text-xs text-gray-500">{lead.contactName || 'Geen contact'}</p>
                       <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
@@ -426,11 +701,21 @@ function CallCenterContent() {
                   placeholder="Zoek op naam, bedrijf, stad..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 />
                 <div className="mt-4 space-y-2 max-h-80 overflow-y-auto">
                   {filteredLeads.map((lead) => (
-                    <div key={lead.id} onClick={() => selectLead(lead)} className={`p-3 rounded-xl cursor-pointer transition-all ${currentLead?.id === lead.id ? 'bg-orange-50 border-2 border-orange-300' : 'bg-gray-50 border border-gray-200 hover:border-orange-300'}`}>
+                    <div 
+                      key={lead.id} 
+                      onClick={() => selectLead(lead)} 
+                      className={`p-3 rounded-xl cursor-pointer transition-all ${
+                        currentLead?.id === lead.id 
+                          ? 'bg-orange-50 border-2 border-orange-300' 
+                          : isCalling 
+                            ? 'opacity-50 cursor-not-allowed' 
+                            : 'bg-gray-50 border border-gray-200 hover:border-orange-300'
+                      }`}
+                    >
                       <p className="font-medium text-gray-900 text-sm">{lead.companyName}</p>
                       <p className="text-xs text-gray-500">{lead.city || 'Geen stad'}</p>
                     </div>
@@ -512,55 +797,12 @@ function CallCenterContent() {
                   <div className="p-6 space-y-4">
                     {isEditing ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <input
-                          type="text"
-                          value={editedLead.companyName || ''}
-                          onChange={(e) => setEditedLead({...editedLead, companyName: e.target.value})}
-                          className="px-3 py-2 border border-gray-300 rounded-lg"
-                          placeholder="Bedrijfsnaam"
-                        />
-                        <input
-                          type="text"
-                          value={editedLead.contactName || ''}
-                          onChange={(e) => setEditedLead({...editedLead, contactName: e.target.value})}
-                          className="px-3 py-2 border border-gray-300 rounded-lg"
-                          placeholder="Contactpersoon"
-                        />
-                        <input
-                          type="text"
-                          value={editedLead.phone || ''}
-                          onChange={(e) => setEditedLead({...editedLead, phone: e.target.value})}
-                          className="px-3 py-2 border border-gray-300 rounded-lg"
-                          placeholder="Telefoon"
-                        />
-                        <input
-                          type="email"
-                          value={editedLead.email || ''}
-                          onChange={(e) => setEditedLead({...editedLead, email: e.target.value})}
-                          className="px-3 py-2 border border-gray-300 rounded-lg"
-                          placeholder="Email"
-                        />
-                        <input
-                          type="text"
-                          value={editedLead.city || ''}
-                          onChange={(e) => setEditedLead({...editedLead, city: e.target.value})}
-                          className="px-3 py-2 border border-gray-300 rounded-lg"
-                          placeholder="Stad"
-                        />
-                        <input
-                          type="text"
-                          value={editedLead.niche || ''}
-                          onChange={(e) => setEditedLead({...editedLead, niche: e.target.value})}
-                          className="px-3 py-2 border border-gray-300 rounded-lg"
-                          placeholder="Niche"
-                        />
-                        <textarea
-                          value={editedLead.notes || ''}
-                          onChange={(e) => setEditedLead({...editedLead, notes: e.target.value})}
-                          className="px-3 py-2 border border-gray-300 rounded-lg md:col-span-2"
-                          placeholder="Notities"
-                          rows={3}
-                        />
+                        <input type="text" value={editedLead.companyName || ''} onChange={(e) => setEditedLead({...editedLead, companyName: e.target.value})} className="px-3 py-2 border border-gray-300 rounded-lg" placeholder="Bedrijfsnaam" />
+                        <input type="text" value={editedLead.contactName || ''} onChange={(e) => setEditedLead({...editedLead, contactName: e.target.value})} className="px-3 py-2 border border-gray-300 rounded-lg" placeholder="Contactpersoon" />
+                        <input type="text" value={editedLead.phone || ''} onChange={(e) => setEditedLead({...editedLead, phone: e.target.value})} className="px-3 py-2 border border-gray-300 rounded-lg" placeholder="Telefoon" />
+                        <input type="email" value={editedLead.email || ''} onChange={(e) => setEditedLead({...editedLead, email: e.target.value})} className="px-3 py-2 border border-gray-300 rounded-lg" placeholder="Email" />
+                        <input type="text" value={editedLead.city || ''} onChange={(e) => setEditedLead({...editedLead, city: e.target.value})} className="px-3 py-2 border border-gray-300 rounded-lg" placeholder="Stad" />
+                        <input type="text" value={editedLead.niche || ''} onChange={(e) => setEditedLead({...editedLead, niche: e.target.value})} className="px-3 py-2 border border-gray-300 rounded-lg" placeholder="Niche" />
                       </div>
                     ) : (
                       <>
@@ -598,11 +840,29 @@ function CallCenterContent() {
                         )}
                       </>
                     )}
+
+                    {/* Quick Actions */}
+                    <div className="flex gap-2 pt-4 border-t border-gray-100">
+                      <button
+                        onClick={() => setShowAppointmentModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100"
+                      >
+                        <Calendar className="w-4 h-4" />
+                        Afspraak Maken
+                      </button>
+                      <Link
+                        href={`/calculator?lead=${currentLead.id}`}
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-orange-700 bg-orange-50 rounded-lg hover:bg-orange-100"
+                      >
+                        <FileText className="w-4 h-4" />
+                        Prijs Berekenen
+                      </Link>
+                    </div>
                   </div>
                 </SmartCard>
 
                 {/* Call Interface */}
-                <SmartCard className={`p-8 text-center ${isCalling ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200' : ''}`}>
+                <SmartCard className={`p-8 text-center transition-all duration-300 ${isCalling ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200' : ''}`}>
                   {!isCalling ? (
                     <>
                       <div onClick={handleStartCall} className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg shadow-green-500/25 cursor-pointer hover:scale-105 transition-transform">
@@ -615,7 +875,7 @@ function CallCenterContent() {
                     </>
                   ) : (
                     <>
-                      <div onClick={handleEndCall} className="w-28 h-28 mx-auto mb-6 bg-gradient-to-br from-red-500 to-rose-600 rounded-full flex items-center justify-center shadow-lg shadow-red-500/25 animate-pulse cursor-pointer hover:scale-105 transition-transform">
+                      <div className="w-28 h-28 mx-auto mb-6 bg-gradient-to-br from-red-500 to-rose-600 rounded-full flex items-center justify-center shadow-lg shadow-red-500/25 animate-pulse">
                         <PhoneOff className="w-14 h-14 text-white" />
                       </div>
                       <div className="text-6xl font-bold text-gray-900 mb-2 font-mono">{formatDuration(callDuration)}</div>
@@ -627,8 +887,8 @@ function CallCenterContent() {
                   )}
                 </SmartCard>
 
-                {/* Call Notes */}
-                {isCalling && (
+                {/* Call Notes - Always visible during call */}
+                {(isCalling || callNotes) && (
                   <SmartCard className="p-4">
                     <h3 className="font-semibold text-gray-900 mb-3">Gespreksnotities</h3>
                     <textarea
@@ -645,12 +905,17 @@ function CallCenterContent() {
                 <EmptyState
                   icon={<Phone className="w-16 h-16" />}
                   title="Geen lead geselecteerd"
-                  description="Start de queue of selecteer een lead om te beginnen."
+                  description={showQueueComplete 
+                    ? "Queue voltooid! Alle leads zijn gebeld."
+                    : "Start de queue of selecteer een lead om te beginnen."
+                  }
                   action={
-                    <button onClick={startQueue} className="px-6 py-3 text-white bg-gradient-to-r from-orange-500 to-red-600 rounded-xl font-medium">
-                      <Play className="w-5 h-5 inline mr-2" />
-                      Start Queue
-                    </button>
+                    <div className="flex gap-3">
+                      <button onClick={startQueue} className="px-6 py-3 text-white bg-gradient-to-r from-orange-500 to-red-600 rounded-xl font-medium flex items-center gap-2">
+                        <Play className="w-5 h-5" />
+                        Start Queue
+                      </button>
+                    </div>
                   }
                 />
               </SmartCard>
@@ -661,7 +926,7 @@ function CallCenterContent() {
 
       {/* Outcome Modal */}
       {showOutcomeModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
           <SmartCard className="w-full max-w-lg">
             <div className="p-6">
               <h3 className="text-xl font-semibold text-gray-900 mb-6">Gesprek Resultaat</h3>
@@ -692,6 +957,13 @@ function CallCenterContent() {
           </SmartCard>
         </div>
       )}
+
+      {/* Appointment Modal */}
+      <AppointmentModal
+        lead={showAppointmentModal ? currentLead : null}
+        isOpen={showAppointmentModal}
+        onClose={() => setShowAppointmentModal(false)}
+      />
     </PageContainer>
   );
 }

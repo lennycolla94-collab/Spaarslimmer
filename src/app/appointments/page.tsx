@@ -27,7 +27,9 @@ import {
   ChevronLeft,
   ChevronRight,
   MoreVertical,
-  ArrowLeft
+  ArrowLeft,
+  TrendingUp,
+  CalendarDays
 } from 'lucide-react';
 
 // Mock data
@@ -387,6 +389,3 @@ export default function AppointmentsPage() {
     </PageContainer>
   );
 }
-
-// Missing import
-import { TrendingUp, CalendarDays } from 'lucide-react';

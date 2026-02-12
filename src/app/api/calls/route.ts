@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
 
     // Insert call log
     await prisma.$executeRaw`
-      INSERT INTO "CallLog" (
+      INSERT INTO calls (
         id, leadid, consultantid, result, notes, duration, calledat
       ) VALUES (
         gen_random_uuid(),

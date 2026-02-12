@@ -27,7 +27,14 @@ import {
   ArrowRight,
   Calendar,
   CheckCircle2,
-  X
+  X,
+  Edit2,
+  Save,
+  Clock,
+  CalendarDays,
+  MapPinned,
+  FileText,
+  Check
 } from 'lucide-react';
 
 const statusConfig: Record<string, { labelKey: 'statusNew' | 'statusContacted' | 'statusQuoted' | 'statusSold' | 'statusNotInterested'; color: string; icon: any }> = {
@@ -38,6 +45,326 @@ const statusConfig: Record<string, { labelKey: 'statusNew' | 'statusContacted' |
   NOT_INTERESTED: { labelKey: 'statusNotInterested', color: 'error', icon: PhoneOff },
 };
 
+// Lead Edit Modal Component
+function LeadEditModal({ lead, isOpen, onClose, onSave }: { 
+  lead: any; 
+  isOpen: boolean; 
+  onClose: () => void;
+  onSave: (updatedLead: any) => void;
+}) {
+  const { t } = useTranslation();
+  const [editedLead, setEditedLead] = useState(lead);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setEditedLead(lead);
+  }, [lead]);
+
+  if (!isOpen || !lead) return null;
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const response = await fetch('/api/leads', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: lead.id, ...editedLead }),
+      });
+      if (response.ok) {
+        onSave(editedLead);
+        onClose();
+      }
+    } catch (error) {
+      console.error('Failed to update:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <SmartCard className="w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center">
+                <Edit2 className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{t('edit')}</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{lead.companyName}</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+              <X className="w-6 h-6 text-slate-500" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('companyName')}</label>
+              <input type="text" value={editedLead.companyName || ''} onChange={(e) => setEditedLead({...editedLead, companyName: e.target.value})} 
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('contactName')}</label>
+              <input type="text" value={editedLead.contactName || ''} onChange={(e) => setEditedLead({...editedLead, contactName: e.target.value})} 
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('phone')}</label>
+              <input type="text" value={editedLead.phone || ''} onChange={(e) => setEditedLead({...editedLead, phone: e.target.value})} 
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('email')}</label>
+              <input type="email" value={editedLead.email || ''} onChange={(e) => setEditedLead({...editedLead, email: e.target.value})} 
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('address')}</label>
+              <input type="text" value={editedLead.address || ''} onChange={(e) => setEditedLead({...editedLead, address: e.target.value})} 
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('city')}</label>
+              <input type="text" value={editedLead.city || ''} onChange={(e) => setEditedLead({...editedLead, city: e.target.value})} 
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('postalCode')}</label>
+              <input type="text" value={editedLead.postalCode || ''} onChange={(e) => setEditedLead({...editedLead, postalCode: e.target.value})} 
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('niche')}</label>
+              <input type="text" value={editedLead.niche || ''} onChange={(e) => setEditedLead({...editedLead, niche: e.target.value})} 
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white" />
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <button onClick={onClose} className="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 rounded-xl hover:bg-slate-200 transition-colors">
+              {t('cancel')}
+            </button>
+            <button onClick={handleSave} disabled={saving} className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-orange-500 to-red-500 rounded-xl hover:shadow-lg disabled:opacity-50 transition-all flex items-center justify-center gap-2">
+              <Save className="w-4 h-4" />
+              {saving ? '...' : t('save')}
+            </button>
+          </div>
+        </div>
+      </SmartCard>
+    </div>
+  );
+}
+
+// Appointment Modal Component
+function AppointmentModal({ lead, isOpen, onClose }: { lead: any; isOpen: boolean; onClose: () => void }) {
+  const { t } = useTranslation();
+  const [step, setStep] = useState(1);
+  const [appointmentType, setAppointmentType] = useState<'phone' | 'physical' | null>(null);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedTime, setSelectedTime] = useState('');
+  const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  // Generate next 14 days
+  const dates = Array.from({ length: 14 }, (_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() + i);
+    return date;
+  });
+
+  // Time slots
+  const timeSlots = [
+    '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+    '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'
+  ];
+
+  if (!isOpen || !lead) return null;
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await fetch('/api/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leadId: lead.id,
+          type: appointmentType,
+          date: selectedDate,
+          time: selectedTime,
+          notes,
+        }),
+      });
+      onClose();
+      setStep(1);
+      setAppointmentType(null);
+      setSelectedDate('');
+      setSelectedTime('');
+      setNotes('');
+    } catch (error) {
+      console.error('Failed to save appointment:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <SmartCard className="w-full max-w-lg animate-in">
+        <div className="p-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center">
+                <CalendarDays className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t('scheduleAppointment')}</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{lead.companyName}</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+              <X className="w-6 h-6 text-slate-500" />
+            </button>
+          </div>
+
+          {/* Step 1: Choose Type */}
+          {step === 1 && (
+            <div className="space-y-4">
+              <p className="text-slate-700 dark:text-slate-300 font-medium">{t('appointmentType')}:</p>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => { setAppointmentType('phone'); setStep(2); }}
+                  className={`p-6 rounded-2xl border-2 text-center transition-all ${
+                    appointmentType === 'phone' 
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/20' 
+                      : 'border-slate-200 dark:border-slate-700 hover:border-blue-300'
+                  }`}
+                >
+                  <Phone className="w-8 h-8 mx-auto mb-3 text-blue-500" />
+                  <p className="font-semibold text-slate-800 dark:text-white">{t('phoneCall')}</p>
+                </button>
+                <button
+                  onClick={() => { setAppointmentType('physical'); setStep(2); }}
+                  className={`p-6 rounded-2xl border-2 text-center transition-all ${
+                    appointmentType === 'physical' 
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/20' 
+                      : 'border-slate-200 dark:border-slate-700 hover:border-blue-300'
+                  }`}
+                >
+                  <MapPinned className="w-8 h-8 mx-auto mb-3 text-blue-500" />
+                  <p className="font-semibold text-slate-800 dark:text-white">{t('physicalVisit')}</p>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Address Verification (Physical only) */}
+          {step === 2 && appointmentType === 'physical' && (
+            <div className="space-y-4">
+              <p className="text-slate-700 dark:text-slate-300 font-medium">{t('verifyAddress')}:</p>
+              <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                <p className="font-semibold text-slate-900 dark:text-white">{lead.companyName}</p>
+                <p className="text-slate-600 dark:text-slate-400">{lead.address || '-'}</p>
+                <p className="text-slate-600 dark:text-slate-400">{lead.postalCode} {lead.city}</p>
+                <p className="text-slate-600 dark:text-slate-400 mt-2">{t('email')}: {lead.email || '-'}</p>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setStep(1)} className="flex-1 px-4 py-2.5 text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 rounded-xl">
+                  {t('back')}
+                </button>
+                <button onClick={() => setStep(3)} className="flex-1 px-4 py-2.5 text-white bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl">
+                  {t('confirmAndContinue')}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Date & Time */}
+          {step === 3 || (step === 2 && appointmentType === 'phone') ? (
+            <div className="space-y-4">
+              {/* Date Selection */}
+              <div>
+                <p className="text-slate-700 dark:text-slate-300 font-medium mb-3">{t('selectDate')}:</p>
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {dates.map((date) => (
+                    <button
+                      key={date.toISOString()}
+                      onClick={() => setSelectedDate(date.toISOString().split('T')[0])}
+                      className={`flex-shrink-0 p-3 rounded-xl text-center min-w-[70px] transition-all ${
+                        selectedDate === date.toISOString().split('T')[0]
+                          ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
+                      }`}
+                    >
+                      <p className="text-xs uppercase">{date.toLocaleDateString('nl-BE', { weekday: 'short' })}</p>
+                      <p className="text-lg font-bold">{date.getDate()}</p>
+                      <p className="text-xs">{date.toLocaleDateString('nl-BE', { month: 'short' })}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Time Selection */}
+              {selectedDate && (
+                <div>
+                  <p className="text-slate-700 dark:text-slate-300 font-medium mb-3">{t('selectTime')}:</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {timeSlots.map((time) => (
+                      <button
+                        key={time}
+                        onClick={() => setSelectedTime(time)}
+                        className={`p-2 rounded-lg text-sm font-medium transition-all ${
+                          selectedTime === time
+                            ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-md'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
+                        }`}
+                      >
+                        {time}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Notes */}
+              <div>
+                <p className="text-slate-700 dark:text-slate-300 font-medium mb-2">{t('notes')}:</p>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder={t('appointmentNotesPlaceholder')}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white h-20 resize-none"
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-2">
+                <button 
+                  onClick={() => appointmentType === 'physical' ? setStep(2) : setStep(1)} 
+                  className="flex-1 px-4 py-2.5 text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 rounded-xl"
+                >
+                  {t('back')}
+                </button>
+                <button 
+                  onClick={handleSave} 
+                  disabled={!selectedDate || !selectedTime || saving}
+                  className="flex-1 px-4 py-2.5 text-white bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl hover:shadow-lg disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                >
+                  <Check className="w-4 h-4" />
+                  {saving ? '...' : t('schedule')}
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </SmartCard>
+    </div>
+  );
+}
+
 export default function LeadsPage() {
   const { t } = useTranslation();
   const router = useRouter();
@@ -46,6 +373,8 @@ export default function LeadsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingLead, setEditingLead] = useState<any>(null);
+  const [appointmentLead, setAppointmentLead] = useState<any>(null);
   const [newLead, setNewLead] = useState({
     companyName: '',
     contactName: '',
@@ -113,6 +442,10 @@ export default function LeadsPage() {
     } catch (error) {
       console.error('Failed to add lead:', error);
     }
+  };
+
+  const handleSaveEdit = (updatedLead: any) => {
+    setLeads(leads.map(l => l.id === updatedLead.id ? { ...l, ...updatedLead } : l));
   };
 
   return (
@@ -213,8 +546,7 @@ export default function LeadsPage() {
               return (
                 <SmartCard 
                   key={lead.id} 
-                  className={`group cursor-pointer ${lead.doNotCall ? 'border-rose-200 dark:border-rose-500/30 bg-rose-50/50 dark:bg-rose-500/5' : ''}`}
-                  onClick={() => router.push(`/leads/${lead.id}`)}
+                  className={`group ${lead.doNotCall ? 'border-rose-200 dark:border-rose-500/30 bg-rose-50/50 dark:bg-rose-500/5' : ''}`}
                 >
                   <div className="p-5">
                     {/* DNCM Warning */}
@@ -269,18 +601,29 @@ export default function LeadsPage() {
                       )}
                     </div>
 
-                    {/* Footer */}
-                    <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700">
-                      <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-                        <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg">
-                          <Calendar className="w-3 h-3" />
-                          {new Date(lead.createdAt).toLocaleDateString('nl-BE')}
-                        </span>
-                      </div>
-                      <span className="flex items-center gap-1 text-sm font-semibold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/10 px-3 py-1.5 rounded-lg">
-                        {t('view')}
-                        <ArrowRight className="w-4 h-4" />
-                      </span>
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 pt-4 border-t border-slate-100 dark:border-slate-700">
+                      <button 
+                        onClick={() => setEditingLead(lead)}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700/50 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                        {t('edit')}
+                      </button>
+                      <button 
+                        onClick={() => setAppointmentLead(lead)}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-semibold text-white bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg hover:shadow-md transition-all"
+                      >
+                        <Calendar className="w-4 h-4" />
+                        {t('scheduleAppointment')}
+                      </button>
+                      <a 
+                        href={`/call-center?lead=${lead.id}`}
+                        className="flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-semibold text-white bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg hover:shadow-md transition-all"
+                      >
+                        <Phone className="w-4 h-4" />
+                        {t('call')}
+                      </a>
                     </div>
                   </div>
                 </SmartCard>
@@ -289,6 +632,21 @@ export default function LeadsPage() {
           </div>
         )}
       </main>
+
+      {/* Edit Modal */}
+      <LeadEditModal 
+        lead={editingLead} 
+        isOpen={!!editingLead} 
+        onClose={() => setEditingLead(null)}
+        onSave={handleSaveEdit}
+      />
+
+      {/* Appointment Modal */}
+      <AppointmentModal
+        lead={appointmentLead}
+        isOpen={!!appointmentLead}
+        onClose={() => setAppointmentLead(null)}
+      />
 
       {/* Add Lead Modal */}
       {showAddModal && (

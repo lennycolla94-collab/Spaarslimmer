@@ -97,8 +97,8 @@ export async function DELETE(
     }
 
     // Delete related records first (cascade)
-    await prisma.$executeRaw`DELETE FROM "CallLog" WHERE leadid = ${leadId}`;
-    await prisma.$executeRaw`DELETE FROM "QueueItem" WHERE leadid = ${leadId}`;
+    await prisma.$executeRaw`DELETE FROM calls WHERE leadid = ${leadId}`;
+    await prisma.$executeRaw`DELETE FROM appointments WHERE leadid = ${leadId}`;
     
     // Delete the lead
     await prisma.$executeRaw`DELETE FROM "Lead" WHERE id = ${leadId}`;

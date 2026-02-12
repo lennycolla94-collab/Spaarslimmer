@@ -94,6 +94,17 @@ export const translations = {
     calculatePrice: 'Prijs Berekenen',
     scheduleAppointment: 'Afspraak Inplannen',
     
+    // Appointment Modal
+    appointmentType: 'Type afspraak',
+    phoneCall: 'Telefonisch',
+    physicalVisit: 'Fysiek bezoek',
+    verifyAddress: 'Adres verifiëren',
+    confirmAndContinue: 'Bevestigen & Doorgaan',
+    selectDate: 'Selecteer datum',
+    selectTime: 'Selecteer tijd',
+    schedule: 'Inplannen',
+    appointmentNotesPlaceholder: 'Extra informatie voor de afspraak...',
+    
     // Tips
     tips: 'Tips',
     tipRequired: 'Vereist: Bedrijfsnaam, TelefoonNummer',
@@ -197,6 +208,17 @@ export const translations = {
     // Quick actions
     calculatePrice: 'Calculer Prix',
     scheduleAppointment: 'Planifier RDV',
+    
+    // Appointment Modal
+    appointmentType: 'Type de rendez-vous',
+    phoneCall: 'Téléphonique',
+    physicalVisit: 'Visite physique',
+    verifyAddress: 'Vérifier l\'adresse',
+    confirmAndContinue: 'Confirmer & Continuer',
+    selectDate: 'Sélectionner date',
+    selectTime: 'Sélectionner heure',
+    schedule: 'Planifier',
+    appointmentNotesPlaceholder: 'Informations supplémentaires...',
     
     // Tips
     tips: 'Conseils',

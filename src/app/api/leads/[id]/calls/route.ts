@@ -30,7 +30,7 @@ export async function GET(
     const calls = await prisma.$queryRaw`
       SELECT 
         id, result, notes, duration, calledat
-      FROM "CallLog"
+      FROM calls
       WHERE leadid = ${leadId}
       ORDER BY calledat DESC
     `;
