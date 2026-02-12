@@ -8,109 +8,71 @@ import Papa from 'papaparse';
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
-
     if (!file) {
       return NextResponse.json({ error: 'No file' }, { status: 400 });
     }
 
-    let csvText = await file.text();
+    const csvText = await file.text();
     
-    if (csvText.charCodeAt(0) === 0xFEFF) {
-      csvText = csvText.substring(1);
-    }
-    
-    const firstLine = csvText.split('\n')[0];
-    const semiCount = (firstLine.match(/;/g) || []).length;
-    const commaCount = (firstLine.match(/,/g) || []).length;
-    const delimiter = semiCount > commaCount ? ';' : ',';
-    
+    // Parse CSV
     const parseResult = Papa.parse(csvText, {
       header: true,
       skipEmptyLines: true,
-      delimiter: delimiter,
+      delimiter: ';',
     });
 
     const rows = parseResult.data as any[];
-    
     if (rows.length === 0) {
       return NextResponse.json({ error: 'Geen data' }, { status: 400 });
     }
 
-    const results = {
-      imported: 0,
-      errors: [] as string[]
-    };
+    let imported = 0;
+    let errors = [] as string[];
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       
+      const rawPhone = row.TelefoonNummer;
+      const companyName = row.Bedrijfsnaam;
+      
+      if (!rawPhone || !companyName) {
+        errors.push(`Rij ${i + 1}: Telefoon of bedrijf mist`);
+        continue;
+      }
+
+      // Schoon telefoonnummer (alleen cijfers)
+      const cleanPhone = rawPhone.toString().replace(/\D/g, '');
+      
+      if (cleanPhone.length < 7) {
+        errors.push(`Rij ${i + 1}: Telefoon te kort`);
+        continue;
+      }
+
+      // Hash als string
+      const phoneHash: string = crypto.createHash('sha256').update(cleanPhone).digest('hex');
+
       try {
-        const rawPhone = row.TelefoonNummer || row.Telefoon || row.telefoon || row.phone;
-        const companyName = row.Bedrijfsnaam || row.Bedrijf || row.bedrijf;
-        
-        if (!rawPhone || !companyName) {
-          results.errors.push(`Rij ${i + 1}: Missing phone or company`);
-          continue;
-        }
-
-        const cleanPhone = rawPhone.toString().replace(/\D/g, '');
-        
-        if (cleanPhone.length < 7) {
-          results.errors.push(`Rij ${i + 1}: Phone too short: ${cleanPhone}`);
-          continue;
-        }
-
-        // Genereer hash - FORCEER dat het een string is
-        const hash = crypto.createHash('sha256');
-        hash.update(cleanPhone);
-        const phoneHash = hash.digest('hex');
-        
-        // EXTRA CHECK: zorg dat hash echt een string is
-        if (typeof phoneHash !== 'string' || phoneHash.length === 0) {
-          results.errors.push(`Rij ${i + 1}: Hash generation failed`);
-          continue;
-        }
-
-        const nietBellen = row['Niet bellen'] || '';
-        const doNotCall = nietBellen.toString().toLowerCase().trim() === 'ja';
-
-        // Log voor debugging
-        console.log(`Row ${i + 1}: phone=${cleanPhone}, hash=${phoneHash.substring(0, 10)}...`);
-
-        // Insert
-        await prisma.lead.create({
-          data: {
-            companyName: companyName.toString().trim(),
-            phone: cleanPhone,
-            phoneHash: phoneHash, // EXPLICIET als string
-            status: 'NEW',
-            ownerId: session.user.id,
-            source: 'IMPORT',
-            doNotCall: doNotCall,
-            consentPhone: true,
-          }
-        });
-
-        results.imported++;
-      } catch (err: any) {
-        results.errors.push(`Rij ${i + 1}: ${err.message}`);
+        // ALLEEN verplichte velden
+        await prisma.$executeRaw`
+          INSERT INTO "Lead" ("id", "companyName", "phone", "phoneHash", "status", "ownerId", "source", "doNotCall", "consentPhone", "createdAt", "updatedAt")
+          VALUES (gen_random_uuid(), ${companyName}, ${cleanPhone}, ${phoneHash}, 'NEW', ${session.user.id}, 'IMPORT', false, true, NOW(), NOW())
+          ON CONFLICT ("phoneHash") DO NOTHING
+        `;
+        imported++;
+      } catch (dbErr: any) {
+        errors.push(`Rij ${i + 1}: ${dbErr.message}`);
       }
     }
 
-    return NextResponse.json(results);
+    return NextResponse.json({ imported, errors: errors.slice(0, 5) });
 
   } catch (error: any) {
-    console.error('Import error:', error);
-    return NextResponse.json(
-      { error: 'Import failed', message: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
