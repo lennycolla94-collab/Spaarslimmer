@@ -34,7 +34,7 @@ export default async function ImportLeadsPage() {
             <li>• Gebruik het template voor de juiste kolomnamen</li>
             <li>• Telefoonnummers worden automatisch geformatteerd</li>
             <li>• Duplicaten (zelfde telefoonnummer) worden overgeslagen</li>
-            <li>• Maximaal 10.000 leads per import</li>
+            <li>• Maximaal 1000 leads per import</li>
           </ul>
         </div>
       </div>

@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     console.log('CSV Headers:', parseResult.meta.fields);
     console.log('First row:', rows[0]);
     
-    const MAX_ROWS = 500;
+    const MAX_ROWS = 1000;
     
     if (rows.length > MAX_ROWS) {
       return NextResponse.json({ 
@@ -64,8 +64,8 @@ export async function POST(request: NextRequest) {
     let duplicates = 0;
     const errors: string[] = [];
 
-    // Process in smaller batches
-    const BATCH_SIZE = 50;
+    // Process in smaller batches (meer voor betere performance)
+    const BATCH_SIZE = 100;
     
     for (let batchStart = 0; batchStart < rows.length; batchStart += BATCH_SIZE) {
       const batch = rows.slice(batchStart, batchStart + BATCH_SIZE);

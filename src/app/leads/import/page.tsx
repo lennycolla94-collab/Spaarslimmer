@@ -50,7 +50,7 @@ export default async function ImportLeadsPage() {
             <li>• Gebruik het template voor de juiste kolomnamen</li>
             <li>• CSV moet <strong>; (puntkomma)</strong> gescheiden zijn (Excel formaat)</li>
             <li>• Duplicaten (zelfde telefoonnummer) worden overgeslagen</li>
-            <li>• Maximaal <strong>500 leads</strong> per import</li>
+            <li>• Maximaal <strong>1000 leads</strong> per import</li>
           </ul>
         </div>
       </div>
