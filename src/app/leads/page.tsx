@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   PageContainer, 
   PageHeader, 
@@ -11,6 +12,7 @@ import {
   Badge,
   SearchInput
 } from '@/components/design-system/page-container';
+import { useTranslation } from '@/components/language-provider';
 import { 
   Users, 
   Plus, 
@@ -19,39 +21,26 @@ import {
   Mail, 
   MapPin, 
   Building2,
-  TrendingUp,
-  MoreVertical,
-  Calendar,
-  CheckCircle2,
-  XCircle,
   AlertCircle,
   Upload,
-  User,
-  Search,
-  Filter,
-  ArrowRight,
   ArrowLeft,
+  ArrowRight,
+  Calendar,
+  CheckCircle2,
   X
 } from 'lucide-react';
 
-// Mock data
-const mockLeads = [
-  { id: '1', companyName: 'Tech Solutions BV', contactName: 'Jan Janssen', email: 'jan@tech.nl', phone: '+32 471 23 45 67', city: 'Antwerpen', status: 'NEW', niche: 'Technologie', lastContact: null, calls: 0, doNotCall: false },
-  { id: '2', companyName: 'Bakkerij De Lekkernij', contactName: 'Maria Peeters', email: 'info@delekkernij.be', phone: '+32 485 67 89 01', city: 'Brussel', status: 'CONTACTED', niche: 'Horeca', lastContact: '2025-02-08', calls: 2, doNotCall: false },
-  { id: '3', companyName: 'Constructie Groep', contactName: 'Peter Willems', email: 'peter@constructie.be', phone: '+32 496 12 34 56', city: 'Gent', status: 'QUOTED', niche: 'Bouw', lastContact: '2025-02-07', calls: 5, doNotCall: false },
-  { id: '4', companyName: 'Fashion Store', contactName: 'Lisa Dubois', email: 'lisa@fashion.be', phone: '+32 477 88 99 00', city: 'Luik', status: 'SALE_MADE', niche: 'Retail', lastContact: '2025-02-06', calls: 8, doNotCall: false },
-  { id: '5', companyName: 'Auto Garage Fast', contactName: 'Tom Vermeer', email: 'tom@fastgarage.be', phone: '+32 468 11 22 33', city: 'Hasselt', status: 'NEW', niche: 'Automotive', lastContact: null, calls: 0, doNotCall: false },
-];
-
-const statusConfig = {
-  NEW: { label: 'Nieuw', color: 'bg-blue-100 text-blue-700 border-blue-200', icon: AlertCircle },
-  CONTACTED: { label: 'Gecontacteerd', color: 'bg-yellow-100 text-yellow-700 border-yellow-200', icon: Phone },
-  QUOTED: { label: 'Offerte', color: 'bg-purple-100 text-purple-700 border-purple-200', icon: CheckCircle2 },
-  SALE_MADE: { label: 'Verkocht', color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircle2 },
-  NOT_INTERESTED: { label: 'Geen Interesse', color: 'bg-red-100 text-red-700 border-red-200', icon: XCircle },
+const statusConfig: Record<string, { labelKey: 'statusNew' | 'statusContacted' | 'statusQuoted' | 'statusSold' | 'statusNotInterested'; color: string; icon: any }> = {
+  NEW: { labelKey: 'statusNew', color: 'info', icon: AlertCircle },
+  CONTACTED: { labelKey: 'statusContacted', color: 'warning', icon: Phone },
+  QUOTED: { labelKey: 'statusQuoted', color: 'default', icon: CheckCircle2 },
+  SALE_MADE: { labelKey: 'statusSold', color: 'success', icon: CheckCircle2 },
+  NOT_INTERESTED: { labelKey: 'statusNotInterested', color: 'error', icon: PhoneOff },
 };
 
 export default function LeadsPage() {
+  const { t } = useTranslation();
+  const router = useRouter();
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -66,7 +55,6 @@ export default function LeadsPage() {
     niche: '',
   });
 
-  // Fetch leads from API
   useEffect(() => {
     fetchLeads();
   }, []);
@@ -76,12 +64,7 @@ export default function LeadsPage() {
       const response = await fetch('/api/leads');
       if (response.ok) {
         const data = await response.json();
-        // Map _count.calls to calls for display
-        const mappedLeads = data.map((lead: any) => ({
-          ...lead,
-          calls: lead._count?.calls || 0,
-        }));
-        setLeads(mappedLeads);
+        setLeads(data);
       }
     } catch (error) {
       console.error('Failed to fetch leads:', error);
@@ -90,21 +73,19 @@ export default function LeadsPage() {
     }
   };
 
-  // Filter leads
   const filteredLeads = leads.filter(lead => {
     const matchesSearch = 
-      lead.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      lead.contactName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      lead.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      lead.niche.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      lead.phone.includes(searchQuery);
+      lead.companyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      lead.contactName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      lead.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      lead.niche?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      lead.phone?.includes(searchQuery);
     
     const matchesStatus = statusFilter === 'ALL' || lead.status === statusFilter;
     
     return matchesSearch && matchesStatus;
   });
 
-  // Stats
   const stats = {
     total: leads.length,
     new: leads.filter(l => l.status === 'NEW').length,
@@ -114,20 +95,13 @@ export default function LeadsPage() {
   };
 
   const handleAddLead = async () => {
-    if (!newLead.contactName || !newLead.phone) return;
+    if (!newLead.companyName || !newLead.phone) return;
     
     try {
       const response = await fetch('/api/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          companyName: newLead.companyName || 'Onbekend Bedrijf',
-          contactName: newLead.contactName,
-          email: newLead.email || '',
-          phone: newLead.phone,
-          city: newLead.city || '',
-          niche: newLead.niche || '',
-        }),
+        body: JSON.stringify(newLead),
       });
 
       if (response.ok) {
@@ -144,72 +118,45 @@ export default function LeadsPage() {
   return (
     <PageContainer>
       <PageHeader
-        title="Mijn Leads"
-        subtitle="Beheer en converteer je leads naar klanten"
+        title={t('leads')}
+        subtitle={t('dashboard')}
         icon={<Users className="w-6 h-6 text-white" />}
         action={
           <div className="flex gap-2">
             <ActionButton href="/dashboard" variant="secondary" icon={<ArrowLeft className="w-4 h-4" />}>
-              Dashboard
+              {t('dashboard')}
             </ActionButton>
             <ActionButton onClick={() => setShowAddModal(true)} variant="primary" icon={<Plus className="w-4 h-4" />}>
-              Lead Toevoegen
+              {t('addLead')}
             </ActionButton>
             <ActionButton href="/leads/import" variant="secondary" icon={<Upload className="w-4 h-4" />}>
-              Importeren
+              {t('importLeads')}
             </ActionButton>
           </div>
         }
         stats={[
-          { label: 'Totaal Leads', value: stats.total.toString() },
-          { label: 'Nieuw Deze Week', value: `+${stats.new}`, trend: '+12%' },
-          { label: 'Conversie Rate', value: '24%', trend: '+5%' },
-          { label: 'Te Bellen', value: stats.new.toString() },
+          { label: t('totalLeads'), value: stats.total.toString() },
+          { label: t('newThisWeek'), value: `+${stats.new}`, trend: '+12%' },
+          { label: t('conversionRate'), value: '24%', trend: '+5%' },
+          { label: t('toCall'), value: stats.new.toString() },
         ]}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-          <StatCard
-            label="Totaal"
-            value={stats.total}
-            icon={<Users className="w-5 h-5" />}
-            color="orange"
-          />
-          <StatCard
-            label="Nieuw"
-            value={stats.new}
-            icon={<AlertCircle className="w-5 h-5" />}
-            color="blue"
-          />
-          <StatCard
-            label="Gecontacteerd"
-            value={stats.contacted}
-            icon={<Phone className="w-5 h-5" />}
-            color="yellow"
-          />
-          <StatCard
-            label="Offerte"
-            value={stats.quoted}
-            icon={<CheckCircle2 className="w-5 h-5" />}
-            color="purple"
-          />
-          <StatCard
-            label="Verkocht"
-            value={stats.sold}
-            icon={<CheckCircle2 className="w-5 h-5" />}
-            color="green"
-            trend="up"
-            trendValue="+2"
-          />
+          <StatCard label={t('total')} value={stats.total} icon={<Users className="w-5 h-5" />} color="orange" />
+          <StatCard label={t('new')} value={stats.new} icon={<AlertCircle className="w-5 h-5" />} color="blue" />
+          <StatCard label={t('contacted')} value={stats.contacted} icon={<Phone className="w-5 h-5" />} color="yellow" />
+          <StatCard label={t('quoted')} value={stats.quoted} icon={<CheckCircle2 className="w-5 h-5" />} color="purple" />
+          <StatCard label={t('sold')} value={stats.sold} icon={<CheckCircle2 className="w-5 h-5" />} color="green" trend="up" trendValue="+2" />
         </div>
 
         {/* Filters & Search */}
         <div className="flex flex-col lg:flex-row gap-4 mb-6">
           <div className="flex-1">
             <SearchInput
-              placeholder="Zoek op bedrijf, contact, stad of telefoon..."
+              placeholder={t('searchPlaceholder')}
               value={searchQuery}
               onChange={setSearchQuery}
             />
@@ -219,21 +166,16 @@ export default function LeadsPage() {
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
                   statusFilter === status
-                    ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-lg'
-                    : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300'
+                    ? 'bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 text-white shadow-lg shadow-orange-500/30'
+                    : 'bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-orange-300'
                 }`}
               >
-                {status === 'ALL' ? 'Alle' : statusConfig[status as keyof typeof statusConfig]?.label || status}
+                {status === 'ALL' ? t('statusAll') : t(statusConfig[status]?.labelKey || 'statusNew')}
                 {status !== 'ALL' && (
-                  <span className={`ml-2 px-1.5 py-0.5 rounded-full text-xs ${
-                    statusFilter === status ? 'bg-white/20' : 'bg-gray-100'
-                  }`}>
-                    {status === 'NEW' ? stats.new : 
-                     status === 'CONTACTED' ? stats.contacted :
-                     status === 'QUOTED' ? stats.quoted :
-                     status === 'SALE_MADE' ? stats.sold : stats.total}
+                  <span className={`ml-2 px-1.5 py-0.5 rounded-full text-xs ${statusFilter === status ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-700'}`}>
+                    {status === 'NEW' ? stats.new : status === 'CONTACTED' ? stats.contacted : status === 'QUOTED' ? stats.quoted : stats.sold}
                   </span>
                 )}
               </button>
@@ -246,18 +188,18 @@ export default function LeadsPage() {
           <SmartCard className="p-12">
             <div className="flex flex-col items-center justify-center">
               <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-              <p className="text-gray-600">Leads laden...</p>
+              <p className="text-slate-600 dark:text-slate-400">{t('loading')}</p>
             </div>
           </SmartCard>
         ) : filteredLeads.length === 0 ? (
           <SmartCard>
             <EmptyState
               icon={<Users className="w-10 h-10" />}
-              title="Geen leads gevonden"
-              description={searchQuery ? "Pas je zoekopdracht aan." : "Voeg je eerste lead toe of importeer via CSV."}
+              title={t('noLeadsFound')}
+              description={searchQuery ? t('search') + "..." : t('noLeadsDescription')}
               action={
                 <ActionButton onClick={() => setShowAddModal(true)} variant="primary" icon={<Plus className="w-4 h-4" />}>
-                  Lead Toevoegen
+                  {t('addFirstLead')}
                 </ActionButton>
               }
             />
@@ -265,22 +207,22 @@ export default function LeadsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {filteredLeads.map((lead) => {
-              const status = statusConfig[lead.status as keyof typeof statusConfig];
-              const StatusIcon = status.icon;
+              const status = statusConfig[lead.status];
+              const StatusIcon = status?.icon || AlertCircle;
               
               return (
                 <SmartCard 
                   key={lead.id} 
-                  className={`group hover:border-orange-300 cursor-pointer ${lead.doNotCall ? 'border-rose-300 bg-rose-50/30' : ''}`}
-                  onClick={() => window.location.href = `/leads/${lead.id}`}
+                  className={`group cursor-pointer ${lead.doNotCall ? 'border-rose-200 dark:border-rose-500/30 bg-rose-50/50 dark:bg-rose-500/5' : ''}`}
+                  onClick={() => router.push(`/leads/${lead.id}`)}
                 >
                   <div className="p-5">
-                    {/* DNCM Warning Banner */}
+                    {/* DNCM Warning */}
                     {lead.doNotCall && (
-                      <div className="mb-4 p-3 bg-rose-100 border border-rose-200 rounded-xl">
-                        <p className="text-rose-800 font-medium text-sm flex items-center gap-2">
+                      <div className="mb-4 p-3 bg-rose-100 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl">
+                        <p className="text-rose-700 dark:text-rose-400 font-semibold text-sm flex items-center gap-2">
                           <PhoneOff className="w-4 h-4" />
-                          DNCM - Niet Bellen (GDPR)
+                          DNCM - {t('dncm')}
                         </p>
                       </div>
                     )}
@@ -288,78 +230,57 @@ export default function LeadsPage() {
                     {/* Header */}
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${lead.doNotCall ? 'bg-rose-100' : 'bg-gradient-to-br from-orange-100 to-orange-200'}`}>
-                          <Building2 className={`w-6 h-6 ${lead.doNotCall ? 'text-rose-600' : 'text-orange-600'}`} />
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${lead.doNotCall ? 'bg-rose-100 dark:bg-rose-500/20' : 'bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-500/20 dark:to-orange-600/20'}`}>
+                          <Building2 className={`w-6 h-6 ${lead.doNotCall ? 'text-rose-600 dark:text-rose-400' : 'text-orange-600 dark:text-orange-400'}`} />
                         </div>
                         <div className="min-w-0">
-                          <h3 className="font-semibold text-gray-900 truncate">{lead.companyName}</h3>
-                          <p className="text-sm text-gray-500">{lead.contactName}</p>
+                          <h3 className="font-bold text-slate-900 dark:text-white truncate">{lead.companyName}</h3>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">{lead.contactName || '-'}</p>
                         </div>
                       </div>
-                      <Badge variant={
-                        lead.status === 'NEW' ? 'info' :
-                        lead.status === 'CONTACTED' ? 'warning' :
-                        lead.status === 'QUOTED' ? 'default' :
-                        lead.status === 'SALE_MADE' ? 'success' : 'error'
-                      }>
+                      <Badge variant={status?.color as any || 'default'}>
                         <StatusIcon className="w-3 h-3 mr-1" />
-                        {status.label}
+                        {t(status?.labelKey || 'statusNew')}
                       </Badge>
                     </div>
 
                     {/* Contact Info */}
                     <div className="space-y-2 mb-4">
                       <div className="flex items-center gap-2 text-sm">
-                        <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                        <a href={`tel:${lead.phone}`} className="text-gray-700 hover:text-orange-600 truncate">
+                        <Phone className="w-4 h-4 text-slate-400" />
+                        <a href={`tel:${lead.phone}`} onClick={(e) => e.stopPropagation()} className="text-slate-700 dark:text-slate-300 hover:text-orange-600 dark:hover:text-orange-400 truncate">
                           {lead.phone}
                         </a>
                       </div>
                       {lead.email && (
                         <div className="flex items-center gap-2 text-sm">
-                          <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                          <span className="text-gray-600 truncate">{lead.email}</span>
+                          <Mail className="w-4 h-4 text-slate-400" />
+                          <span className="text-slate-600 dark:text-slate-400 truncate">{lead.email}</span>
                         </div>
                       )}
                       {lead.city && (
                         <div className="flex items-center gap-2 text-sm">
-                          <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                          <span className="text-gray-600">{lead.city}</span>
+                          <MapPin className="w-4 h-4 text-slate-400" />
+                          <span className="text-slate-600 dark:text-slate-400">{lead.city}</span>
                           {lead.niche && (
-                            <span className="text-gray-400">• {lead.niche}</span>
+                            <span className="text-slate-400 dark:text-slate-500">• {lead.niche}</span>
                           )}
                         </div>
                       )}
                     </div>
 
                     {/* Footer */}
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                      <div className="flex items-center gap-3 text-xs text-gray-500">
-                        {lead.calls > 0 ? (
-                          <span className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-lg">
-                            <Phone className="w-3 h-3" />
-                            {lead.calls}
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-1 text-orange-600 bg-orange-50 px-2 py-1 rounded-lg">
-                            <AlertCircle className="w-3 h-3" />
-                            Nog niet gebeld
-                          </span>
-                        )}
-                        {lead.lastContact && (
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {new Date(lead.lastContact).toLocaleDateString('nl-BE')}
-                          </span>
-                        )}
+                    <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700">
+                      <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                        <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg">
+                          <Calendar className="w-3 h-3" />
+                          {new Date(lead.createdAt).toLocaleDateString('nl-BE')}
+                        </span>
                       </div>
-                      <a
-                        href={`/call-center?lead=${lead.id}`}
-                        className="flex items-center gap-1 text-sm font-medium text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-lg transition-colors"
-                      >
-                        {lead.status === 'NEW' ? 'Bellen' : 'Openen'}
+                      <span className="flex items-center gap-1 text-sm font-semibold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/10 px-3 py-1.5 rounded-lg">
+                        {t('view')}
                         <ArrowRight className="w-4 h-4" />
-                      </a>
+                      </span>
                     </div>
                   </div>
                 </SmartCard>
@@ -371,136 +292,57 @@ export default function LeadsPage() {
 
       {/* Add Lead Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <SmartCard className="w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
-                    <Plus className="w-5 h-5 text-orange-600" />
+                  <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
+                    <Plus className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900">Nieuwe Lead</h2>
-                    <p className="text-sm text-gray-500">Voeg een lead handmatig toe</p>
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t('addLead')}</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">{t('addFirstLead')}</p>
                   </div>
                 </div>
-                <button
-                  onClick={() => setShowAddModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
+                <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                  <X className="w-5 h-5 text-slate-500" />
                 </button>
               </div>
 
               <div className="space-y-4">
-                {/* Required Fields */}
-                <div className="p-4 bg-orange-50 rounded-xl border border-orange-100">
-                  <p className="text-sm font-medium text-orange-800 mb-3">Verplichte velden *</p>
-                  
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Contactpersoon *
-                      </label>
-                      <input
-                        type="text"
-                        value={newLead.contactName}
-                        onChange={(e) => setNewLead({ ...newLead, contactName: e.target.value })}
-                        placeholder="bv. Jan Janssen"
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Telefoonnummer *
-                      </label>
-                      <input
-                        type="tel"
-                        value={newLead.phone}
-                        onChange={(e) => setNewLead({ ...newLead, phone: e.target.value })}
-                        placeholder="bv. 0471 23 45 67"
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
-                      />
-                    </div>
-                  </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('companyName')} *</label>
+                  <input type="text" value={newLead.companyName} onChange={(e) => setNewLead({...newLead, companyName: e.target.value})} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/30" />
                 </div>
-
-                {/* Optional Fields */}
-                <div className="p-4 bg-gray-50 rounded-xl">
-                  <p className="text-sm font-medium text-gray-600 mb-3">Optionele velden</p>
-                  
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Bedrijfsnaam
-                      </label>
-                      <input
-                        type="text"
-                        value={newLead.companyName}
-                        onChange={(e) => setNewLead({ ...newLead, companyName: e.target.value })}
-                        placeholder="bv. Tech Solutions BV"
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        value={newLead.email}
-                        onChange={(e) => setNewLead({ ...newLead, email: e.target.value })}
-                        placeholder="bv. jan@bedrijf.be"
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Stad
-                        </label>
-                        <input
-                          type="text"
-                          value={newLead.city}
-                          onChange={(e) => setNewLead({ ...newLead, city: e.target.value })}
-                          placeholder="bv. Antwerpen"
-                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Branche/Niche
-                        </label>
-                        <input
-                          type="text"
-                          value={newLead.niche}
-                          onChange={(e) => setNewLead({ ...newLead, niche: e.target.value })}
-                          placeholder="bv. Technologie"
-                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('contactName')}</label>
+                  <input type="text" value={newLead.contactName} onChange={(e) => setNewLead({...newLead, contactName: e.target.value})} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/30" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('phone')} *</label>
+                  <input type="text" value={newLead.phone} onChange={(e) => setNewLead({...newLead, phone: e.target.value})} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/30" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('email')}</label>
+                  <input type="email" value={newLead.email} onChange={(e) => setNewLead({...newLead, email: e.target.value})} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/30" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('city')}</label>
+                  <input type="text" value={newLead.city} onChange={(e) => setNewLead({...newLead, city: e.target.value})} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/30" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('niche')}</label>
+                  <input type="text" value={newLead.niche} onChange={(e) => setNewLead({...newLead, niche: e.target.value})} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/30" />
                 </div>
               </div>
 
               <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
-                >
-                  Annuleren
+                <button onClick={() => setShowAddModal(false)} className="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl transition-colors">
+                  {t('cancel')}
                 </button>
-                <button
-                  onClick={handleAddLead}
-                  disabled={!newLead.contactName || !newLead.phone}
-                  className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-orange-500 to-red-600 hover:shadow-lg rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Lead Opslaan
+                <button onClick={handleAddLead} disabled={!newLead.companyName || !newLead.phone} className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-orange-500 to-red-500 rounded-xl hover:shadow-lg disabled:opacity-50 transition-all">
+                  {t('save')}
                 </button>
               </div>
             </div>
