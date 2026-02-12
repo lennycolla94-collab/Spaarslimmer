@@ -269,7 +269,11 @@ export default function LeadsPage() {
               const StatusIcon = status.icon;
               
               return (
-                <SmartCard key={lead.id} className={`group hover:border-orange-300 ${lead.doNotCall ? 'border-rose-300 bg-rose-50/30' : ''}`}>
+                <SmartCard 
+                  key={lead.id} 
+                  className={`group hover:border-orange-300 cursor-pointer ${lead.doNotCall ? 'border-rose-300 bg-rose-50/30' : ''}`}
+                  onClick={() => window.location.href = `/leads/${lead.id}`}
+                >
                   <div className="p-5">
                     {/* DNCM Warning Banner */}
                     {lead.doNotCall && (

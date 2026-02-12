@@ -1,14 +1,14 @@
-import { getServerSession } from 'next-auth/next';
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
+// POST - Create a new call log
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Niet ingelogd' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -16,67 +16,68 @@ export async function POST(request: NextRequest) {
 
     if (!leadId || !result) {
       return NextResponse.json(
-        { error: 'Lead ID en resultaat zijn verplicht' },
+        { error: 'Lead ID and result are required' },
         { status: 400 }
       );
     }
 
-    const lead = await prisma.lead.findFirst({
-      where: {
-        id: leadId,
-        ownerId: session.user.id
-      }
-    });
+    // Verify ownership
+    const lead = await prisma.$queryRaw`
+      SELECT id FROM "Lead"
+      WHERE id = ${leadId} AND ownerid = ${session.user.id}
+      LIMIT 1
+    `;
 
-    if (!lead) {
-      return NextResponse.json(
-        { error: 'Lead niet gevonden' },
-        { status: 404 }
-      );
+    if (!(lead as any[]).length) {
+      return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
     }
 
-    // Create call record
-    const callRecord = await prisma.callLog.create({
-      data: {
-        leadId,
-        consultantId: session.user.id,
-        result,
-        notes: notes || null,
-        duration: duration || null,
-        calledAt: new Date()
-      }
-    });
+    // Insert call log
+    await prisma.$executeRaw`
+      INSERT INTO "CallLog" (
+        id, leadid, consultantid, result, notes, duration, calledat
+      ) VALUES (
+        gen_random_uuid(),
+        ${leadId},
+        ${session.user.id},
+        ${result},
+        ${notes || null},
+        ${duration || null},
+        NOW()
+      )
+    `;
 
-    // Update lead status based on result
-    let newStatus = lead.status;
-    if (result === 'CONVERSATION') {
-      newStatus = 'CONTACTED';
+    // Update lead status if needed
+    if (result === 'NOTE') {
+      // Just a note, don't change status
+    } else if (result === 'INTERESTED') {
+      await prisma.$executeRaw`
+        UPDATE "Lead" SET status = 'CONTACTED', updatedat = NOW()
+        WHERE id = ${leadId}
+      `;
+    } else if (result === 'QUOTED') {
+      await prisma.$executeRaw`
+        UPDATE "Lead" SET status = 'QUOTED', updatedat = NOW()
+        WHERE id = ${leadId}
+      `;
+    } else if (result === 'SALE') {
+      await prisma.$executeRaw`
+        UPDATE "Lead" SET status = 'SALE_MADE', updatedat = NOW()
+        WHERE id = ${leadId}
+      `;
     } else if (result === 'NOT_INTERESTED') {
-      newStatus = 'LOST';
-    } else if (result === 'QUOTE_SENT') {
-      newStatus = 'QUOTE_SENT';
+      await prisma.$executeRaw`
+        UPDATE "Lead" SET status = 'NOT_INTERESTED', updatedat = NOW()
+        WHERE id = ${leadId}
+      `;
     }
 
-    if (newStatus !== lead.status) {
-      await prisma.lead.update({
-        where: { id: leadId },
-        data: { status: newStatus }
-      });
-    }
+    return NextResponse.json({ success: true });
 
-    return NextResponse.json({
-      success: true,
-      call: {
-        id: callRecord.id,
-        result: callRecord.result,
-        calledAt: callRecord.calledAt
-      }
-    });
-
-  } catch (error) {
-    console.error('Call log error:', error);
+  } catch (error: any) {
+    console.error('Call POST error:', error);
     return NextResponse.json(
-      { error: 'Interne fout bij opslaan gesprek' },
+      { error: 'Failed to save call', details: error.message },
       { status: 500 }
     );
   }
