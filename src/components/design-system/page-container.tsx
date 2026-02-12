@@ -1,6 +1,9 @@
 'use client';
 
 import { ReactNode } from 'react';
+import { useTheme } from 'next-themes';
+import { useLanguage } from '@/components/language-provider';
+import { Moon, Sun, Globe } from 'lucide-react';
 
 interface PageContainerProps {
   children: ReactNode;
@@ -9,9 +12,40 @@ interface PageContainerProps {
 
 export function PageContainer({ children, className = '' }: PageContainerProps) {
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-white to-orange-50/30 ${className}`}>
+    <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-white to-orange-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 ${className}`}>
       {children}
     </div>
+  );
+}
+
+// Theme Toggle Component
+export function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  
+  return (
+    <button
+      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+      className="p-2 rounded-xl bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
+      aria-label="Toggle theme"
+    >
+      {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+    </button>
+  );
+}
+
+// Language Toggle Component
+export function LanguageToggle() {
+  const { language, setLanguage } = useLanguage();
+  
+  return (
+    <button
+      onClick={() => setLanguage(language === 'nl' ? 'fr' : 'nl')}
+      className="p-2 rounded-xl bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors font-medium text-sm"
+      aria-label="Toggle language"
+    >
+      <Globe className="w-4 h-4 inline mr-1" />
+      {language.toUpperCase()}
+    </button>
   );
 }
 
@@ -21,11 +55,12 @@ interface PageHeaderProps {
   icon?: ReactNode;
   action?: ReactNode;
   stats?: { label: string; value: string; trend?: string }[];
+  showThemeToggle?: boolean;
 }
 
-export function PageHeader({ title, subtitle, icon, action, stats }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, icon, action, stats, showThemeToggle = true }: PageHeaderProps) {
   return (
-    <header className="bg-white border-b border-gray-200/80 sticky top-0 z-40">
+    <header className="bg-white dark:bg-slate-800 border-b border-gray-200/80 dark:border-slate-700 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -35,21 +70,25 @@ export function PageHeader({ title, subtitle, icon, action, stats }: PageHeaderP
               </div>
             )}
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-              {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{title}</h1>
+              {subtitle && <p className="text-sm text-gray-500 dark:text-gray-400">{subtitle}</p>}
             </div>
           </div>
           
-          {action && <div className="flex-shrink-0">{action}</div>}
+          <div className="flex items-center gap-2">
+            <LanguageToggle />
+            {showThemeToggle && <ThemeToggle />}
+            {action && <div className="flex-shrink-0">{action}</div>}
+          </div>
         </div>
         
         {stats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-4 border-t border-gray-100">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-4 border-t border-gray-100 dark:border-slate-700">
             {stats.map((stat, idx) => (
               <div key={idx} className="text-center md:text-left">
-                <p className="text-xs text-gray-500 uppercase tracking-wider">{stat.label}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">{stat.label}</p>
                 <div className="flex items-baseline gap-2 justify-center md:justify-start">
-                  <p className="text-xl font-bold text-gray-900">{stat.value}</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
                   {stat.trend && (
                     <span className="text-xs text-green-600 font-medium">{stat.trend}</span>
                   )}
@@ -71,8 +110,8 @@ interface CardProps {
 
 export function SmartCard({ children, className = '', gradient = false }: CardProps) {
   return (
-    <div className={`bg-white rounded-2xl border border-gray-200/60 overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200 ${
-      gradient ? 'bg-gradient-to-br from-orange-50/50 to-white' : ''
+    <div className={`bg-white dark:bg-slate-800 rounded-2xl border border-gray-200/60 dark:border-slate-700 overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200 ${
+      gradient ? 'bg-gradient-to-br from-orange-50/50 to-white dark:from-slate-800 dark:to-slate-800' : ''
     } ${className}`}>
       {children}
     </div>
@@ -103,8 +142,8 @@ export function StatCard({ label, value, subtext, icon, trend, trendValue, color
     <SmartCard className="p-6">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm text-gray-500 mb-1">{label}</p>
-          <p className="text-3xl font-bold text-gray-900">{value}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{label}</p>
+          <p className="text-3xl font-bold text-gray-900 dark:text-white">{value}</p>
           {subtext && <p className="text-xs text-gray-400 mt-1">{subtext}</p>}
           {trend && trendValue && (
             <div className={`flex items-center gap-1 mt-2 text-sm ${
@@ -137,8 +176,8 @@ export function ActionButton({ children, onClick, href, variant = 'primary', ico
   
   const variantClasses = {
     primary: 'bg-gradient-to-r from-orange-500 to-red-600 text-white hover:shadow-lg hover:shadow-orange-500/25 hover:scale-105',
-    secondary: 'bg-white text-gray-700 border border-gray-200 hover:border-orange-300 hover:text-orange-600',
-    ghost: 'text-gray-600 hover:text-orange-600 hover:bg-orange-50',
+    secondary: 'bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600 hover:border-orange-300 hover:text-orange-600 dark:hover:text-orange-400',
+    ghost: 'text-gray-600 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-slate-700',
   };
   
   const sizeClasses = {
@@ -176,11 +215,11 @@ interface EmptyStateProps {
 export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
   return (
     <div className="text-center py-16 px-4">
-      <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center text-gray-400">
+      <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-slate-700 dark:to-slate-600 rounded-2xl flex items-center justify-center text-gray-400 dark:text-gray-500">
         {icon}
       </div>
-      <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-      <p className="text-gray-500 max-w-sm mx-auto mb-6">{description}</p>
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{title}</h3>
+      <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto mb-6">{description}</p>
       {action}
     </div>
   );
@@ -189,19 +228,20 @@ export function EmptyState({ icon, title, description, action }: EmptyStateProps
 interface BadgeProps {
   children: ReactNode;
   variant?: 'default' | 'success' | 'warning' | 'error' | 'info';
+  className?: string;
 }
 
-export function Badge({ children, variant = 'default' }: BadgeProps) {
+export function Badge({ children, variant = 'default', className = '' }: BadgeProps) {
   const variantClasses = {
-    default: 'bg-gray-100 text-gray-700',
-    success: 'bg-green-100 text-green-700 border border-green-200',
-    warning: 'bg-yellow-100 text-yellow-700 border border-yellow-200',
-    error: 'bg-red-100 text-red-700 border border-red-200',
-    info: 'bg-blue-100 text-blue-700 border border-blue-200',
+    default: 'bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-gray-300',
+    success: 'bg-green-100 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800',
+    warning: 'bg-yellow-100 text-yellow-700 border border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800',
+    error: 'bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800',
+    info: 'bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800',
   };
   
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${variantClasses[variant]}`}>
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${variantClasses[variant]} ${className}`}>
       {children}
     </span>
   );
@@ -224,7 +264,7 @@ export function SearchInput({ placeholder = 'Zoeken...', value, onChange }: Sear
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+        className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
       />
     </div>
   );
@@ -246,13 +286,13 @@ export function FilterTabs({ options, value, onChange }: FilterTabsProps) {
           className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
             value === option.value
               ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-lg shadow-orange-500/25'
-              : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300 hover:text-orange-600'
+              : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-slate-600 hover:border-orange-300 hover:text-orange-600 dark:hover:text-orange-400'
           }`}
         >
           {option.label}
           {option.count !== undefined && (
             <span className={`ml-2 px-1.5 py-0.5 rounded-full text-xs ${
-              value === option.value ? 'bg-white/20' : 'bg-gray-100'
+              value === option.value ? 'bg-white/20' : 'bg-gray-100 dark:bg-slate-600'
             }`}>
               {option.count}
             </span>
