@@ -16,6 +16,7 @@ export function CSVUploader() {
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<{headers: string[], rows: any[]} | null>(null);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     console.log('Files dropped:', acceptedFiles);
@@ -25,6 +26,28 @@ export function CSVUploader() {
         setFile(selectedFile);
         setError(null);
         setResult(null);
+        setPreview(null);
+        
+        // Preview the CSV
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const text = e.target?.result as string;
+          const lines = text.split('\n').filter(l => l.trim());
+          if (lines.length > 0) {
+            const delimiter = (lines[0].match(/;/g) || []).length > (lines[0].match(/,/g) || []).length ? ';' : ',';
+            const headers = lines[0].split(delimiter).map(h => h.trim());
+            const rows = lines.slice(1, 4).map(line => {
+              const values = line.split(delimiter);
+              const row: any = {};
+              headers.forEach((h, i) => {
+                row[h] = values[i]?.trim();
+              });
+              return row;
+            });
+            setPreview({ headers, rows });
+          }
+        };
+        reader.readAsText(selectedFile);
       } else {
         setError('Alleen .csv bestanden toegestaan');
       }
@@ -172,6 +195,7 @@ export function CSVUploader() {
     setError(null);
     setProgress(0);
     setUploading(false);
+    setPreview(null);
   };
 
   return (
@@ -230,6 +254,23 @@ export function CSVUploader() {
               </button>
             )}
           </div>
+          
+          {/* CSV Preview */}
+          {preview && (
+            <div className="mt-4 pt-4 border-t border-green-200">
+              <p className="text-sm font-medium text-green-800 mb-2">Gevonden kolommen:</p>
+              <div className="flex flex-wrap gap-1 mb-3">
+                {preview.headers.map((h, i) => (
+                  <span key={i} className="px-2 py-1 bg-green-200 text-green-800 text-xs rounded">
+                    {h}
+                  </span>
+                ))}
+              </div>
+              <p className="text-xs text-green-700">
+                {preview.rows.length} van {file.size > 1024 ? 'veel' : ''} rijen preview
+              </p>
+            </div>
+          )}
         </div>
       )}
 
