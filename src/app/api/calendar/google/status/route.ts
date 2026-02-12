@@ -32,17 +32,24 @@ export async function GET(request: NextRequest) {
 
 // Helper functie om Google OAuth URL te genereren
 function getGoogleAuthUrl() {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
+  // Trim de client ID (kan spaties/newlines bevatten bij copy-paste)
+  const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
   const redirectUri = `${process.env.NEXTAUTH_URL}/api/calendar/google/callback`;
   
-  console.log('Generating Google Auth URL:', {
-    clientId: clientId ? 'SET' : 'NOT SET',
+  console.log('Google OAuth Debug:', {
+    clientIdLength: clientId?.length,
+    clientIdStart: clientId?.slice(0, 10),
+    clientIdEnd: clientId?.slice(-10),
     redirectUri,
-    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
   });
   
+  if (!clientId) {
+    console.error('GOOGLE_CLIENT_ID is not set!');
+    return '#';
+  }
+  
   const params = new URLSearchParams({
-    client_id: clientId || '',
+    client_id: clientId,
     redirect_uri: redirectUri,
     scope: 'https://www.googleapis.com/auth/calendar.events',
     response_type: 'code',

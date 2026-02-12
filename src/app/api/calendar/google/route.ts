@@ -70,6 +70,14 @@ ${notes || 'Geen notities'}
       colorId: type === 'physical' ? '6' : '9', // Oranje voor fysiek, blauw voor call
     };
 
+    // Debug log
+    console.log('Creating calendar event:', {
+      leadId,
+      date,
+      time,
+      hasAccessToken: !!accessToken,
+    });
+
     // Call Google Calendar API
     const response = await fetch(`${GOOGLE_CALENDAR_API}/calendars/primary/events`, {
       method: 'POST',
