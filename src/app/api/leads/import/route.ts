@@ -72,8 +72,8 @@ export async function POST(request: NextRequest) {
         await prisma.$executeRaw`
           INSERT INTO "Lead" (
             id, companyname, phone, phonehash, status, 
-            "ownerId", source, "consentPhone", "doNotCall",
-            "createdAt", "updatedAt"
+            ownerid, source, consentphone, donotcall,
+            createdat, updatedat
           ) VALUES (
             gen_random_uuid(), 
             ${safeCompanyName}, 
