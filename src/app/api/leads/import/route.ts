@@ -36,11 +36,27 @@ export async function POST(request: NextRequest) {
     });
 
     const rows = parseResult.data as any[];
-    const MAX_ROWS = 500; // Limiet om timeout te voorkomen
+    
+    // Debug: log eerste rij om kolomnamen te zien
+    console.log('CSV Headers:', parseResult.meta.fields);
+    console.log('First row:', rows[0]);
+    
+    const MAX_ROWS = 500;
     
     if (rows.length > MAX_ROWS) {
       return NextResponse.json({ 
         error: `Bestand te groot. Maximum ${MAX_ROWS} leads per import. Jouw bestand heeft ${rows.length} leads. Split het bestand in kleinere delen.`
+      }, { status: 400 });
+    }
+
+    // Check of de vereiste kolommen aanwezig zijn
+    const headers = parseResult.meta.fields || [];
+    const hasBedrijfsnaam = headers.some((h: string) => h.toLowerCase().includes('bedrijf') || h.toLowerCase().includes('company'));
+    const hasTelefoon = headers.some((h: string) => h.toLowerCase().includes('telefoon') || h.toLowerCase().includes('phone') || h.toLowerCase().includes('tel'));
+    
+    if (!hasBedrijfsnaam || !hasTelefoon) {
+      return NextResponse.json({ 
+        error: `CSV kolommen niet herkend. Gevonden kolommen: ${headers.join(', ')}. Vereist: Bedrijfsnaam en TelefoonNummer (of varianten zoals Company, Phone, etc.)`
       }, { status: 400 });
     }
 
@@ -59,9 +75,21 @@ export async function POST(request: NextRequest) {
         const rowNum = batchStart + idx + 1;
         
         try {
-          // Vereiste velden
-          const rawPhone = row['TelefoonNummer'];
-          const companyName = row['Bedrijfsnaam']?.toString().trim();
+          // Helper functie om kolom waarde te vinden (case insensitive)
+          const getValue = (...possibleNames: string[]): string | undefined => {
+            for (const name of possibleNames) {
+              // Exact match
+              if (row[name] !== undefined) return row[name];
+              // Case insensitive match
+              const key = Object.keys(row).find(k => k.toLowerCase() === name.toLowerCase());
+              if (key) return row[key];
+            }
+            return undefined;
+          };
+
+          // Vereiste velden (meerdere mogelijke kolomnamen)
+          const rawPhone = getValue('TelefoonNummer', 'telefoonnummer', 'Telefoon', 'telefoon', 'Phone', 'phone', 'Tel', 'tel', 'GSM', 'gsm', 'Mobiel', 'mobiel');
+          const companyName = getValue('Bedrijfsnaam', 'bedrijfsnaam', 'Bedrijf', 'bedrijf', 'Company', 'company', 'Naam', 'naam')?.toString().trim();
           
           if (!rawPhone || !companyName || companyName === '') {
             errors.push(`Rij ${rowNum}: Mist telefoonnummer of bedrijfsnaam`);
@@ -84,15 +112,15 @@ export async function POST(request: NextRequest) {
             return;
           }
 
-          // Optionele velden
-          const contactName = row['Contactpersoon']?.toString().trim() || null;
-          const niche = row['Niche']?.toString().trim() || null;
-          const address = row['Adres']?.toString().trim() || null;
-          const postalCode = row['Postcode']?.toString().trim() || null;
-          const city = row['Gemeente']?.toString().trim() || null;
-          const province = row['Provincie']?.toString().trim() || null;
-          const email = row['Email']?.toString().trim() || null;
-          const currentProvider = row['HuidigeProvider']?.toString().trim() || null;
+          // Optionele velden (flexibele kolomnamen)
+          const contactName = getValue('Contactpersoon', 'contactpersoon', 'Contact', 'contact', 'Contactpers', 'contactpers')?.toString().trim() || null;
+          const niche = getValue('Niche', 'niche', 'Sector', 'sector', 'Branche', 'branche', 'Industrie', 'industrie')?.toString().trim() || null;
+          const address = getValue('Adres', 'adres', 'Adress', 'adress', 'Straat', 'straat', 'Address', 'address')?.toString().trim() || null;
+          const postalCode = getValue('Postcode', 'postcode', 'Post code', 'post code', 'Zip', 'zip', 'Zipcode', 'zipcode')?.toString().trim() || null;
+          const city = getValue('Gemeente', 'gemeente', 'Stad', 'stad', 'City', 'city', 'Plaats', 'plaats')?.toString().trim() || null;
+          const province = getValue('Provincie', 'provincie', 'Province', 'province', 'State', 'state')?.toString().trim() || null;
+          const email = getValue('Email', 'email', 'E-mail', 'e-mail', 'Mail', 'mail', 'E-mailadres', 'e-mailadres')?.toString().trim() || null;
+          const currentProvider = getValue('HuidigeProvider', 'huidigeprovider', 'Provider', 'provider', 'Huidige provider', 'huidige provider', 'Leverancier', 'leverancier')?.toString().trim() || null;
           
           const safeCompanyName = companyName || 'Onbekend Bedrijf';
           
