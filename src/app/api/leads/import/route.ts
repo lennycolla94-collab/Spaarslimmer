@@ -29,9 +29,7 @@ export async function POST(request: NextRequest) {
     const firstLine = csvText.split('\n')[0];
     const semiCount = (firstLine.match(/;/g) || []).length;
     const commaCount = (firstLine.match(/,/g) || []).length;
-    
-    let delimiter = ',';
-    if (semiCount > commaCount) delimiter = ';';
+    const delimiter = semiCount > commaCount ? ';' : ',';
     
     // Parse CSV
     const parseResult = Papa.parse(csvText, {
@@ -41,57 +39,56 @@ export async function POST(request: NextRequest) {
     });
 
     const rows = parseResult.data as any[];
+    
+    // DEBUG: Log wat we hebben
+    console.log('Total rows:', rows.length);
+    console.log('First row:', JSON.stringify(rows[0]));
+    console.log('Columns:', Object.keys(rows[0] || {}));
+
     if (rows.length === 0) {
-      return NextResponse.json({ error: 'Geen data' }, { status: 400 });
+      return NextResponse.json({ error: 'Geen data gevonden' }, { status: 400 });
     }
 
     let imported = 0;
     let duplicates = 0;
     let errors = [] as string[];
 
-    // Verzamel alle phoneHashes uit CSV
-    const phoneHashesInFile = new Set<string>();
-
-    for (let i = 0; i < rows.length; i++) {
+    for (let i = 0; i < Math.min(rows.length, 50); i++) { // Max 50 voor test
       const row = rows[i];
       
-      const rawPhone = row.TelefoonNummer;
-      const companyName = row.Bedrijfsnaam;
-      
-      if (!rawPhone || !companyName) {
-        errors.push(`Rij ${i + 1}: Telefoon of bedrijf mist`);
-        continue;
-      }
-
-      const cleanPhone = rawPhone.toString().replace(/\D/g, '');
-      
-      if (cleanPhone.length < 7) {
-        errors.push(`Rij ${i + 1}: Telefoon te kort`);
-        continue;
-      }
-
-      const phoneHash = crypto.createHash('sha256').update(cleanPhone).digest('hex');
-      
-      // Check duplicate in huidige file
-      if (phoneHashesInFile.has(phoneHash)) {
-        duplicates++;
-        continue;
-      }
-      phoneHashesInFile.add(phoneHash);
-
-      // Check duplicate in database
-      const existing = await prisma.lead.findFirst({
-        where: { phoneHash }
-      });
-      
-      if (existing) {
-        duplicates++;
-        continue;
-      }
-
       try {
-        // Insert zonder ON CONFLICT
-        await prisma.lead.create({
+        // Haal data op met verschillende mogelijke kolomnamen
+        const rawPhone = row['TelefoonNummer'] || row['telefoonNummer'] || row['telefoonnummer'];
+        const companyName = row['Bedrijfsnaam'] || row['bedrijfsnaam'];
+        
+        console.log(`Row ${i + 1}: phone=${rawPhone}, company=${companyName}`);
+        
+        if (!rawPhone || !companyName) {
+          errors.push(`Rij ${i + 1}: Mist data`);
+          continue;
+        }
+
+        const cleanPhone = rawPhone.toString().replace(/\D/g, '');
+        
+        if (cleanPhone.length < 7) {
+          errors.push(`Rij ${i + 1}: Telefoon te kort: ${cleanPhone}`);
+          continue;
+        }
+
+        const phoneHash = crypto.createHash('sha256').update(cleanPhone).digest('hex');
+
+        // Check duplicate
+        const existing = await prisma.lead.findFirst({
+          where: { phoneHash }
+        });
+        
+        if (existing) {
+          duplicates++;
+          continue;
+        }
+
+        // Insert
+        const newLead = await prisma.lead.create({
           data: {
             companyName: companyName.toString().trim(),
             phone: cleanPhone,
@@ -103,19 +100,25 @@ export async function POST(request: NextRequest) {
             consentPhone: true,
           }
         });
+        
+        console.log(`Row ${i + 1}: CREATED ${newLead.id}`);
         imported++;
-      } catch (dbErr: any) {
-        if (dbErr.code === 'P2002') {
-          duplicates++; // Duplicate key
-        } else {
-          errors.push(`Rij ${i + 1}: ${dbErr.message}`);
-        }
+        
+      } catch (err: any) {
+        console.error(`Row ${i + 1} ERROR:`, err.message);
+        errors.push(`Rij ${i + 1}: ${err.message}`);
       }
     }
 
-    return NextResponse.json({ imported, duplicates, errors: errors.slice(0, 5) });
+    return NextResponse.json({ 
+      imported, 
+      duplicates, 
+      errors: errors.slice(0, 5),
+      message: `Processed ${Math.min(rows.length, 50)} rows`
+    });
 
   } catch (error: any) {
+    console.error('IMPORT ERROR:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
