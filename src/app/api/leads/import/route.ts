@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File;
 
     if (!file) {
-      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+      return NextResponse.json({ error: 'No file' }, { status: 400 });
     }
 
     let csvText = await file.text();
@@ -26,7 +26,6 @@ export async function POST(request: NextRequest) {
       csvText = csvText.substring(1);
     }
     
-    // Detecteer delimiter
     const firstLine = csvText.split('\n')[0];
     const semiCount = (firstLine.match(/;/g) || []).length;
     const commaCount = (firstLine.match(/,/g) || []).length;
@@ -44,77 +43,56 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Geen data' }, { status: 400 });
     }
 
-    const results = {
-      imported: 0,
-      errors: [] as string[]
-    };
-
-    // Import één voor één
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      
-      try {
-        const rawPhone = row.TelefoonNummer || row.Telefoon || row.telefoon || row.phone;
-        const companyName = row.Bedrijfsnaam || row.Bedrijf || row.bedrijf;
-        
-        if (!rawPhone || !companyName) {
-          results.errors.push(`Rij ${i + 1}: Missing data`);
-          continue;
-        }
-
-        const cleanPhone = rawPhone.toString().replace(/\D/g, '');
-        
-        if (cleanPhone.length < 7) {
-          results.errors.push(`Rij ${i + 1}: Phone too short`);
-          continue;
-        }
-
-        // Genereer hash
-        const phoneHash = crypto.createHash('sha256').update(cleanPhone).digest('hex');
-
-        // Parse "Niet bellen"
-        const nietBellen = row['Niet bellen'] || '';
-        const doNotCall = nietBellen.toString().toLowerCase().trim() === 'ja';
-
-        // Insert met try/catch per rij
-        try {
-          await prisma.lead.create({
-            data: {
-              companyName: companyName.toString().trim(),
-              phone: cleanPhone,
-              phoneHash: phoneHash,
-              status: 'NEW',
-              ownerId: session.user.id,
-              source: 'IMPORT',
-              doNotCall: doNotCall,
-              consentPhone: true,
-            }
-          });
-          results.imported++;
-        } catch (dbErr: any) {
-          // Als duplicate, negeren
-          if (dbErr.code === 'P2002') {
-            // Duplicate - skip
-          } else {
-            results.errors.push(`Rij ${i + 1}: DB error`);
-          }
-        }
-      } catch (err: any) {
-        results.errors.push(`Rij ${i + 1}: ${err.message}`);
-      }
+    // Test eerst 1 rij
+    const testRow = rows[0];
+    const rawPhone = testRow.TelefoonNummer || testRow.Telefoon || testRow.telefoon || testRow.phone;
+    const companyName = testRow.Bedrijfsnaam || testRow.Bedrijf || testRow.bedrijf;
+    
+    if (!rawPhone || !companyName) {
+      return NextResponse.json({ 
+        error: 'Missing data in first row',
+        phone: rawPhone,
+        company: companyName
+      }, { status: 400 });
     }
 
-    return NextResponse.json({
-      imported: results.imported,
-      duplicates: 0,
-      errors: results.errors.slice(0, 10),
-      totalErrors: results.errors.length
-    });
+    const cleanPhone = rawPhone.toString().replace(/\D/g, '');
+    const phoneHash = crypto.createHash('sha256').update(cleanPhone).digest('hex');
+
+    // Probeer 1 lead te maken
+    try {
+      const lead = await prisma.lead.create({
+        data: {
+          companyName: companyName.toString().trim(),
+          phone: cleanPhone,
+          phoneHash: phoneHash,
+          status: 'NEW',
+          ownerId: session.user.id,
+          source: 'IMPORT',
+          doNotCall: false,
+          consentPhone: true,
+        }
+      });
+      
+      return NextResponse.json({
+        success: true,
+        message: 'Test lead created',
+        leadId: lead.id,
+        totalRows: rows.length
+      });
+      
+    } catch (dbErr: any) {
+      return NextResponse.json({ 
+        error: 'DB Error on first row',
+        code: dbErr.code,
+        message: dbErr.message,
+        meta: dbErr.meta
+      }, { status: 500 });
+    }
 
   } catch (error: any) {
-    console.error('Import error:', error);
     return NextResponse.json(
-      { error: 'Import failed', details: error.message },
+      { error: 'Import failed', message: error.message },
       { status: 500 }
     );
   }
