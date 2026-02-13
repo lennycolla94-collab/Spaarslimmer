@@ -32,6 +32,7 @@ model User {
   calls         CallLog[]
   commissions   Commission[]
   queueItems    QueueItem[]
+  offers        Offer[]
   
   @@index([sponsorId])
   @@index([email])
@@ -86,6 +87,7 @@ model Lead {
   sales             Sale[]
   calls             CallLog[]
   queueItems        QueueItem[]
+  offers            Offer[]
   
   @@index([ownerId])
   @@index([status])
@@ -210,6 +212,47 @@ model Appointment {
   @@index([appointmentDate])
   @@index([status])
   @@map("appointments")
+}
+
+// OFFER MODEL
+model Offer {
+  id              String   @id @default(cuid())
+  leadId          String
+  lead            Lead     @relation(fields: [leadId], references: [id])
+  consultantId    String
+  consultant      User     @relation(fields: [consultantId], references: [id])
+  
+  // Offer details
+  products        Json     // Array of {type, plan, retailValue, aspValue}
+  totalRetail     Float    // Totale maandwaarde
+  totalASP        Float    // Totale ASP punten
+  customerSavings Float    // Klant besparing
+  
+  // Commission calculation (auto-calculated)
+  potentialCommission Float?  // Bij verstuurd
+  effectiveCommission Float?  // Bij geaccepteerd
+  
+  // Status tracking
+  status          String   @default("DRAFT") // DRAFT, SENT, ACCEPTED, REJECTED, EXPIRED
+  sentAt          DateTime?
+  acceptedAt      DateTime?
+  
+  // Communication
+  emailSent       Boolean  @default(false)
+  emailOpened     Boolean  @default(false)
+  
+  // PDF/Document
+  pdfUrl          String?
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([consultantId])
+  @@index([leadId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("offers")
 }
 
 // AUDIT LOG
