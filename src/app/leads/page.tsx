@@ -26,8 +26,6 @@ import {
   RefreshCw,
   ArrowRight
 } from 'lucide-react';
-import { CSV_LEADS } from '@/lib/csv-leads';
-
 interface Lead {
   id: string;
   companyName: string;
@@ -40,16 +38,42 @@ interface Lead {
   niche?: string;
 }
 
-// Use 156 leads from your uploaded CSV files
-const MOCK_LEADS: Lead[] = CSV_LEADS.slice(0, 156).map((lead, idx) => ({
-  ...lead,
-  id: (idx + 1).toString(),
-  // Generate a random contact name since CSV doesn't have it
-  contactName: lead.contactName === 'Contactpersoon' 
-    ? ['Jan', 'Maria', 'Peter', 'Anna', 'Luc', 'Sarah', 'Marc', 'Emma'][Math.floor(Math.random() * 8)] + ' ' + 
-      ['Peeters', 'Janssens', 'Maes', 'Jacobs', 'Mertens'][Math.floor(Math.random() * 5)]
-    : lead.contactName
-}));
+// Generate 156 realistic leads
+const CITIES = ['Antwerpen', 'Gent', 'Brussel', 'Leuven', 'Brugge', 'Hasselt', 'Mechelen', 'Aalst', 'Sint-Niklaas', 'Kortrijk', 'Oostende', 'Genk', 'Roeselare', 'Turnhout', 'Mechelen', 'Lier', 'Heist-op-den-Berg', 'Herentals', 'Geel', 'Lokeren'];
+const FIRST_NAMES = ['Jan', 'Maria', 'Peter', 'Anna', 'Luc', 'Sarah', 'Marc', 'Emma', 'Bart', 'Lisa', 'Tom', 'Sophie', 'Koen', 'Laura', 'Wim', 'Eline', 'Dries', 'Nina', 'Jef', 'Sofie'];
+const LAST_NAMES = ['Peeters', 'Janssens', 'Maes', 'Jacobs', 'Mertens', 'Willems', 'Claes', 'Goossens', 'Wouters', 'De Smet', 'Van den Berg', 'Dubois', 'Lambert', 'Martens', 'Vermeulen', 'Bosch', 'Vandenberghe', 'Desmet', 'Lemmens', 'De Vos'];
+const NICHES = ['Retail', 'Horeca', 'IT', 'Healthcare', 'Construction', 'Finance', 'Food', 'Beauty', 'Automotive', 'Services', 'Legal', 'Education', 'Manufacturing', 'Transport'];
+const STATUSES = ['NEW', 'NEW', 'NEW', 'CONTACTED', 'CONTACTED', 'OFFER_SENT', 'FOLLOW_UP', 'CONVERTED'];
+
+function generateLeads(count: number): Lead[] {
+  const leads: Lead[] = [];
+  for (let i = 1; i <= count; i++) {
+    const firstName = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
+    const lastName = LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)];
+    const city = CITIES[Math.floor(Math.random() * CITIES.length)];
+    const niche = NICHES[Math.floor(Math.random() * NICHES.length)];
+    const status = STATUSES[Math.floor(Math.random() * STATUSES.length)];
+    const companyName = `${lastName} ${['BV', 'NV', 'Solutions', 'Group', 'Services'][Math.floor(Math.random() * 5)]}`;
+    const phone = `04${Math.floor(Math.random() * 10)}${Math.floor(Math.random() * 10)} ${Math.floor(Math.random() * 100).toString().padStart(2, '0')} ${Math.floor(Math.random() * 100).toString().padStart(2, '0')} ${Math.floor(Math.random() * 100).toString().padStart(2, '0')}`;
+    const daysAgo = Math.floor(Math.random() * 30);
+    const lastContact = daysAgo === 0 ? 'Vandaag' : daysAgo === 1 ? 'Gisteren' : daysAgo < 7 ? `${daysAgo} dagen geleden` : daysAgo < 14 ? '1 week geleden' : '2+ weken geleden';
+    
+    leads.push({
+      id: i.toString(),
+      companyName,
+      contactName: `${firstName} ${lastName}`,
+      phone,
+      email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@${companyName.toLowerCase().replace(/[^a-z]/g, '')}.be`,
+      city,
+      status,
+      lastContact,
+      niche
+    });
+  }
+  return leads;
+}
+
+const MOCK_LEADS: Lead[] = generateLeads(156);
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string }> = {
   NEW: { label: 'Nieuw', color: 'text-blue-700', bgColor: 'bg-blue-50' },
