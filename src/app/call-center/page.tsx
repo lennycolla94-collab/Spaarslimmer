@@ -1,7 +1,5 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
 import { useState, useEffect } from 'react';
 import { PremiumLayout } from '@/components/design-system/premium-layout';
 import { 

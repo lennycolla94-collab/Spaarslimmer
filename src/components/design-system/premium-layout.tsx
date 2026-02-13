@@ -98,8 +98,9 @@ const quickActions = [
 export function PremiumLayout({ children, user }: PremiumLayoutProps) {
   const pathname = usePathname();
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const { resolvedTheme } = useTheme();
-
+  const themeContext = useTheme();
+  
+  const resolvedTheme = themeContext?.resolvedTheme || 'light';
   const isDark = resolvedTheme === 'dark';
 
   return (

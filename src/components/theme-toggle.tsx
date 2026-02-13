@@ -4,7 +4,11 @@ import { Sun, Moon, Monitor } from 'lucide-react';
 import { useTheme } from './theme-provider';
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+  const themeContext = useTheme();
+  
+  // Fallback als theme niet beschikbaar is
+  const theme = themeContext?.theme || 'light';
+  const setTheme = themeContext?.setTheme || (() => {});
 
   return (
     <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1 gap-1">
