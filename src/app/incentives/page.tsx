@@ -21,8 +21,9 @@ import {
   Diamond,
   Car,
   Smartphone,
-  Briefcase,
-  Award
+  Award,
+  ArrowRight,
+  Sparkles
 } from 'lucide-react';
 
 // Extended incentives data
@@ -191,16 +192,16 @@ export default function IncentivesPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Incentives & Beloningen</h1>
-          <p className="text-gray-500 mt-1">Prestatiebeloningen, trips en bonussen</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Incentives & Beloningen</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Prestatiebeloningen, trips en bonussen</p>
         </div>
         <div className="flex items-center gap-4">
           <div className="text-right">
-            <p className="text-sm text-gray-500">Jouw PQS Punten</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Jouw PQS Punten</p>
             <p className="text-2xl font-bold text-orange-600">1,850</p>
           </div>
           <div className="text-right">
-            <p className="text-sm text-gray-500">Rank</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Rank</p>
             <p className="text-2xl font-bold text-purple-600">#8</p>
           </div>
           <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-pink-600 rounded-xl flex items-center justify-center">
@@ -211,45 +212,25 @@ export default function IncentivesPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-        <div className="bg-blue-50 rounded-xl border border-blue-200 p-4">
-          <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center mb-3">
-            <Target className="w-5 h-5 text-white" />
+        {[
+          { icon: Target, label: 'Actieve Doelen', value: '6', color: 'blue' },
+          { icon: CheckCircle2, label: 'Behaald', value: '3', color: 'green' },
+          { icon: Trophy, label: 'Huidige Rank', value: '#8', color: 'purple' },
+          { icon: Zap, label: 'Streak', value: '15 dagen', color: 'orange' },
+          { icon: Award, label: 'Volgende Bonus', value: '€500', color: 'pink' },
+        ].map((stat, i) => (
+          <div key={i} className={`bg-${stat.color}-50 dark:bg-${stat.color}-500/10 rounded-xl border border-${stat.color}-200 dark:border-${stat.color}-500/20 p-4 hover:shadow-md transition-shadow`}>
+            <div className={`w-10 h-10 bg-${stat.color}-500 rounded-lg flex items-center justify-center mb-3`}>
+              <stat.icon className="w-5 h-5 text-white" />
+            </div>
+            <p className={`text-sm text-${stat.color}-600 dark:text-${stat.color}-400`}>{stat.label}</p>
+            <p className={`text-2xl font-bold text-${stat.color}-900 dark:text-${stat.color}-100`}>{stat.value}</p>
           </div>
-          <p className="text-sm text-blue-600">Actieve Doelen</p>
-          <p className="text-2xl font-bold text-blue-900">6</p>
-        </div>
-        <div className="bg-green-50 rounded-xl border border-green-200 p-4">
-          <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center mb-3">
-            <CheckCircle2 className="w-5 h-5 text-white" />
-          </div>
-          <p className="text-sm text-green-600">Behaald</p>
-          <p className="text-2xl font-bold text-green-900">3</p>
-        </div>
-        <div className="bg-purple-50 rounded-xl border border-purple-200 p-4">
-          <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center mb-3">
-            <Trophy className="w-5 h-5 text-white" />
-          </div>
-          <p className="text-sm text-purple-600">Huidige Rank</p>
-          <p className="text-2xl font-bold text-purple-900">#8</p>
-        </div>
-        <div className="bg-orange-50 rounded-xl border border-orange-200 p-4">
-          <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center mb-3">
-            <Zap className="w-5 h-5 text-white" />
-          </div>
-          <p className="text-sm text-orange-600">Streak</p>
-          <p className="text-2xl font-bold text-orange-900">15 dagen</p>
-        </div>
-        <div className="bg-pink-50 rounded-xl border border-pink-200 p-4">
-          <div className="w-10 h-10 bg-pink-500 rounded-lg flex items-center justify-center mb-3">
-            <Award className="w-5 h-5 text-white" />
-          </div>
-          <p className="text-sm text-pink-600">Volgende Bonus</p>
-          <p className="text-2xl font-bold text-pink-900">€500</p>
-        </div>
+        ))}
       </div>
 
       {/* Category Filter */}
-      <div className="bg-white rounded-xl border border-gray-200 p-2 mb-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-2 mb-6">
         <div className="flex flex-wrap gap-2">
           {categories.map((cat) => (
             <button
@@ -257,13 +238,13 @@ export default function IncentivesPage() {
               onClick={() => setSelectedCategory(cat.id)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
                 selectedCategory === cat.id
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
+                  : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600'
               }`}
             >
               {cat.label}
               <span className={`px-1.5 py-0.5 rounded text-xs ${
-                selectedCategory === cat.id ? 'bg-gray-700' : 'bg-gray-200'
+                selectedCategory === cat.id ? 'bg-gray-700 dark:bg-gray-200' : 'bg-gray-200 dark:bg-slate-600'
               }`}>
                 {cat.count}
               </span>
@@ -276,31 +257,20 @@ export default function IncentivesPage() {
         {/* Main Incentives */}
         <div className="lg:col-span-2">
           {/* Tabs */}
-          <div className="bg-white rounded-xl border border-gray-200 p-1 mb-6 inline-flex">
-            <button
-              onClick={() => setActiveTab('ACTIVE')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'ACTIVE' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              Actief
-            </button>
-            <button
-              onClick={() => setActiveTab('COMPLETED')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'COMPLETED' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              Behaald
-            </button>
-            <button
-              onClick={() => setActiveTab('UPCOMING')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'UPCOMING' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              Aankomend
-            </button>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-1 mb-6 inline-flex">
+            {['ACTIVE', 'COMPLETED', 'UPCOMING'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === tab 
+                    ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900' 
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
+                }`}
+              >
+                {tab === 'ACTIVE' ? 'Actief' : tab === 'COMPLETED' ? 'Behaald' : 'Aankomend'}
+              </button>
+            ))}
           </div>
 
           {/* Incentives List */}
@@ -310,7 +280,7 @@ export default function IncentivesPage() {
                 const Icon = incentive.icon;
                 const percentage = (incentive.progress / incentive.target) * 100;
                 return (
-                  <div key={incentive.id} className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+                  <div key={incentive.id} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6 hover:shadow-lg transition-shadow">
                     <div className="flex items-start gap-4">
                       <div className={`w-16 h-16 bg-gradient-to-br ${incentive.color} rounded-2xl flex items-center justify-center flex-shrink-0`}>
                         <Icon className="w-8 h-8 text-white" />
@@ -319,39 +289,29 @@ export default function IncentivesPage() {
                         <div className="flex items-start justify-between mb-2">
                           <div>
                             <div className="flex items-center gap-2 mb-1">
-                              <h3 className="font-semibold text-gray-900 text-lg">{incentive.name}</h3>
-                              <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
+                              <h3 className="font-semibold text-gray-900 dark:text-white text-lg">{incentive.name}</h3>
+                              <span className="px-2 py-0.5 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 text-xs rounded-full">
                                 {incentive.requiredRank}
                               </span>
                             </div>
-                            <p className="text-gray-500">{incentive.description}</p>
+                            <p className="text-gray-500 dark:text-gray-400">{incentive.description}</p>
                           </div>
-                          <span className="text-2xl font-bold text-orange-600">
-                            {Math.round(percentage)}%
-                          </span>
+                          <span className="text-2xl font-bold text-orange-600">{Math.round(percentage)}%</span>
                         </div>
-                        
-                        {/* Progress */}
                         <div className="mb-3">
                           <div className="flex items-center justify-between text-sm mb-1">
-                            <span className="text-gray-500">{incentive.progress} / {incentive.target} punten</span>
-                            <span className="text-gray-500">Deadline: {incentive.deadline}</span>
+                            <span className="text-gray-500 dark:text-gray-400">{incentive.progress} / {incentive.target} punten</span>
+                            <span className="text-gray-500 dark:text-gray-400">Deadline: {incentive.deadline}</span>
                           </div>
-                          <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                            <div 
-                              className={`h-full bg-gradient-to-r ${incentive.color} rounded-full transition-all`}
-                              style={{ width: `${percentage}%` }}
-                            />
+                          <div className="h-3 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div className={`h-full bg-gradient-to-r ${incentive.color} rounded-full transition-all`} style={{ width: `${percentage}%` }} />
                           </div>
                         </div>
-
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">
                             <span className="font-semibold">Beloning:</span> {incentive.reward}
                           </span>
-                          <span className="text-xs text-gray-400">
-                            {incentive.participants} deelnemers
-                          </span>
+                          <span className="text-xs text-gray-400 dark:text-gray-500">{incentive.participants} deelnemers</span>
                         </div>
                       </div>
                     </div>
@@ -362,7 +322,7 @@ export default function IncentivesPage() {
               COMPLETED_INCENTIVES.map((incentive) => {
                 const Icon = incentive.icon;
                 return (
-                  <div key={incentive.id} className="bg-white rounded-xl border border-gray-200 p-6 opacity-90">
+                  <div key={incentive.id} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6 opacity-90">
                     <div className="flex items-center gap-4">
                       <div className={`w-16 h-16 bg-gradient-to-br ${incentive.color} rounded-2xl flex items-center justify-center`}>
                         <Icon className="w-8 h-8 text-white" />
@@ -370,12 +330,12 @@ export default function IncentivesPage() {
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
                           <div>
-                            <h3 className="font-semibold text-gray-900">{incentive.name}</h3>
-                            <p className="text-gray-500">Behaald op {incentive.completedDate}</p>
+                            <h3 className="font-semibold text-gray-900 dark:text-white">{incentive.name}</h3>
+                            <p className="text-gray-500 dark:text-gray-400">Behaald op {incentive.completedDate}</p>
                           </div>
                           <CheckCircle2 className="w-6 h-6 text-green-500" />
                         </div>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                           <span className="font-semibold">Beloning:</span> {incentive.reward}
                         </p>
                       </div>
@@ -385,7 +345,7 @@ export default function IncentivesPage() {
               })
             ) : (
               UPCOMING_INCENTIVES.map((incentive, idx) => (
-                <div key={idx} className="bg-gray-50 rounded-xl border border-gray-200 p-6 opacity-75">
+                <div key={idx} className="bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 p-6 opacity-75">
                   <div className="flex items-center gap-4">
                     <div className="w-16 h-16 bg-gradient-to-br from-gray-400 to-gray-500 rounded-2xl flex items-center justify-center">
                       <Calendar className="w-8 h-8 text-white" />
@@ -393,14 +353,12 @@ export default function IncentivesPage() {
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
                         <div>
-                          <h3 className="font-semibold text-gray-900">{incentive.name}</h3>
-                          <p className="text-gray-500">Start: {incentive.date}</p>
+                          <h3 className="font-semibold text-gray-900 dark:text-white">{incentive.name}</h3>
+                          <p className="text-gray-500 dark:text-gray-400">Start: {incentive.date}</p>
                         </div>
-                        <span className="px-3 py-1 bg-gray-200 text-gray-600 text-sm rounded-full">
-                          Binnenkort
-                        </span>
+                        <span className="px-3 py-1 bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-gray-300 text-sm rounded-full">Binnenkort</span>
                       </div>
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                         <span className="font-semibold">Beloning:</span> {incentive.reward}
                       </p>
                     </div>
@@ -414,21 +372,18 @@ export default function IncentivesPage() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Leaderboard */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Leaderboard</h2>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Leaderboard</h2>
             <div className="space-y-3">
               {LEADERBOARD.map((user) => (
-                <div 
-                  key={user.rank} 
-                  className={`flex items-center gap-3 p-3 rounded-xl ${
-                    user.isMe ? 'bg-orange-50 border border-orange-200' : 'bg-gray-50'
-                  }`}
-                >
+                <div key={user.rank} className={`flex items-center gap-3 p-3 rounded-xl ${
+                  user.isMe ? 'bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20' : 'bg-gray-50 dark:bg-slate-700/50'
+                }`}>
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
                     user.rank === 1 ? 'bg-yellow-400 text-yellow-900' :
                     user.rank === 2 ? 'bg-gray-300 text-gray-900' :
                     user.rank === 3 ? 'bg-orange-400 text-orange-900' :
-                    'bg-gray-200 text-gray-700'
+                    'bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-gray-300'
                   }`}>
                     {user.rank}
                   </div>
@@ -436,56 +391,55 @@ export default function IncentivesPage() {
                     {user.avatar}
                   </div>
                   <div className="flex-1">
-                    <p className={`font-medium ${user.isMe ? 'text-orange-900' : 'text-gray-900'}`}>
+                    <p className={`font-medium ${user.isMe ? 'text-orange-900 dark:text-orange-300' : 'text-gray-900 dark:text-white'}`}>
                       {user.name}
                     </p>
                   </div>
-                  <span className="font-semibold text-gray-900">{user.points.toLocaleString()}</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">{user.points.toLocaleString()}</span>
                 </div>
               ))}
             </div>
-            <button className="w-full mt-4 py-2 text-sm text-orange-600 bg-orange-50 rounded-lg hover:bg-orange-100">
-              Bekijk volledig leaderboard →
+            <button className="w-full mt-4 py-2 text-sm text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/10 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-500/20 transition-colors flex items-center justify-center gap-2">
+              Bekijk volledig leaderboard
+              <ArrowRight className="w-4 h-4" />
             </button>
           </div>
 
           {/* Next Milestone */}
-          <div className="bg-gradient-to-br from-orange-500 to-pink-600 rounded-xl p-6 text-white">
-            <div className="flex items-center gap-3 mb-4">
-              <Medal className="w-6 h-6" />
-              <h3 className="font-semibold">Volgende Milestone</h3>
-            </div>
-            <p className="text-3xl font-bold mb-2">Portugal Seminar</p>
-            <p className="text-orange-100 mb-4">Nog 20 PQS punten te gaan!</p>
-            <div className="h-2 bg-white/20 rounded-full overflow-hidden mb-4">
-              <div className="h-full bg-white rounded-full" style={{ width: '80%' }} />
-            </div>
-            <div className="flex items-center justify-between text-sm text-orange-100">
-              <span>80 / 100 punten</span>
-              <span>Deadline: 31 maart</span>
+          <div className="bg-gradient-to-br from-orange-500 to-pink-600 rounded-xl p-6 text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="relative">
+              <div className="flex items-center gap-3 mb-4">
+                <Medal className="w-6 h-6" />
+                <h3 className="font-semibold">Volgende Milestone</h3>
+              </div>
+              <p className="text-3xl font-bold mb-2">Portugal Seminar</p>
+              <p className="text-orange-100 mb-4">Nog 20 PQS punten te gaan!</p>
+              <div className="h-2 bg-white/20 rounded-full overflow-hidden mb-4">
+                <div className="h-full bg-white rounded-full" style={{ width: '80%' }} />
+              </div>
+              <div className="flex items-center justify-between text-sm text-orange-100">
+                <span>80 / 100 punten</span>
+                <span>Deadline: 31 maart</span>
+              </div>
             </div>
           </div>
 
           {/* Quick Stats */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Deze Maand</h3>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Deze Maand</h3>
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Nieuwe Sales</span>
-                <span className="font-semibold text-gray-900">12</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">ASP Punten</span>
-                <span className="font-semibold text-gray-900">+45</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Team Recruits</span>
-                <span className="font-semibold text-gray-900">2</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Opvolgcalls</span>
-                <span className="font-semibold text-gray-900">28</span>
-              </div>
+              {[
+                { label: 'Nieuwe Sales', value: '12' },
+                { label: 'ASP Punten', value: '+45' },
+                { label: 'Team Recruits', value: '2' },
+                { label: 'Opvolgcalls', value: '28' },
+              ].map((stat, i) => (
+                <div key={i} className="flex items-center justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">{stat.label}</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">{stat.value}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
