@@ -29,68 +29,37 @@ import {
   Handshake,
   Crown,
   Target,
-  Award
+  Award,
+  Info
 } from 'lucide-react';
 
-// Maandelijkse fees per product (van prijslijst)
-const MONTHLY_FEES = {
-  'Internet': 0.35,
-  'Energy': 0.35,
-  'Orange Mobile Child': 0.25,
-  'Orange Mobile Small': 0.50,
-  'Orange Mobile Medium': 1.00,
-  'Orange Mobile Large': 1.25,
-  'Orange Mobile Unlimited': 1.50,
-  'Go Light': 0.40,
-  'Go Plus': 0.80,
-  'Go Intense': 1.00,
-  'Go Extreme': 1.75,
-  'EasyInternet@Home': 0.50,
-  'Internet Everywhere': 0.05,
+// Fidelity vergoedingen per product per niveau (van prijslijst)
+const FIDELITY_RATES = {
+  'Internet':        { l0: 0.35, l1: 0.10, l2: 0.04, l3: 0.04, l4: 0.04, l5: 0.04, l6: 0.04, l7: 0.05 },
+  'Energy':          { l0: 0.35, l1: 0.10, l2: 0.04, l3: 0.04, l4: 0.04, l5: 0.04, l6: 0.04, l7: 0.05 },
+  'Orange Mobile Child':   { l0: 0.25, l1: 0.11, l2: 0.04, l3: 0.04, l4: 0.04, l5: 0.04, l6: 0.04, l7: 0.14 },
+  'Orange Mobile Small':   { l0: 0.50, l1: 0.21, l2: 0.07, l3: 0.07, l4: 0.07, l5: 0.07, l6: 0.07, l7: 0.29 },
+  'Orange Mobile Medium':  { l0: 1.00, l1: 0.43, l2: 0.14, l3: 0.14, l4: 0.14, l5: 0.14, l6: 0.14, l7: 0.57 },
+  'Orange Mobile Large':   { l0: 1.25, l1: 0.53, l2: 0.17, l3: 0.17, l4: 0.17, l5: 0.17, l6: 0.17, l7: 0.73 },
+  'Orange Mobile Unlimited': { l0: 1.50, l1: 0.64, l2: 0.21, l3: 0.21, l4: 0.21, l5: 0.21, l6: 0.21, l7: 0.89 },
+  'Go Light':        { l0: 0.40, l1: 0.17, l2: 0.06, l3: 0.06, l4: 0.06, l5: 0.06, l6: 0.06, l7: 0.23 },
+  'Go Plus':         { l0: 0.80, l1: 0.34, l2: 0.11, l3: 0.11, l4: 0.11, l5: 0.11, l6: 0.11, l7: 0.46 },
+  'Go Intense':      { l0: 1.00, l1: 0.43, l2: 0.14, l3: 0.14, l4: 0.14, l5: 0.14, l6: 0.14, l7: 0.57 },
+  'Go Extreme':      { l0: 1.75, l1: 0.75, l2: 0.25, l3: 0.25, l4: 0.25, l5: 0.25, l6: 0.25, l7: 1.00 },
+  'EasyInternet@Home': { l0: 0.50, l1: 0.21, l2: 0.07, l3: 0.07, l4: 0.07, l5: 0.07, l6: 0.07, l7: 0.29 },
+  'Internet Everywhere': { l0: 0.05, l1: 0.02, l2: 0.01, l3: 0.01, l4: 0.01, l5: 0.01, l6: 0.01, l7: 0.03 },
 };
 
-// Upline fidelity percentages
-const UPLINE_STRUCTURE = [
-  { 
-    level: 'Level 0 (Jij)', 
-    role: 'Business Consultant',
-    commission: '100%',
-    personalRate: '100%',
-    fromDownline: 'N/A',
-    example: '€45/maand = €45'
-  },
-  { 
-    level: 'Level 1 (Direct)', 
-    role: 'Sponsor/Mentor',
-    commission: '+€2/klant',
-    personalRate: '100%',
-    fromDownline: '€2 per maand per klant',
-    example: '5 klanten = +€10/maand'
-  },
-  { 
-    level: 'Level 2', 
-    role: 'Senior Consultant',
-    commission: '+€1/klant',
-    personalRate: '100% + team bonus',
-    fromDownline: '€1 per maand per klant',
-    example: '5 klanten = +€5/maand'
-  },
-  { 
-    level: 'Level 3-4', 
-    role: 'Premier Consultant',
-    commission: '+€0.50/klant',
-    personalRate: '100% + team bonus',
-    fromDownline: '€0.50 per maand per klant',
-    example: '5 klanten = +€2.50/maand'
-  },
-  { 
-    level: 'Level 5-7', 
-    role: 'Leader/Premier Leader',
-    commission: '+€0.25/klant',
-    personalRate: '100% + infinity bonus',
-    fromDownline: '€0.25 per maand per klant',
-    example: '5 klanten = +€1.25/maand'
-  },
+// Upline niveau namen
+const LEVEL_NAMES = [
+  { level: 0, name: 'Jij (Level 0)', role: 'Business Consultant' },
+  { level: 1, name: 'Level 1', role: 'Sponsor/Mentor' },
+  { level: 2, name: 'Level 2', role: 'Senior Consultant' },
+  { level: 3, name: 'Level 3', role: 'Premier Consultant' },
+  { level: 4, name: 'Level 4', role: 'Premier Consultant' },
+  { level: 5, name: 'Level 5', role: 'Leader' },
+  { level: 6, name: 'Level 6', role: 'Leader' },
+  { level: 7, name: 'Level 7', role: 'Premier Leader' },
 ];
 
 // Mock data voor maandelijkse fidelity fees
@@ -186,6 +155,7 @@ export default function FidelityPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
+  const [showRatesModal, setShowRatesModal] = useState(false);
 
   // Stats
   const activeClients = FIDELITY_CLIENTS.filter(c => c.status === 'ACTIVE');
@@ -213,37 +183,121 @@ export default function FidelityPage() {
 
   return (
     <PremiumLayout user={{ name: 'Lenny De K.' }}>
-      {/* Commission Structure Banner */}
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-6 text-white mb-8">
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Handshake className="w-5 h-5" />
-          Upline Vergoedingen (Fidelity per Maand)
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          {UPLINE_STRUCTURE.map((level, idx) => (
-            <div key={idx} className={`p-4 rounded-xl ${idx === 0 ? 'bg-white/20 border-2 border-white' : 'bg-white/10'}`}>
-              <p className="text-xs text-purple-200 mb-1">{level.level}</p>
-              <p className="font-semibold text-sm">{level.role}</p>
-              <p className="text-lg font-bold text-yellow-300 mt-1">{level.commission}</p>
-              <p className="text-xs text-purple-100 mt-2">{level.example}</p>
+      {/* Rates Modal */}
+      {showRatesModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-auto border border-gray-200 dark:border-slate-700">
+            <div className="p-6 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between sticky top-0 bg-white dark:bg-slate-800">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Fidelity Vergoedingen Per Niveau</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Maandelijkse fees per product per upline niveau</p>
+              </div>
+              <button 
+                onClick={() => setShowRatesModal(false)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg text-gray-500"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
             </div>
-          ))}
+            
+            <div className="p-6">
+              {/* Rate Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200 dark:border-slate-700">
+                      <th className="text-left py-3 px-2 font-semibold text-gray-900 dark:text-white">Product</th>
+                      {LEVEL_NAMES.map((l) => (
+                        <th key={l.level} className="text-center py-3 px-2 font-semibold text-gray-900 dark:text-white">
+                          <div className="text-xs">{l.name}</div>
+                          <div className="text-[10px] text-gray-500 font-normal">{l.role}</div>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+                    {Object.entries(FIDELITY_RATES).map(([product, rates]) => (
+                      <tr key={product} className="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+                        <td className="py-3 px-2 font-medium text-gray-900 dark:text-white">{product}</td>
+                        <td className="py-3 px-2 text-center font-bold text-orange-600 dark:text-orange-400">€{rates.l0.toFixed(2)}</td>
+                        <td className="py-3 px-2 text-center text-gray-600 dark:text-gray-400">€{rates.l1.toFixed(2)}</td>
+                        <td className="py-3 px-2 text-center text-gray-600 dark:text-gray-400">€{rates.l2.toFixed(2)}</td>
+                        <td className="py-3 px-2 text-center text-gray-600 dark:text-gray-400">€{rates.l3.toFixed(2)}</td>
+                        <td className="py-3 px-2 text-center text-gray-600 dark:text-gray-400">€{rates.l4.toFixed(2)}</td>
+                        <td className="py-3 px-2 text-center text-gray-600 dark:text-gray-400">€{rates.l5.toFixed(2)}</td>
+                        <td className="py-3 px-2 text-center text-gray-600 dark:text-gray-400">€{rates.l6.toFixed(2)}</td>
+                        <td className="py-3 px-2 text-center font-semibold text-purple-600 dark:text-purple-400">€{rates.l7.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Example */}
+              <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-500/10 rounded-xl border border-blue-200 dark:border-blue-500/20">
+                <h4 className="font-semibold text-blue-900 dark:text-blue-400 mb-2 flex items-center gap-2">
+                  <Info className="w-4 h-4" />
+                  Voorbeeld: Internet abonnement
+                </h4>
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Jij (Level 0) ontvangt €0.35/maand • Je sponsor (Level 1) ontvangt €0.10/maand • 
+                  Level 2 ontvangt €0.04/maand • Level 3-6 ontvangen €0.04/maand • Level 7 ontvangt €0.05/maand
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
-        <p className="mt-4 text-sm text-purple-100">
-          💡 Jij verdient maandelijkse fees per klant. Level 1 ontvangt €2/maand per klant, Level 2 €1/maand, Level 3-4 €0.50/maand, Level 5-7 €0.25/maand
-        </p>
-      </div>
+      )}
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Fidelity - Passief Inkomen</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">Maandelijkse terugkerende fees van je klanten</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-pink-600 text-white rounded-lg hover:shadow-lg transition-all">
-          <Plus className="w-4 h-4" />
-          Nieuwe Klant
-        </button>
+        <div className="flex gap-3">
+          <button 
+            onClick={() => setShowRatesModal(true)}
+            className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+          >
+            <Info className="w-4 h-4" />
+            Tarieven
+          </button>
+          <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-pink-600 text-white rounded-lg hover:shadow-lg transition-all">
+            <Plus className="w-4 h-4" />
+            Nieuwe Klant
+          </button>
+        </div>
+      </div>
+
+      {/* Upline Commission Banner */}
+      <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-6 text-white mb-8">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Handshake className="w-5 h-5" />
+          Upline Fidelity Vergoedingen
+        </h2>
+        <p className="text-sm text-purple-100 mb-4">
+          Voor elke actieve dienst in je team ontvang je maandelijkse fidelity fees tot het 7de niveau. 
+          Klik op "Tarieven" voor de volledige tabel per product.
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+          <div className="bg-white/10 rounded-lg p-3">
+            <p className="text-purple-200 text-xs">Level 0 (Jij)</p>
+            <p className="font-bold">Volledig bedrag</p>
+          </div>
+          <div className="bg-white/10 rounded-lg p-3">
+            <p className="text-purple-200 text-xs">Level 1</p>
+            <p className="font-bold">Bijv. €0.10-0.64</p>
+          </div>
+          <div className="bg-white/10 rounded-lg p-3">
+            <p className="text-purple-200 text-xs">Level 2-6</p>
+            <p className="font-bold">Bijv. €0.04-0.25</p>
+          </div>
+          <div className="bg-white/10 rounded-lg p-3">
+            <p className="text-purple-200 text-xs">Level 7</p>
+            <p className="font-bold">Bijv. €0.05-1.00</p>
+          </div>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -335,7 +389,7 @@ export default function FidelityPage() {
               <tr>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Klant</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Status</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Maandfee</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-orange-600 dark:text-orange-400">Maandfee</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Totaal Verdiend</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Contract</th>
                 <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900 dark:text-white">Acties</th>
