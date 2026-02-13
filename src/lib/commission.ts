@@ -256,9 +256,9 @@ export function convertOfferToSale(
   status: 'PENDING' | 'CONFIRMED';
 } {
   // Clawback rules:
-  // < 1 month = 0% (full clawback)
-  // ≥ 1 month = 25% 
-  // ≥ 6 months = 75%
+  // < 1 month = 100% clawback (0% keep)
+  // 1-6 months = 75% clawback (25% keep)
+  // ≥ 6 months = 0% clawback (100% keep)
   
   const now = new Date();
   const monthsActive = (now.getTime() - activationDate.getTime()) / (1000 * 60 * 60 * 24 * 30);
@@ -266,9 +266,9 @@ export function convertOfferToSale(
   let clawbackRisk = 1.0; // 100% risk initially
   
   if (monthsActive >= 6) {
-    clawbackRisk = 0.25; // 25% risk - keep 75%
+    clawbackRisk = 0; // 0% risk - fully secured
   } else if (monthsActive >= 1) {
-    clawbackRisk = 0.75; // 75% risk - keep 25%
+    clawbackRisk = 0.75; // 75% clawback - keep 25%
   }
   
   return {

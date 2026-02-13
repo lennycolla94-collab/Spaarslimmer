@@ -48,7 +48,7 @@ function getClawbackStatus(saleDate: string) {
     progressPercent = (daysSinceSale / 30) * 100;
   } else if (monthsSinceSale < 6) {
     clawbackRisk = 'MEDIUM';
-    riskPercentage = 75;
+    riskPercentage = 75; // 75% clawback = 25% keep
     const remainingDays = Math.ceil((6 - monthsSinceSale) * 30);
     statusText = `${remainingDays} dagen tot volledig veilig`;
     progressPercent = (monthsSinceSale / 6) * 100;
@@ -421,7 +421,7 @@ export default function CommissionPage() {
                   <span className="font-semibold text-amber-900">Medium Risico (1-6 maanden)</span>
                 </div>
                 <p className="text-sm text-amber-700">
-                  Bij annulering tussen 1-6 maanden: 25% clawback. Je houdt 75% van je commissie.
+                  Bij annulering tussen 1-6 maanden: 75% clawback. Je houdt 25% van je commissie.
                 </p>
               </div>
               <div className="p-4 bg-green-50 rounded-lg border border-green-100">
