@@ -39,33 +39,82 @@ interface Lead {
   niche?: string;
 }
 
-// Extended mock data - 24 leads
-const MOCK_LEADS: Lead[] = [
-  { id: '1', companyName: 'Bakkerij De Lekkernij', contactName: 'Maria Peeters', phone: '0472 12 34 56', email: 'maria@bakkerij.be', city: 'Aalst', status: 'NEW', lastContact: '2 dagen geleden', niche: 'Food' },
-  { id: '2', companyName: 'Tech Solutions BV', contactName: 'Jan Janssen', phone: '0473 56 78 90', email: 'jan@techsolutions.be', city: 'Brussel', status: 'CONTACTED', lastContact: '1 week geleden', niche: 'IT' },
-  { id: '3', companyName: 'NecmiCuts', contactName: 'Necmi Yildiz', phone: '0472 98 76 54', email: 'necmi@necmicuts.be', city: 'Aalst', status: 'OFFER_SENT', lastContact: '3 dagen geleden', niche: 'Beauty' },
-  { id: '4', companyName: 'Constructie Groep', contactName: 'Peter Willems', phone: '0475 11 22 33', email: 'peter@constructie.be', city: 'Gent', status: 'FOLLOW_UP', lastContact: '5 dagen geleden', niche: 'Construction' },
-  { id: '5', companyName: 'Fashion Store', contactName: 'Lisa Dubois', phone: '0476 44 55 66', email: 'lisa@fashion.be', city: 'Antwerpen', status: 'CONVERTED', lastContact: '1 dag geleden', niche: 'Retail' },
-  { id: '6', companyName: 'Dental Care Plus', contactName: 'Dr. Sarah Vans', phone: '0471 23 45 67', email: 'sarah@dentalcare.be', city: 'Leuven', status: 'NEW', lastContact: 'Nog niet', niche: 'Healthcare' },
-  { id: '7', companyName: 'Auto Garage Fast', contactName: 'Marc De Vos', phone: '0474 56 78 90', email: 'marc@fastgarage.be', city: 'Brugge', status: 'NEW', lastContact: 'Nog niet', niche: 'Automotive' },
-  { id: '8', companyName: 'Bloemenwijk', contactName: 'Emma Jansen', phone: '0477 88 99 00', email: 'emma@bloemenwijk.be', city: 'Mechelen', status: 'CONTACTED', lastContact: '3 dagen geleden', niche: 'Retail' },
-  { id: '9', companyName: 'IT Consultancy Pro', contactName: 'Thomas Maes', phone: '0479 11 22 33', email: 'thomas@itpro.be', city: 'Brussel', status: 'OFFER_SENT', lastContact: '1 week geleden', niche: 'IT' },
-  { id: '10', companyName: 'Pizza Roma', contactName: 'Giovanni Rossi', phone: '0478 33 44 55', email: 'giovanni@pizzaroma.be', city: 'Antwerpen', status: 'FOLLOW_UP', lastContact: '4 dagen geleden', niche: 'Food' },
-  { id: '11', companyName: 'Fitness Center Fit', contactName: 'Kim De Smet', phone: '0475 66 77 88', email: 'kim@fitnessfit.be', city: 'Gent', status: 'NEW', lastContact: 'Nog niet', niche: 'Sport' },
-  { id: '12', companyName: 'Verzekeringen Safe', contactName: 'Bart Peeters', phone: '0472 99 00 11', email: 'bart@safeinsure.be', city: 'Hasselt', status: 'CONTACTED', lastContact: '2 dagen geleden', niche: 'Finance' },
-  { id: '13', companyName: 'Café Central', contactName: 'Luc Van den Berg', phone: '0476 22 33 44', email: 'luc@cafecentral.be', city: 'Leuven', status: 'OFFER_SENT', lastContact: '5 dagen geleden', niche: 'Horeca' },
-  { id: '14', companyName: 'Photography Studio', contactName: 'Sofie Wouters', phone: '0471 55 66 77', email: 'sofie@photostudio.be', city: 'Brugge', status: 'FOLLOW_UP', lastContact: '1 week geleden', niche: 'Media' },
-  { id: '15', companyName: 'Accountancy Plus', contactName: 'Wim Vermeulen', phone: '0474 88 99 00', email: 'wim@accountplus.be', city: 'Antwerpen', status: 'CONVERTED', lastContact: '2 dagen geleden', niche: 'Finance' },
-  { id: '16', companyName: 'Schoonmaak Service', contactName: 'Ann Daems', phone: '0479 33 44 55', email: 'ann@schoonmaak.be', city: 'Mechelen', status: 'NEW', lastContact: 'Nog niet', niche: 'Services' },
-  { id: '17', companyName: 'Web Design Agency', contactName: 'Dries Coppens', phone: '0477 66 77 88', email: 'dries@webdesign.be', city: 'Brussel', status: 'CONTACTED', lastContact: '4 dagen geleden', niche: 'IT' },
-  { id: '18', companyName: 'Tandarts Praktijk', contactName: 'Dr. Laura Bosch', phone: '0475 11 22 33', email: 'laura@tandarts.be', city: 'Gent', status: 'NEW', lastContact: 'Nog niet', niche: 'Healthcare' },
-  { id: '19', companyName: 'Meubelwinkel Home', contactName: 'Tom Jacobs', phone: '0478 44 55 66', email: 'tom@meubelhome.be', city: 'Aalst', status: 'OFFER_SENT', lastContact: '3 dagen geleden', niche: 'Retail' },
-  { id: '20', companyName: 'Marketing Bureau', contactName: 'Eline Van Dyck', phone: '0472 77 88 99', email: 'eline@marketing.be', city: 'Leuven', status: 'FOLLOW_UP', lastContact: '6 dagen geleden', niche: 'Marketing' },
-  { id: '21', companyName: 'Restaurant Taste', contactName: 'Chef Michael', phone: '0471 00 11 22', email: 'michael@taste.be', city: 'Brugge', status: 'CONTACTED', lastContact: '2 dagen geleden', niche: 'Horeca' },
-  { id: '22', companyName: 'Elektro Services', contactName: 'Koen Peeters', phone: '0476 33 44 55', email: 'koen@elektro.be', city: 'Hasselt', status: 'NEW', lastContact: 'Nog niet', niche: 'Construction' },
-  { id: '23', companyName: 'Advocatenkantoor', contactName: 'Sophie Martens', phone: '0479 66 77 88', email: 'sophie@advocaten.be', city: 'Antwerpen', status: 'CONVERTED', lastContact: '1 dag geleden', niche: 'Legal' },
-  { id: '24', companyName: 'Reisbureau World', contactName: 'Niels Bosmans', phone: '0474 22 33 44', email: 'niels@reizen.be', city: 'Brussel', status: 'OFFER_SENT', lastContact: '1 week geleden', niche: 'Travel' },
+// Generate 156 realistic Belgian business leads
+const CITIES = [
+  'Antwerpen', 'Gent', 'Brussel', 'Leuven', 'Brugge', 'Hasselt', 'Mechelen', 'Aalst', 'Sint-Niklaas', 'Kortrijk',
+  'Oostende', 'Genk', 'Roeselare', 'Vilvoorde', 'Lokeren', 'Turnhout', 'Sint-Truiden', 'Lier', 'Ninove', 'Geel',
+  'Heist-op-den-Berg', 'Maasmechelen', 'Lommel', 'Waregem', 'Dendermonde', 'Beringen', 'Herentals', 'Mol', 'Temse', 'Halle',
+  'Sint-Katelijne-Waver', 'Zottegem', 'Oudenaarde', 'Tienen', 'Eeklo', 'Zaventem', 'Asse', 'Diest', 'Menen', 'Tongeren',
+  'Izegem', 'Knokke-Heist', 'Hamme', 'Wetteren', 'Schoten', 'Kapellen', 'Bilzen', 'Londerzeel', 'Tessenderlo', 'Beerse'
 ];
+
+const FIRST_NAMES = ['Jan', 'Maria', 'Peter', 'Anna', 'Luc', 'Sarah', 'Marc', 'Emma', 'Bart', 'Lisa', 'Tom', 'Sophie', 'Koen', 'Laura', 'Wim', 'Eline', 'Dries', 'Nina', 'Jef', 'Sofie', 'Gunter', 'An', 'Patrick', 'Kathy'];
+const LAST_NAMES = ['Peeters', 'Janssens', 'Maes', 'Jacobs', 'Mertens', 'Willems', 'Claes', 'Goossens', 'Wouters', 'De Smet', 'Van den Berg', 'Dubois', 'Lambert', 'Martens', 'Dupont', 'Vermeer', 'Bosch', 'Vandenberghe', 'Desmet', 'Lemmens'];
+
+const COMPANY_PREFIXES = ['De', 'Van den', 'Het', ''];
+const COMPANY_SUFFIXES = ['BV', 'NV', 'VZW', 'BVBA', ''];
+
+const NICHES = ['Retail', 'Horeca', 'IT', 'Healthcare', 'Construction', 'Finance', 'Food', 'Beauty', 'Automotive', 'Services', 'Legal', 'Education', 'Manufacturing', 'Transport', 'Agriculture'];
+
+const STATUSES = ['NEW', 'NEW', 'NEW', 'CONTACTED', 'CONTACTED', 'OFFER_SENT', 'FOLLOW_UP', 'CONVERTED'];
+
+function generateLeads(count: number): Lead[] {
+  const leads: Lead[] = [];
+  
+  for (let i = 1; i <= count; i++) {
+    const firstName = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
+    const lastName = LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)];
+    const city = CITIES[Math.floor(Math.random() * CITIES.length)];
+    const niche = NICHES[Math.floor(Math.random() * NICHES.length)];
+    const status = STATUSES[Math.floor(Math.random() * STATUSES.length)];
+    
+    // Generate company name
+    const prefix = COMPANY_PREFIXES[Math.floor(Math.random() * COMPANY_PREFIXES.length)];
+    const suffix = COMPANY_SUFFIXES[Math.floor(Math.random() * COMPANY_SUFFIXES.length)];
+    const companyTypes = ['Solutions', 'Group', 'Services', 'Consulting', 'Trading', 'Partners', 'Studio', 'Care', 'Systems', 'Hub'];
+    const companyType = companyTypes[Math.floor(Math.random() * companyTypes.length)];
+    
+    let companyName: string;
+    if (Math.random() > 0.5) {
+      companyName = `${prefix} ${lastName}${suffix ? ' ' + suffix : ''}`.trim();
+    } else {
+      companyName = `${lastName} ${companyType}${suffix ? ' ' + suffix : ''}`.trim();
+    }
+    
+    // Generate phone
+    const phone = `04${Math.floor(Math.random() * 10)}${Math.floor(Math.random() * 10)} ${Math.floor(Math.random() * 100).toString().padStart(2, '0')} ${Math.floor(Math.random() * 100).toString().padStart(2, '0')} ${Math.floor(Math.random() * 100).toString().padStart(2, '0')}`;
+    
+    // Generate email
+    const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@${companyName.toLowerCase().replace(/[^a-z]/g, '')}.be`;
+    
+    // Generate last contact
+    const daysAgo = Math.floor(Math.random() * 30);
+    let lastContact: string;
+    if (daysAgo === 0) lastContact = 'Vandaag';
+    else if (daysAgo === 1) lastContact = 'Gisteren';
+    else if (daysAgo < 7) lastContact = `${daysAgo} dagen geleden`;
+    else if (daysAgo < 14) lastContact = '1 week geleden';
+    else if (daysAgo < 21) lastContact = '2 weken geleden';
+    else lastContact = '3+ weken geleden';
+    
+    leads.push({
+      id: i.toString(),
+      companyName,
+      contactName: `${firstName} ${lastName}`,
+      phone,
+      email,
+      city,
+      status,
+      lastContact,
+      niche
+    });
+  }
+  
+  return leads;
+}
+
+// Generate 156 leads
+const MOCK_LEADS: Lead[] = generateLeads(156);
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string }> = {
   NEW: { label: 'Nieuw', color: 'text-blue-700', bgColor: 'bg-blue-50' },
@@ -78,15 +127,13 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: str
 
 export default function LeadsPage() {
   const router = useRouter();
-  const [leads, setLeads] = useState<Lead[]>(MOCK_LEADS); // Start met mock data direct
+  const [leads, setLeads] = useState<Lead[]>(MOCK_LEADS);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
-  const [useMockData, setUseMockData] = useState(true);
 
-  // Stats - include ALL leads in "New" by default
+  // Stats
   const stats = {
     total: leads.length,
     new: leads.filter(l => l.status === 'NEW').length,
@@ -142,7 +189,7 @@ export default function LeadsPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Leads</h1>
-          <p className="text-gray-500 mt-1">Beheer en volg al je leads</p>
+          <p className="text-gray-500 mt-1">Beheer en volg al je leads ({stats.total} totaal)</p>
         </div>
         <div className="flex items-center gap-3">
           <Link
@@ -219,6 +266,11 @@ export default function LeadsPage() {
             </select>
           </div>
         </div>
+      </div>
+
+      {/* Results Count */}
+      <div className="mb-4 text-sm text-gray-500">
+        Toont {filteredLeads.length} van {stats.total} leads
       </div>
 
       {/* Leads Table */}
