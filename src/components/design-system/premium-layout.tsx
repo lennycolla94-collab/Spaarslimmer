@@ -88,9 +88,9 @@ const navSections = [
 ];
 
 const quickActions = [
-  { icon: Plus, label: 'New Lead', shortcut: '⌘N' },
-  { icon: Phone, label: 'Call', shortcut: '⌘C' },
-  { icon: FileText, label: 'Offer', shortcut: '⌘O' },
+  { icon: Plus, label: 'Nieuwe Lead', shortcut: '⌘N', href: '/leads/new' },
+  { icon: Phone, label: 'Bel', shortcut: '⌘C', href: '/call-center' },
+  { icon: FileText, label: 'Offerte', shortcut: '⌘O', href: '/offers/new' },
 ];
 
 export function PremiumLayout({ children, user }: PremiumLayoutProps) {
@@ -117,8 +117,9 @@ export function PremiumLayout({ children, user }: PremiumLayoutProps) {
           {/* Quick Actions */}
           <div className="flex items-center gap-2">
             {quickActions.map((action) => (
-              <button
+              <Link
                 key={action.label}
+                href={action.href}
                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors border border-gray-200 dark:border-slate-700"
               >
                 <action.icon className="w-4 h-4" />
@@ -126,7 +127,7 @@ export function PremiumLayout({ children, user }: PremiumLayoutProps) {
                 <kbd className="hidden xl:inline-block px-1.5 py-0.5 text-xs bg-white dark:bg-slate-900 rounded border border-gray-300 dark:border-slate-600 text-gray-500 dark:text-gray-400 font-mono">
                   {action.shortcut}
                 </kbd>
-              </button>
+              </Link>
             ))}
           </div>
 
