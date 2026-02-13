@@ -4,13 +4,11 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PremiumLayout } from '@/components/design-system/premium-layout';
 import { 
-  Plus, 
-  Minus, 
   Wifi, 
   Smartphone, 
   Tv, 
-  Zap,
-  TrendingUp,
+  Plus, 
+  Minus,
   Euro,
   ArrowLeft,
   Save,
@@ -19,11 +17,15 @@ import {
   MapPin,
   Phone,
   X,
-  Loader2
+  Loader2,
+  TrendingUp,
+  CheckCircle2
 } from 'lucide-react';
 import Link from 'next/link';
 
-// Orange Producten met correcte prijzen
+// ============================================
+// PRODUCTEN - Exacte Orange prijzen
+// ============================================
 const INTERNET_PLANS = [
   { id: 'START', name: 'Start Fiber', price: 53, speed: '200 Mbps', commission: 15 },
   { id: 'ZEN', name: 'Zen Fiber', price: 62, speed: '500 Mbps', commission: 15 },
@@ -39,10 +41,13 @@ const MOBILE_PLANS = [
 ];
 
 const TV_OPTIONS = [
-  { id: 'TV', name: 'Orange TV', price: 0, commission: 10 },
-  { id: 'TV_PLUS', name: 'Orange TV+', price: 20, commission: 10 },
+  { id: 'TV', name: 'Orange TV', price: 0, commission: 10, features: ['80+ zenders'] },
+  { id: 'TV_PLUS', name: 'Orange TV+', price: 20, commission: 10, features: ['Netflix', 'Disney+'] },
 ];
 
+// ============================================
+// INTERFACES
+// ============================================
 interface Lead {
   id: string;
   companyName: string;
@@ -52,6 +57,7 @@ interface Lead {
   city: string;
 }
 
+// Mock lead data
 const MOCK_LEADS: Record<string, Lead> = {
   'eba79e50-2f72-4cdf-8cca-6002af922a0f': {
     id: 'eba79e50-2f72-4cdf-8cca-6002af922a0f',
@@ -63,6 +69,9 @@ const MOCK_LEADS: Record<string, Lead> = {
   }
 };
 
+// ============================================
+// COMPONENT
+// ============================================
 function CalculatorContent() {
   const searchParams = useSearchParams();
   const leadId = searchParams.get('lead');
@@ -84,35 +93,38 @@ function CalculatorContent() {
     yearlySavings: 0
   });
 
-  // Load lead
+  // Load lead from URL
   useEffect(() => {
     if (leadId && MOCK_LEADS[leadId]) {
       setSelectedLead(MOCK_LEADS[leadId]);
     }
   }, [leadId]);
 
-  // Calculate
+  // Calculate prices
   useEffect(() => {
     let newMonthly = 0;
     let commission = 0;
 
+    // Internet
     if (internet) {
       const plan = INTERNET_PLANS.find(p => p.id === internet)!;
       newMonthly += plan.price;
       commission += plan.commission;
     }
 
+    // Mobile lines
     mobileLines.forEach((line) => {
       if (line.plan) {
         const plan = MOBILE_PLANS.find(p => p.id === line.plan)!;
         newMonthly += plan.price;
         commission += plan.commission;
         if (line.portability && ['MEDIUM', 'LARGE', 'UNLIMITED'].includes(line.plan)) {
-          commission += 20;
+          commission += 20; // Portability bonus
         }
       }
     });
 
+    // TV
     if (tv) {
       const plan = TV_OPTIONS.find(p => p.id === tv)!;
       newMonthly += plan.price;
@@ -133,6 +145,10 @@ function CalculatorContent() {
     setMobileLines(updated);
   };
 
+  const saveOffer = () => {
+    alert('Offerte opgeslagen! (Demo)');
+  };
+
   return (
     <PremiumLayout user={{ name: 'Lenny De K.' }}>
       {/* Header */}
@@ -148,7 +164,7 @@ function CalculatorContent() {
         </div>
       </div>
 
-      {/* Lead Selection Card */}
+      {/* Lead Selection */}
       {!selectedLead ? (
         <div className="bg-white rounded-xl border-2 border-dashed border-orange-300 p-8 mb-6 text-center">
           <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -156,10 +172,7 @@ function CalculatorContent() {
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Kies een lead</h3>
           <p className="text-gray-500 mb-4">Selecteer eerst voor welke klant je de offerte maakt</p>
-          <Link 
-            href="/leads" 
-            className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
-          >
+          <Link href="/leads" className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600">
             Kies Lead
           </Link>
         </div>
@@ -175,10 +188,7 @@ function CalculatorContent() {
                 <p className="text-sm text-gray-600">{selectedLead.contactName} • {selectedLead.city}</p>
               </div>
             </div>
-            <button 
-              onClick={() => setSelectedLead(null)}
-              className="p-2 text-gray-400 hover:text-red-500"
-            >
+            <button onClick={() => setSelectedLead(null)} className="p-2 text-gray-400 hover:text-red-500">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -301,10 +311,7 @@ function CalculatorContent() {
                   </label>
                 )}
                 
-                <button 
-                  onClick={() => removeMobileLine(idx)}
-                  className="p-3 text-red-500 hover:bg-red-50 rounded-lg"
-                >
+                <button onClick={() => removeMobileLine(idx)} className="p-3 text-red-500 hover:bg-red-50 rounded-lg">
                   <Minus className="w-5 h-5" />
                 </button>
               </div>
@@ -328,9 +335,7 @@ function CalculatorContent() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <button
             onClick={() => setTv(tv === 'TV' ? null : 'TV')}
-            className={`p-4 rounded-xl border-2 text-left ${
-              tv === 'TV' ? 'border-pink-500 bg-pink-50' : 'border-gray-200 hover:border-pink-300'
-            }`}
+            className={`p-4 rounded-xl border-2 text-left ${tv === 'TV' ? 'border-pink-500 bg-pink-50' : 'border-gray-200 hover:border-pink-300'}`}
           >
             <h3 className="font-semibold text-gray-900">Orange TV</h3>
             <p className="text-2xl font-bold text-gray-900 mt-2">Gratis</p>
@@ -339,9 +344,7 @@ function CalculatorContent() {
           
           <button
             onClick={() => setTv(tv === 'TV_PLUS' ? null : 'TV_PLUS')}
-            className={`p-4 rounded-xl border-2 text-left ${
-              tv === 'TV_PLUS' ? 'border-pink-500 bg-pink-50' : 'border-gray-200 hover:border-pink-300'
-            }`}
+            className={`p-4 rounded-xl border-2 text-left ${tv === 'TV_PLUS' ? 'border-pink-500 bg-pink-50' : 'border-gray-200 hover:border-pink-300'}`}
           >
             <h3 className="font-semibold text-gray-900">Orange TV+</h3>
             <p className="text-2xl font-bold text-gray-900 mt-2">€20<span className="text-sm font-normal">/maand</span></p>
@@ -350,11 +353,11 @@ function CalculatorContent() {
         </div>
       </div>
 
-      {/* Results Summary */}
+      {/* Results */}
       {(internet || mobileLines.some(l => l.plan) || tv) && (
         <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-6 text-white">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <Zap className="w-5 h-5 text-yellow-400" />
+            <TrendingUp className="w-5 h-5 text-yellow-400" />
             Overzicht
           </h3>
           
@@ -369,9 +372,7 @@ function CalculatorContent() {
               <p className={`text-3xl font-bold ${totals.yearlySavings > 0 ? 'text-green-400' : 'text-gray-400'}`}>
                 €{totals.yearlySavings.toFixed(0)}
               </p>
-              {totals.savings > 0 && (
-                <p className="text-sm text-green-400">€{totals.savings.toFixed(2)} / maand</p>
-              )}
+              {totals.savings > 0 && <p className="text-sm text-green-400">€{totals.savings.toFixed(2)} / maand</p>}
             </div>
             
             <div>
@@ -383,7 +384,7 @@ function CalculatorContent() {
 
           {selectedLead && (internet || mobileLines.some(l => l.plan)) && (
             <button 
-              onClick={() => alert('Offerte opgeslagen!')}
+              onClick={saveOffer}
               className="mt-6 w-full py-3 bg-orange-500 hover:bg-orange-600 rounded-lg font-semibold transition-colors"
             >
               Offerte Opslaan
