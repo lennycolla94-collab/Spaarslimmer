@@ -506,16 +506,16 @@ export default function CallCenterPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Call Center Pro</h1>
-          <p className="text-gray-500 mt-1">Bel je leads en volg je voortgang</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Call Center Pro</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Bel je leads en volg je voortgang</p>
         </div>
         <div className="flex items-center gap-4">
           <div className="text-right">
-            <p className="text-sm text-gray-500">Calls vandaag</p>
-            <p className="text-2xl font-bold text-gray-900">{stats.called}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Calls vandaag</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.called}</p>
           </div>
           <div className="text-right">
-            <p className="text-sm text-gray-500">Queue</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Queue</p>
             <p className="text-2xl font-bold text-orange-600">{filteredQueue.length}</p>
           </div>
         </div>
@@ -523,26 +523,26 @@ export default function CallCenterPage() {
 
       {/* Stats Bar */}
       <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-          <p className="text-sm text-blue-600">Totaal Leads</p>
-          <p className="text-2xl font-bold text-blue-900">{stats.total}</p>
+        <div className="bg-blue-50 dark:bg-blue-500/10 rounded-xl p-4 border border-blue-200 dark:border-blue-500/20">
+          <p className="text-sm text-blue-600 dark:text-blue-400">Totaal Leads</p>
+          <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{stats.total}</p>
         </div>
-        <div className="bg-green-50 rounded-xl p-4 border border-green-200">
-          <p className="text-sm text-green-600">Gebeld</p>
-          <p className="text-2xl font-bold text-green-900">{stats.called}</p>
+        <div className="bg-green-50 dark:bg-green-500/10 rounded-xl p-4 border border-green-200 dark:border-green-500/20">
+          <p className="text-sm text-green-600 dark:text-green-400">Gebeld</p>
+          <p className="text-2xl font-bold text-green-900 dark:text-green-100">{stats.called}</p>
         </div>
-        <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
-          <p className="text-sm text-purple-600">Interesse</p>
-          <p className="text-2xl font-bold text-purple-900">{stats.interested}</p>
+        <div className="bg-purple-50 dark:bg-purple-500/10 rounded-xl p-4 border border-purple-200 dark:border-purple-500/20">
+          <p className="text-sm text-purple-600 dark:text-purple-400">Interesse</p>
+          <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{stats.interested}</p>
         </div>
-        <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
-          <p className="text-sm text-orange-600">Offertes</p>
-          <p className="text-2xl font-bold text-orange-900">{stats.offers}</p>
+        <div className="bg-orange-50 dark:bg-orange-500/10 rounded-xl p-4 border border-orange-200 dark:border-orange-500/20">
+          <p className="text-sm text-orange-600 dark:text-orange-400">Offertes</p>
+          <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{stats.offers}</p>
         </div>
       </div>
 
       {/* Search & Filters */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4 mb-6">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -551,13 +551,13 @@ export default function CallCenterPage() {
               placeholder="Zoek op bedrijf, contact of telefoon..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-slate-900 dark:text-white"
             />
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${
-              showFilters ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              showFilters ? 'bg-orange-500 text-white' : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600'
             }`}
           >
             <Filter className="w-4 h-4" />
@@ -566,43 +566,43 @@ export default function CallCenterPage() {
         </div>
         
         {showFilters && (
-          <div className="grid grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-100">
+          <div className="grid grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-100 dark:border-slate-700">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Stad</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Stad</label>
               <input
                 type="text"
                 placeholder="Filter op stad..."
                 value={cityFilter}
                 onChange={(e) => setCityFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500"
+                className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-slate-900 dark:text-white"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Provincie</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Provincie</label>
               <select
                 value={provinceFilter}
                 onChange={(e) => setProvinceFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500"
+                className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-slate-900 dark:text-white"
               >
                 {PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Prioriteit</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Prioriteit</label>
               <select
                 value={priorityFilter}
                 onChange={(e) => setPriorityFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500"
+                className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-slate-900 dark:text-white"
               >
                 {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500"
+                className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:text-white dark:bg-slate-800"
               >
                 {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
