@@ -15,7 +15,8 @@ import {
   BarChart3,
   Calendar,
   LogOut,
-  Crown
+  Crown,
+  ShoppingCart
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -28,7 +29,8 @@ const menuItems = [
   { icon: Phone, label: 'Call Logging', href: '/call-center' },
   { icon: Calendar, label: 'Afspraken', href: '/appointments' },
   { icon: Calculator, label: 'Prijs Calculator', href: '/calculator' },
-  { icon: FileText, label: 'Order Invoer', href: '/orders/new' },
+  { icon: FileText, label: 'Offertes', href: '/offers' },
+  { icon: ShoppingCart, label: 'Orders', href: '/orders' },
   { icon: Gift, label: 'Incentives', href: '/incentives', badge: 'NEW' },
   { icon: Euro, label: 'Mijn Commissie', href: '/commission' },
   { icon: Users2, label: 'Team Management', href: '/team' },

@@ -32,6 +32,7 @@ import {
   Euro, 
   Users2, 
   BarChart3,
+  Calculator,
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -52,10 +53,12 @@ const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
   { icon: UsersIcon, label: 'Lead Management', href: '/leads' },
   { icon: Phone, label: 'Call Logging', href: '/call-center' },
-  { icon: ShoppingCart, label: 'Verkoop', href: '/offers' },
-  { icon: FileText, label: 'Order Invoer', href: '/orders/new' },
+  { icon: Calendar, label: 'Afspraken', href: '/appointments' },
+  { icon: Calculator, label: 'Prijs Calculator', href: '/calculator' },
+  { icon: FileText, label: 'Offertes', href: '/offers' },
+  { icon: ShoppingCart, label: 'Orders', href: '/orders' },
   { icon: Gift, label: 'Incentives', href: '/incentives', badge: 'NEW' },
-  { icon: Euro, label: 'Commissies', href: '/commissions' },
+  { icon: Euro, label: 'Commissies', href: '/commission' },
   { icon: Users2, label: 'Team Management', href: '/team' },
   { icon: BarChart3, label: 'Rapporten', href: '/reports' },
 ];
