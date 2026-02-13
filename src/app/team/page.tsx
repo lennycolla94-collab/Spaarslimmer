@@ -21,7 +21,8 @@ import {
   UserPlus,
   BarChart3,
   DollarSign,
-  Handshake
+  Handshake,
+  CheckCircle2
 } from 'lucide-react';
 
 // Upline commission structure
