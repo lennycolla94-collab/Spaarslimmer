@@ -18,7 +18,10 @@ import {
   ChevronDown,
   Settings,
   LogOut,
-  Command
+  Command,
+  Gift,
+  Users,
+  Trophy
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 
@@ -55,6 +58,22 @@ const navSections = [
     items: [
       { icon: Wallet, label: 'Commission', href: '/commission', amount: '€18.6K', highlight: true },
       { icon: Calculator, label: 'Calculator', href: '/calculator' },
+    ]
+  },
+  {
+    title: 'Rewards',
+    icon: '🏆',
+    items: [
+      { icon: Gift, label: 'Incentives', href: '/incentives', badge: '4 Active' },
+      { icon: Trophy, label: 'PQS Ranking', href: '/incentives', count: 8 },
+    ]
+  },
+  {
+    title: 'Team',
+    icon: '👨‍👩‍👧‍👦',
+    items: [
+      { icon: Users, label: 'Mijn Team', href: '/team', count: 3 },
+      { icon: Target, label: 'Fidelity', href: '/team', amount: '€2.4K' },
     ]
   },
   {
