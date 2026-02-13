@@ -47,6 +47,9 @@ export async function POST(
     
     const commissionCalc = calculateOfferCommission(products, 'BC', { hasConvergence });
 
+    // Calculate activation date (for clawback tracking)
+    const activationDate = new Date();
+    
     // Update to SOLD status with full effective commission
     const updatedOffer = await prisma.offer.update({
       where: { id },
@@ -55,16 +58,37 @@ export async function POST(
         potentialCommission: null, // Clear potential, set effective
         effectiveCommission: commissionCalc.effectiveCommission,
         soldAt: new Date(),
+        activationDate: activationDate,
+        clawbackStatus: 'PENDING',
+        clawbackRisk: 100, // 100% risk initially
       },
       include: {
         lead: {
           select: {
+            id: true,
             companyName: true,
             contactName: true,
             city: true,
             phone: true,
           },
         },
+      },
+    });
+
+    // Schedule automatic follow-up call for 30 days from now
+    const followUpDate = new Date(activationDate);
+    followUpDate.setDate(followUpDate.getDate() + 30);
+
+    // Create a scheduled queue item for follow-up
+    await prisma.queueItem.create({
+      data: {
+        leadId: offer.leadId,
+        assignedTo: session.user.id,
+        priority: 2,
+        dueDate: followUpDate,
+        status: 'PENDING',
+        type: 'FOLLOW_UP',
+        notes: `Automatische opvolgcall voor ${updatedOffer.lead.companyName}. Sale geactiveerd op ${activationDate.toLocaleDateString('nl-BE')}.`,
       },
     });
 

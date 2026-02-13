@@ -237,6 +237,16 @@ model Offer {
   sentAt          DateTime?
   acceptedAt      DateTime?
   soldAt          DateTime?
+  activationDate  DateTime?
+  
+  // Clawback tracking
+  clawbackStatus  String   @default("PENDING") // PENDING, PARTIAL, SECURED
+  clawbackRisk    Float    @default(100) // 100 = high risk, 25 = medium, 0 = safe
+  
+  // Follow-up tracking
+  followUpDone    Boolean  @default(false)
+  followUpDate    DateTime?
+  followUpQueued  Boolean  @default(false)
   
   // Communication
   emailSent       Boolean  @default(false)
