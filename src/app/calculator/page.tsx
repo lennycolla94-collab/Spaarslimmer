@@ -26,7 +26,10 @@ import {
   Wallet,
   Building2,
   Zap,
-  Calculator
+  Calculator,
+  Edit3,
+  Euro,
+  Gift
 } from 'lucide-react';
 import { getCommissionPreview } from '@/lib/commission';
 
@@ -61,6 +64,7 @@ export default function CalculatorPage() {
   const [internetInstallType, setInternetInstallType] = useState<'NEW' | 'EASY_SWITCH' | null>(null);
   const [selectedLead, setSelectedLead] = useState(MOCK_LEADS[0]);
   const [creatingOffer, setCreatingOffer] = useState(false);
+  const [showLeadSelector, setShowLeadSelector] = useState(false);
 
   const hasInternet = !!internetPlan;
   const hasMobile = mobileLines.length > 0;
@@ -177,34 +181,62 @@ export default function CalculatorPage() {
         </Link>
       </div>
 
-      {/* Selected Lead */}
+      {/* Selected Lead Card - FIXED COLORS */}
       <div className="bg-gradient-to-r from-orange-500 to-pink-600 rounded-2xl p-6 text-white mb-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center text-2xl font-bold">
+            <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center text-2xl font-bold text-white">
               {selectedLead.companyName[0]}
             </div>
             <div>
-              <h3 className="text-xl font-bold">{selectedLead.companyName}</h3>
+              <h3 className="text-xl font-bold text-white">{selectedLead.companyName}</h3>
               <p className="text-orange-100">{selectedLead.contactName}</p>
               <p className="text-sm text-orange-200">{selectedLead.city}</p>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-sm text-orange-100">Voor klant</p>
-            <Link href="/leads" className="text-white underline text-sm">Wijzig lead</Link>
+            <p className="text-sm text-orange-100 mb-1">Voor klant</p>
+            <button 
+              onClick={() => setShowLeadSelector(!showLeadSelector)}
+              className="text-white underline text-sm hover:text-orange-100"
+            >
+              Wijzig lead
+            </button>
           </div>
         </div>
+        
+        {/* Lead Selector Dropdown */}
+        {showLeadSelector && (
+          <div className="mt-4 p-4 bg-white rounded-xl">
+            <p className="text-sm font-medium text-gray-700 mb-2">Selecteer een lead:</p>
+            <div className="space-y-2">
+              {MOCK_LEADS.map((lead) => (
+                <button
+                  key={lead.id}
+                  onClick={() => { setSelectedLead(lead); setShowLeadSelector(false); }}
+                  className={`w-full p-3 rounded-lg text-left transition-colors ${
+                    selectedLead.id === lead.id 
+                      ? 'bg-orange-100 border-2 border-orange-500' 
+                      : 'bg-gray-50 hover:bg-gray-100'
+                  }`}
+                >
+                  <p className="font-medium text-gray-900">{lead.companyName}</p>
+                  <p className="text-sm text-gray-500">{lead.contactName} • {lead.city}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column - Products */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Current Cost */}
+          {/* Current Cost - FIXED */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                <Calculator className="w-5 h-5 text-blue-600" />
+                <Euro className="w-5 h-5 text-blue-600" />
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900">Huidige Maandkosten</h3>
@@ -219,14 +251,14 @@ export default function CalculatorPage() {
                   placeholder="0"
                   value={currentMonthlyCost}
                   onChange={(e) => setCurrentMonthlyCost(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-lg font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
                 />
               </div>
               <span className="text-gray-500">/maand</span>
             </div>
           </div>
 
-          {/* Internet */}
+          {/* Internet - FIXED */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
@@ -268,26 +300,27 @@ export default function CalculatorPage() {
                   <button
                     onClick={() => setInternetInstallType('NEW')}
                     className={`p-4 rounded-xl border-2 text-left transition-all ${
-                      internetInstallType === 'NEW' ? 'border-orange-500 bg-white' : 'border-gray-200 bg-white'
+                      internetInstallType === 'NEW' ? 'border-orange-500 bg-white' : 'border-gray-200 bg-white hover:border-orange-300'
                     }`}
                   >
-                    <span className="font-semibold">Nieuwe installatie</span>
+                    <span className="font-semibold text-gray-900">Nieuwe installatie</span>
+                    <p className="text-sm text-gray-500 mt-1">Nieuwe aansluiting</p>
                   </button>
                   <button
                     onClick={() => setInternetInstallType('EASY_SWITCH')}
                     className={`p-4 rounded-xl border-2 text-left transition-all ${
-                      internetInstallType === 'EASY_SWITCH' ? 'border-orange-500 bg-white' : 'border-gray-200 bg-white'
+                      internetInstallType === 'EASY_SWITCH' ? 'border-orange-500 bg-white' : 'border-gray-200 bg-white hover:border-orange-300'
                     }`}
                   >
-                    <span className="font-semibold">Easy Switch</span>
-                    <p className="text-sm text-gray-500">+€12 commissie</p>
+                    <span className="font-semibold text-gray-900">Easy Switch</span>
+                    <p className="text-sm text-gray-500 mt-1">Nummerbehoud (+€12)</p>
                   </button>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Mobile */}
+          {/* Mobile - FIXED */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
@@ -319,7 +352,7 @@ export default function CalculatorPage() {
                     <div className="flex justify-between items-center mb-3">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold">{index + 1}</div>
-                        <span className="font-medium">GSM #{index + 1}</span>
+                        <span className="font-medium text-gray-900">GSM #{index + 1}</span>
                       </div>
                       <button onClick={() => removeMobileLine(index)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
                         <Trash2 className="w-4 h-4" />
@@ -327,7 +360,7 @@ export default function CalculatorPage() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <select
-                        className="w-full p-3 bg-white border border-gray-200 rounded-xl"
+                        className="w-full p-3 bg-white border border-gray-200 rounded-xl text-gray-900"
                         value={line.plan}
                         onChange={(e) => updateMobileLine(index, { plan: e.target.value as any })}
                       >
@@ -342,16 +375,27 @@ export default function CalculatorPage() {
                           onChange={(e) => updateMobileLine(index, { isPortability: e.target.checked })}
                           className="w-4 h-4 text-blue-600 rounded"
                         />
-                        <span className="text-sm">Nummerbehoud (+€20)</span>
+                        <span className="text-sm text-gray-700">Nummerbehoud (+€20)</span>
                       </label>
                     </div>
                   </div>
                 ))}
               </div>
             )}
+            {mobileLines.length >= 2 && (
+              <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl">
+                <div className="flex items-center gap-3 text-green-800">
+                  <Gift className="w-5 h-5" />
+                  <div>
+                    <strong className="text-green-900">Multi-line korting toegepast!</strong>
+                    <p className="text-sm text-green-700">Alle {mobileLines.length} lijnen krijgen de 2+ prijs</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* TV */}
+          {/* TV - FIXED */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
@@ -381,7 +425,7 @@ export default function CalculatorPage() {
           </div>
         </div>
 
-        {/* Right Column - Results */}
+        {/* Right Column - Results - FIXED */}
         <div>
           <div className="sticky top-24 space-y-4">
             {result ? (
@@ -395,16 +439,16 @@ export default function CalculatorPage() {
                   <div className="grid grid-cols-2 gap-3 mb-4">
                     <div className="p-3 bg-white/10 rounded-lg">
                       <p className="text-green-100 text-sm">Nu</p>
-                      <p className="text-xl font-bold">{formatPrice((parseFloat(currentMonthlyCost) || 0) * 100)}</p>
+                      <p className="text-xl font-bold text-white">{formatPrice((parseFloat(currentMonthlyCost) || 0) * 100)}</p>
                     </div>
                     <div className="p-3 bg-white/20 rounded-lg">
                       <p className="text-green-100 text-sm">Met SmartSN</p>
-                      <p className="text-xl font-bold">{formatPrice(result.totalMonthly)}</p>
+                      <p className="text-xl font-bold text-white">{formatPrice(result.totalMonthly)}</p>
                     </div>
                   </div>
                   <div className="text-center p-4 bg-white/10 rounded-xl">
                     <p className="text-green-100 text-sm mb-1">Nieuwe prijs</p>
-                    <p className="text-4xl font-bold">{formatPrice(result.totalMonthly)}</p>
+                    <p className="text-4xl font-bold text-white">{formatPrice(result.totalMonthly)}</p>
                     <p className="text-green-200 text-xs mt-1">per maand</p>
                   </div>
                 </div>
@@ -419,11 +463,11 @@ export default function CalculatorPage() {
                     <div className="space-y-3">
                       <div className="p-3 bg-white/10 rounded-lg">
                         <p className="text-orange-100 text-sm">Potentiële (bij versturen)</p>
-                        <p className="text-xl font-bold">€{commissionPreview.potential.toFixed(0)}</p>
+                        <p className="text-xl font-bold text-white">€{commissionPreview.potential.toFixed(0)}</p>
                       </div>
                       <div className="p-3 bg-white/20 rounded-lg border border-white/30">
                         <p className="text-orange-100 text-sm">Effectieve (bij tekenen)</p>
-                        <p className="text-2xl font-bold">€{commissionPreview.effective.toFixed(0)}</p>
+                        <p className="text-2xl font-bold text-white">€{commissionPreview.effective.toFixed(0)}</p>
                       </div>
                     </div>
                   </div>
@@ -441,7 +485,10 @@ export default function CalculatorPage() {
                       Aanmaken...
                     </span>
                   ) : !internetInstallType ? (
-                    'Selecteer installatie type'
+                    <span className="flex items-center justify-center gap-2">
+                      <Zap className="w-5 h-5" />
+                      Selecteer installatie type
+                    </span>
                   ) : (
                     <span className="flex items-center justify-center gap-2">
                       Maak Offerte
