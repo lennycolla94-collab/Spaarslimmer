@@ -1,16 +1,17 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { 
   PageContainer, 
   PageHeader, 
   SmartCard, 
-  StatCard, 
   ActionButton,
 } from '@/components/design-system/page-container';
 import { 
   calculateTariff, 
-  formatEuro,
+  formatEuro as formatPrice,
   type MobileLine,
   MOBILE_PRICES_STANDALONE,
   MOBILE_PRICES_STANDALONE_2PLUS,
@@ -30,9 +31,16 @@ import {
   ArrowRight,
   ArrowLeft,
   Euro,
-  Users,
-  Gift
+  Gift,
+  Loader2,
+  Wallet,
+  Search,
+  X,
+  Building2,
+  MapPin,
+  Phone
 } from 'lucide-react';
+import { getCommissionPreview } from '@/lib/commission';
 
 const internetPlans = [
   { value: '', label: 'Geen internet', price: 0, download: 0 },
@@ -48,12 +56,29 @@ const tvPlans = [
   { value: 'TV_PLUS', label: 'Orange TV Plus (Netflix)', price: 3200 },
 ];
 
+interface Lead {
+  id: string;
+  companyName: string;
+  contactName: string;
+  city: string;
+  phone: string;
+}
+
 export default function CalculatorPage() {
+  const router = useRouter();
   const [internetPlan, setInternetPlan] = useState('');
   const [isSecondAddress, setIsSecondAddress] = useState(false);
   const [mobileLines, setMobileLines] = useState<MobileLine[]>([]);
   const [tvPlan, setTvPlan] = useState('');
   const [currentMonthlyCost, setCurrentMonthlyCost] = useState('');
+  const [creatingOffer, setCreatingOffer] = useState(false);
+  
+  // Lead selection
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [showLeadModal, setShowLeadModal] = useState(false);
+  const [leadSearch, setLeadSearch] = useState('');
+  const [loadingLeads, setLoadingLeads] = useState(false);
   
   // Extras
   const [hasVasteLijn, setHasVasteLijn] = useState(false);
@@ -63,6 +88,25 @@ export default function CalculatorPage() {
 
   const hasInternet = !!internetPlan;
   const hasMobile = mobileLines.length > 0;
+
+  // Fetch leads
+  useEffect(() => {
+    async function fetchLeads() {
+      try {
+        setLoadingLeads(true);
+        const res = await fetch('/api/leads?limit=100');
+        if (res.ok) {
+          const data = await res.json();
+          setLeads(data.leads || []);
+        }
+      } catch (error) {
+        console.error('Error fetching leads:', error);
+      } finally {
+        setLoadingLeads(false);
+      }
+    }
+    fetchLeads();
+  }, []);
 
   const result = useMemo(() => {
     if (!hasInternet && !hasMobile) return null;
@@ -81,6 +125,50 @@ export default function CalculatorPage() {
     });
   }, [internetPlan, isSecondAddress, mobileLines, tvPlan, currentMonthlyCost, hasInternet, hasMobile, hasVasteLijn, hasMyComfort, wifiBoosters, extraDecoders]);
 
+  // Calculate commission preview
+  const commissionPreview = useMemo(() => {
+    if (!result) return null;
+
+    const products = [];
+    
+    if (internetPlan) {
+      products.push({
+        type: 'INTERNET' as const,
+        plan: internetPlan,
+        retailValue: result.internetPrice,
+        options: { convergence: hasMobile },
+      });
+    }
+    
+    mobileLines.forEach((line) => {
+      products.push({
+        type: 'MOBILE' as const,
+        plan: line.plan,
+        retailValue: result.mobilePrice / mobileLines.length,
+        options: {
+          portability: line.isPortability,
+          convergence: hasInternet,
+        },
+      });
+    });
+    
+    if (tvPlan) {
+      products.push({
+        type: 'TV' as const,
+        plan: tvPlan,
+        retailValue: result.tvPrice,
+      });
+    }
+
+    return getCommissionPreview(products, 'BC');
+  }, [result, internetPlan, mobileLines, tvPlan, hasInternet]);
+
+  const filteredLeads = leads.filter(l => 
+    l.companyName.toLowerCase().includes(leadSearch.toLowerCase()) ||
+    l.contactName?.toLowerCase().includes(leadSearch.toLowerCase()) ||
+    l.city?.toLowerCase().includes(leadSearch.toLowerCase())
+  );
+
   const addMobileLine = () => {
     setMobileLines([...mobileLines, { plan: 'MEDIUM', isPortability: false }]);
   };
@@ -94,6 +182,77 @@ export default function CalculatorPage() {
     newLines[index] = { ...newLines[index], ...updates };
     setMobileLines(newLines);
   };
+
+  // Create offer via API
+  async function createOffer() {
+    if (!result || !commissionPreview || !selectedLead) {
+      setShowLeadModal(true);
+      return;
+    }
+    
+    try {
+      setCreatingOffer(true);
+      
+      const products = [];
+      
+      if (internetPlan) {
+        products.push({
+          type: 'INTERNET',
+          plan: internetPlan,
+          retailValue: result.internetPrice,
+          aspValue: 15,
+          options: { convergence: hasMobile },
+        });
+      }
+      
+      mobileLines.forEach((line) => {
+        const aspValues: Record<string, number> = {
+          'CHILD': 1, 'SMALL': 5, 'MEDIUM': 10, 'LARGE': 15, 'UNLIMITED': 20,
+        };
+        
+        products.push({
+          type: 'MOBILE',
+          plan: line.plan,
+          retailValue: result.mobilePrice / mobileLines.length,
+          aspValue: aspValues[line.plan] || 10,
+          options: {
+            portability: line.isPortability,
+            convergence: hasInternet,
+          },
+        });
+      });
+      
+      if (tvPlan) {
+        products.push({
+          type: 'TV',
+          plan: tvPlan,
+          retailValue: result.tvPrice,
+          aspValue: 5,
+        });
+      }
+
+      const res = await fetch('/api/offers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leadId: selectedLead.id,
+          products,
+          totalRetail: result.totalMonthly,
+          totalASP: commissionPreview.breakdown.reduce((sum, b) => sum + (b.baseCommission > 0 ? 10 : 0), 0),
+          customerSavings: result.savings6Months || 0,
+        }),
+      });
+
+      if (!res.ok) throw new Error('Failed to create offer');
+      
+      router.push('/offers');
+    } catch (error) {
+      console.error('Error creating offer:', error);
+      alert('Kon offerte niet aanmaken. Probeer opnieuw.');
+    } finally {
+      setCreatingOffer(false);
+    }
+  }
 
   const getMobilePlanOptions = (lineIndex: number, totalLines: number) => {
     const isMultiLine = totalLines >= 2;
@@ -142,13 +301,11 @@ export default function CalculatorPage() {
     return plans;
   };
 
-  const currentPlan = internetPlans.find(p => p.value === internetPlan);
-
   return (
     <PageContainer>
       <PageHeader
         title="Prijs Calculator"
-        subtitle="Bereken de perfecte prijs voor je klant"
+        subtitle="Bereken de perfecte prijs en commissie voor je klant"
         icon={<Calculator className="w-6 h-6 text-white" />}
         action={
           <ActionButton href="/dashboard" variant="secondary" icon={<ArrowLeft className="w-4 h-4" />}>
@@ -157,10 +314,143 @@ export default function CalculatorPage() {
         }
       />
 
+      {/* Lead Selection Modal */}
+      {showLeadModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] flex flex-col">
+            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Kies een lead</h2>
+                <p className="text-gray-500">Selecteer voor welke klant je de offerte maakt</p>
+              </div>
+              <button 
+                onClick={() => setShowLeadModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-4 border-b border-gray-200">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Zoek op bedrijf, contact of stad..."
+                  value={leadSearch}
+                  onChange={(e) => setLeadSearch(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-auto p-4">
+              {loadingLeads ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+                </div>
+              ) : filteredLeads.length === 0 ? (
+                <div className="text-center py-12">
+                  <Building2 className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                  <p className="text-gray-500">Geen leads gevonden</p>
+                  <Link 
+                    href="/leads" 
+                    className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Nieuwe lead toevoegen
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {filteredLeads.map((lead) => (
+                    <button
+                      key={lead.id}
+                      onClick={() => {
+                        setSelectedLead(lead);
+                        setShowLeadModal(false);
+                      }}
+                      className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                        selectedLead?.id === lead.id
+                          ? 'border-orange-500 bg-orange-50'
+                          : 'border-gray-200 hover:border-orange-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-pink-600 rounded-xl flex items-center justify-center text-white font-bold">
+                          {lead.companyName[0]}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-gray-900">{lead.companyName}</h3>
+                          <p className="text-sm text-gray-500">{lead.contactName}</p>
+                          <div className="flex items-center gap-4 mt-1 text-xs text-gray-400">
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {lead.city || 'Onbekend'}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Phone className="w-3 h-3" />
+                              {lead.phone}
+                            </span>
+                          </div>
+                        </div>
+                        {selectedLead?.id === lead.id && (
+                          <CheckCircle2 className="w-6 h-6 text-orange-500" />
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Input */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Selected Lead Card */}
+            {selectedLead ? (
+              <div className="bg-gradient-to-r from-orange-500 to-pink-600 rounded-2xl p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center text-2xl font-bold">
+                      {selectedLead.companyName[0]}
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold">{selectedLead.companyName}</h3>
+                      <p className="text-orange-100">{selectedLead.contactName}</p>
+                      <div className="flex items-center gap-3 mt-1 text-sm text-orange-200">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-4 h-4" />
+                          {selectedLead.city || 'Onbekend'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowLeadModal(true)}
+                    className="px-4 py-2 bg-white/20 rounded-lg text-sm hover:bg-white/30 transition-colors"
+                  >
+                    Wijzig
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowLeadModal(true)}
+                className="w-full p-6 bg-gray-50 border-2 border-dashed border-gray-300 rounded-2xl text-center hover:border-orange-400 hover:bg-orange-50 transition-colors"
+              >
+                <div className="w-16 h-16 bg-gray-200 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <Building2 className="w-8 h-8 text-gray-400" />
+                </div>
+                <h3 className="font-semibold text-gray-700">Kies een lead</h3>
+                <p className="text-sm text-gray-500 mt-1">Selecteer eerst voor welke klant je de offerte maakt</p>
+              </button>
+            )}
+
             {/* Current Cost */}
             <SmartCard className="border-l-4 border-l-blue-500">
               <div className="p-6">
@@ -293,7 +583,7 @@ export default function CalculatorPage() {
                           >
                             {getMobilePlanOptions(index, mobileLines.length).map((plan) => (
                               <option key={plan.value} value={plan.value}>
-                                {plan.label} - {formatEuro(plan.price)}
+                                {plan.label} - {formatPrice(plan.price)}
                               </option>
                             ))}
                           </select>
@@ -305,7 +595,7 @@ export default function CalculatorPage() {
                               onChange={(e) => updateMobileLine(index, { isPortability: e.target.checked })}
                               className="w-4 h-4 text-blue-600 rounded"
                             />
-                            <span className="text-sm">Nummerbehoud</span>
+                            <span className="text-sm">Nummerbehoud (+€20)</span>
                           </label>
                         </div>
                       </div>
@@ -336,7 +626,7 @@ export default function CalculatorPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">TV (optioneel)</h3>
-                    <p className="text-sm text-gray-500">Voeg TV toe aan je pakket</p>
+                    <p className="text-sm text-gray-500">Voeg TV toe aan je pakket (+€10 commissie)</p>
                   </div>
                 </div>
                 
@@ -359,7 +649,7 @@ export default function CalculatorPage() {
                       </div>
                       {plan.price > 0 && (
                         <p className="text-xl font-bold text-gray-900">
-                          {formatEuro(plan.price)}
+                          {formatPrice(plan.price)}
                           <span className="text-sm font-normal text-gray-500">/maand</span>
                         </p>
                       )}
@@ -445,11 +735,6 @@ export default function CalculatorPage() {
                           </button>
                         </div>
                       </div>
-                      {wifiBoosters > 0 && (
-                        <p className="text-sm text-orange-600 font-medium">
-                          + €{wifiBoosters * 3}/maand
-                        </p>
-                      )}
                     </div>
 
                     {/* Extra Decoders */}
@@ -475,11 +760,6 @@ export default function CalculatorPage() {
                           </button>
                         </div>
                       </div>
-                      {extraDecoders > 0 && (
-                        <p className="text-sm text-orange-600 font-medium">
-                          + €{extraDecoders * 9}/maand
-                        </p>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -492,6 +772,7 @@ export default function CalculatorPage() {
             <div className="sticky top-24 space-y-4">
               {result ? (
                 <>
+                  {/* Customer Savings Card */}
                   <SmartCard className="bg-gradient-to-br from-green-600 to-emerald-700 text-white border-0">
                     <div className="p-6">
                       <div className="flex items-center gap-3 mb-6">
@@ -499,50 +780,117 @@ export default function CalculatorPage() {
                           <TrendingDown className="w-6 h-6" />
                         </div>
                         <div>
-                          <h3 className="text-lg font-semibold">Jouw Voordeel</h3>
-                          <p className="text-green-100 text-sm">Berekening voor deze klant</p>
+                          <h3 className="text-lg font-semibold">Klant Voordeel</h3>
+                          <p className="text-green-100 text-sm">Wat de klant bespaart</p>
                         </div>
                       </div>
 
-                      {/* Price Comparison */}
                       <div className="grid grid-cols-2 gap-4 mb-6">
                         <div className="p-4 bg-white/10 rounded-xl">
                           <p className="text-green-100 text-sm">Nu</p>
                           <p className="text-2xl font-bold">
-                            {formatEuro((parseFloat(currentMonthlyCost) || 0) * 100)}
+                            {formatPrice((parseFloat(currentMonthlyCost) || 0) * 100)}
                           </p>
                         </div>
                         <div className="p-4 bg-white/20 rounded-xl">
                           <p className="text-green-100 text-sm">Met SmartSN</p>
-                          <p className="text-2xl font-bold">{formatEuro(result.totalMonthly)}</p>
+                          <p className="text-2xl font-bold">{formatPrice(result.totalMonthly)}</p>
                         </div>
                       </div>
 
-                      {/* New Price */}
-                      <div className="text-center p-6 bg-white/10 rounded-2xl mb-6">
+                      <div className="text-center p-6 bg-white/10 rounded-2xl">
                         <p className="text-green-100 mb-1">Nieuwe Maandprijs</p>
-                        <p className="text-5xl font-bold">{formatEuro(result.totalMonthly)}</p>
+                        <p className="text-5xl font-bold">{formatPrice(result.totalMonthly)}</p>
                         <p className="text-green-200 text-sm mt-1">per maand</p>
                       </div>
 
-                      {/* Savings */}
-                      {result.savings6Months && result.savings6Months > 0 && (
-                        <div className="p-4 bg-white/20 rounded-xl mb-4">
-                          <div className="flex items-center justify-between">
-                            <span className="text-green-100">Besparing 6 maanden</span>
-                            <span className="text-2xl font-bold">{formatEuro(result.savings6Months)}</span>
-                          </div>
-                        </div>
-                      )}
-
                       {result.savings24Months && result.savings24Months > 0 && (
-                        <div className="p-4 bg-white/10 rounded-xl">
+                        <div className="p-4 bg-white/10 rounded-xl mt-4">
                           <p className="text-green-100 text-sm mb-1">Besparing op 2 jaar</p>
-                          <p className="text-3xl font-bold">{formatEuro(result.savings24Months)}</p>
+                          <p className="text-3xl font-bold">{formatPrice(result.savings24Months)}</p>
                         </div>
                       )}
                     </div>
                   </SmartCard>
+
+                  {/* Commission Preview Card */}
+                  {commissionPreview && commissionPreview.effective > 0 && (
+                    <SmartCard className="bg-gradient-to-br from-orange-500 to-pink-600 text-white border-0">
+                      <div className="p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                            <Wallet className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold">Jouw Commissie</h3>
+                            <p className="text-orange-100 text-sm">Bij verkoop van dit pakket</p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          {/* Potential Commission */}
+                          <div className="p-4 bg-white/10 rounded-xl">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-orange-100 text-sm">Potentiële commissie</p>
+                                <p className="text-xs text-orange-200">Bij versturen offerte</p>
+                              </div>
+                              <p className="text-2xl font-bold">
+                                €{commissionPreview.potential.toFixed(0)}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Effective Commission */}
+                          <div className="p-4 bg-white/20 rounded-xl border-2 border-white/30">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-orange-100 text-sm">Effectieve commissie</p>
+                                <p className="text-xs text-orange-200">Bij tekenen klant</p>
+                              </div>
+                              <p className="text-3xl font-bold">
+                                €{commissionPreview.effective.toFixed(0)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Commission Breakdown */}
+                        <div className="mt-4 pt-4 border-t border-white/20 text-sm">
+                          <p className="text-orange-200 mb-2">Opbouw:</p>
+                          {internetPlan && (
+                            <div className="flex justify-between text-orange-100">
+                              <span>Internet</span>
+                              <span>€15</span>
+                            </div>
+                          )}
+                          {mobileLines.map((line, idx) => (
+                            <div key={idx} className="flex justify-between text-orange-100">
+                              <span>GSM #{idx + 1} ({line.plan})</span>
+                              <span>
+                                €{line.plan === 'CHILD' ? 1 : line.plan === 'SMALL' ? 10 : line.plan === 'MEDIUM' ? 35 : line.plan === 'LARGE' ? 50 : 60}
+                                {line.isPortability && ' + €20'}
+                              </span>
+                            </div>
+                          ))}
+                          {tvPlan && (
+                            <div className="flex justify-between text-orange-100">
+                              <span>TV</span>
+                              <span>€10</span>
+                            </div>
+                          )}
+                          {hasInternet && hasMobile && mobileLines.some(l => ['MEDIUM', 'LARGE', 'UNLIMITED'].includes(l.plan)) && (
+                            <div className="flex justify-between text-orange-100">
+                              <span>Convergentie bonus</span>
+                              <span>
+                                €{(12 + 15) * mobileLines.filter(l => ['MEDIUM', 'LARGE', 'UNLIMITED'].includes(l.plan)).length}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </SmartCard>
+                  )}
 
                   {/* Price Breakdown */}
                   <SmartCard className="p-4">
@@ -551,57 +899,59 @@ export default function CalculatorPage() {
                       {result.internetPrice > 0 && (
                         <div className="flex justify-between items-center py-2 border-b border-gray-100">
                           <span className="text-gray-600">Internet</span>
-                          <span className="font-semibold">{formatEuro(result.internetPrice)}</span>
+                          <span className="font-semibold">{formatPrice(result.internetPrice)}</span>
                         </div>
                       )}
                       {result.mobilePrice > 0 && (
                         <div className="flex justify-between items-center py-2 border-b border-gray-100">
                           <span className="text-gray-600">Mobiel ({mobileLines.length} lijnen)</span>
-                          <span className="font-semibold">{formatEuro(result.mobilePrice)}</span>
+                          <span className="font-semibold">{formatPrice(result.mobilePrice)}</span>
                         </div>
                       )}
                       {result.tvPrice > 0 && (
                         <div className="flex justify-between items-center py-2 border-b border-gray-100">
                           <span className="text-gray-600">TV</span>
-                          <span className="font-semibold">{formatEuro(result.tvPrice)}</span>
+                          <span className="font-semibold">{formatPrice(result.tvPrice)}</span>
                         </div>
                       )}
                       {result.addonsPrice > 0 && (
                         <div className="py-2 border-b border-gray-100">
                           <div className="flex justify-between items-center">
                             <span className="text-gray-600">Extras</span>
-                            <span className="font-semibold">{formatEuro(result.addonsPrice)}</span>
+                            <span className="font-semibold">{formatPrice(result.addonsPrice)}</span>
                           </div>
-                          <div className="text-xs text-gray-500 mt-1 space-y-1">
-                            {hasVasteLijn && <div>• Vaste lijn €12</div>}
-                            {hasMyComfort && <div>• My Comfort {internetPlan === 'GIGA' ? '€5' : '€10'}</div>}
-                            {wifiBoosters > 0 && <div>• {wifiBoosters}x WiFi Booster €{wifiBoosters * 3}</div>}
-                            {extraDecoders > 0 && <div>• {extraDecoders}x Extra Decoder €{extraDecoders * 9}</div>}
-                          </div>
-                        </div>
-                      )}
-                      {result.secondAddressDiscount > 0 && (
-                        <div className="flex justify-between items-center py-2 text-green-600">
-                          <span>2de adres korting</span>
-                          <span className="font-semibold">-{formatEuro(result.secondAddressDiscount)}</span>
                         </div>
                       )}
                       <div className="flex justify-between items-center pt-2 text-lg font-bold">
                         <span>Totaal</span>
-                        <span>{formatEuro(result.totalMonthly)}</span>
+                        <span>{formatPrice(result.totalMonthly)}</span>
                       </div>
                     </div>
                   </SmartCard>
 
-                  {/* CTA */}
-                  <ActionButton 
-                    href="/leads" 
-                    variant="primary" 
-                    size="lg"
-                    icon={<ArrowRight className="w-5 h-5" />}
+                  {/* CTA Button */}
+                  <button
+                    onClick={createOffer}
+                    disabled={creatingOffer || !selectedLead}
+                    className="w-full inline-flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-orange-500 to-pink-600 text-white rounded-xl font-semibold text-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Maak Offerte
-                  </ActionButton>
+                    {creatingOffer ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Offerte aanmaken...
+                      </>
+                    ) : !selectedLead ? (
+                      <>
+                        <Building2 className="w-5 h-5" />
+                        Kies eerst een lead
+                      </>
+                    ) : (
+                      <>
+                        <ArrowRight className="w-5 h-5" />
+                        Maak Offerte voor {selectedLead.companyName}
+                      </>
+                    )}
+                  </button>
                 </>
               ) : (
                 <SmartCard className="bg-gray-100 border-2 border-dashed border-gray-300">
