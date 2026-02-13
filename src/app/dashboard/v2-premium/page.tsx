@@ -4,48 +4,21 @@ import { useEffect, useState } from 'react';
 import { PremiumLayout } from '@/components/design-system/premium-layout';
 import { 
   TrendingUp, 
-  TrendingDown,
   Users, 
   Phone, 
   FileText, 
   Wallet,
   ArrowUpRight,
-  ArrowDownRight,
   Calendar,
   Target,
   MoreHorizontal,
   Filter,
   Download,
-  Wifi,
-  Smartphone,
-  Tv,
-  Plus,
-  Minus,
-  ChevronDown,
   Calculator,
   Zap,
-  Euro,
-  Search,
-  Building2,
-  MapPin,
   CheckCircle2
 } from 'lucide-react';
 import Link from 'next/link';
-
-// Orange Prices
-const ORANGE_INTERNET = [
-  { id: 'START', name: 'Internet Start', packPrice: 49, standalonePrice: 53, speed: '100 Mbps' },
-  { id: 'ZEN', name: 'Internet Zen', packPrice: 58, standalonePrice: 62, speed: '300 Mbps' },
-  { id: 'GIGA', name: 'Internet Giga', packPrice: 68, standalonePrice: 72, speed: '1 Gbps' },
-];
-
-const ORANGE_MOBILE = [
-  { id: 'CHILD', name: 'Child', packPrice: 0, standalonePrice: 0, data: '1 GB' },
-  { id: 'SMALL', name: 'Small', packPrice: 11.50, standalonePrice: 16, data: '5 GB' },
-  { id: 'MEDIUM', name: 'Medium', packPrice: 16.50, standalonePrice: 26, data: '20 GB' },
-  { id: 'LARGE', name: 'Large', packPrice: 21.50, standalonePrice: 32, data: '40 GB' },
-  { id: 'UNLIMITED', name: 'Unlimited', packPrice: 32, standalonePrice: 42, data: 'Unlimited' },
-];
 
 // Mock data for demonstration
 const stats = {
@@ -72,55 +45,10 @@ const pipeline = [
 
 export default function PremiumDashboard() {
   const [mounted, setMounted] = useState(false);
-  
-  // Calculator state
-  const [showCalculator, setShowCalculator] = useState(false);
-  const [internetPlan, setInternetPlan] = useState<string | null>(null);
-  const [mobileLines, setMobileLines] = useState<Array<{ plan: string; portability: boolean }>>([]);
-  const [tvPlan, setTvPlan] = useState<string | null>(null);
-  const [totalPrice, setTotalPrice] = useState(0);
-  const [commission, setCommission] = useState(0);
 
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  // Calculate prices
-  useEffect(() => {
-    const hasConvergence = internetPlan && mobileLines.length > 0;
-    let price = 0;
-    
-    if (internetPlan) {
-      const internet = ORANGE_INTERNET.find(i => i.id === internetPlan);
-      if (internet) price += hasConvergence ? internet.packPrice : internet.standalonePrice;
-    }
-    
-    mobileLines.forEach(line => {
-      if (line.plan) {
-        const mobile = ORANGE_MOBILE.find(m => m.id === line.plan);
-        if (mobile) price += hasConvergence ? mobile.packPrice : mobile.standalonePrice;
-      }
-    });
-    
-    setTotalPrice(price);
-    // Simple commission calc
-    let comm = 0;
-    if (internetPlan) comm += 15;
-    mobileLines.forEach(line => {
-      if (line.plan === 'MEDIUM') comm += 35;
-      if (line.plan === 'LARGE') comm += 50;
-      if (line.plan === 'UNLIMITED') comm += 60;
-    });
-    setCommission(comm);
-  }, [internetPlan, mobileLines]);
-
-  const addMobileLine = () => setMobileLines([...mobileLines, { plan: '', portability: false }]);
-  const removeMobileLine = (idx: number) => setMobileLines(mobileLines.filter((_, i) => i !== idx));
-  const updateMobileLine = (idx: number, field: 'plan' | 'portability', value: any) => {
-    const updated = [...mobileLines];
-    updated[idx] = { ...updated[idx], [field]: value };
-    setMobileLines(updated);
-  };
 
   if (!mounted) return null;
 
@@ -223,138 +151,25 @@ export default function PremiumDashboard() {
         </div>
       </div>
 
-      {/* Quick Calculator Widget */}
-      <div className="bg-white rounded-xl border border-gray-200 mb-8 overflow-hidden">
-        <div 
-          className="p-4 border-b border-gray-100 flex items-center justify-between cursor-pointer hover:bg-gray-50"
-          onClick={() => setShowCalculator(!showCalculator)}
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-pink-600 rounded-lg flex items-center justify-center">
-              <Calculator className="w-5 h-5 text-white" />
+      {/* Calculator Card */}
+      <div className="bg-gradient-to-r from-orange-500 to-pink-600 rounded-xl p-6 mb-8 text-white">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+              <Calculator className="w-7 h-7" />
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900">Quick Calculator</h2>
-              <p className="text-sm text-gray-500">Bereken prijzen en commissie direct</p>
+              <h2 className="text-xl font-bold">Prijs Calculator</h2>
+              <p className="text-orange-100">Bereken offertes en commissies</p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            {totalPrice > 0 && (
-              <div className="text-right mr-4">
-                <p className="text-sm text-gray-500">Klant prijs</p>
-                <p className="text-xl font-bold text-gray-900">€{totalPrice}/mnd</p>
-              </div>
-            )}
-            {commission > 0 && (
-              <div className="text-right mr-4">
-                <p className="text-sm text-green-600">Jouw commissie</p>
-                <p className="text-xl font-bold text-green-600">€{commission}</p>
-              </div>
-            )}
-            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showCalculator ? 'rotate-180' : ''}`} />
-          </div>
+          <Link
+            href="/calculator"
+            className="px-6 py-3 bg-white text-orange-600 rounded-xl font-semibold hover:bg-orange-50 transition-colors"
+          >
+            Open Calculator
+          </Link>
         </div>
-        
-        {showCalculator && (
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Internet */}
-              <div>
-                <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                  <Wifi className="w-4 h-4 text-blue-500" />
-                  Internet
-                </h3>
-                <div className="space-y-2">
-                  {ORANGE_INTERNET.map((plan) => (
-                    <button
-                      key={plan.id}
-                      onClick={() => setInternetPlan(internetPlan === plan.id ? null : plan.id)}
-                      className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
-                        internetPlan === plan.id 
-                          ? 'border-orange-500 bg-orange-50' 
-                          : 'border-gray-200 hover:border-orange-300'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-sm">{plan.name}</span>
-                        <span className="text-sm font-bold">€{plan.packPrice}</span>
-                      </div>
-                      <p className="text-xs text-gray-500">{plan.speed}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Mobile */}
-              <div>
-                <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                  <Smartphone className="w-4 h-4 text-purple-500" />
-                  Mobile
-                  <button 
-                    onClick={addMobileLine}
-                    className="ml-auto p-1 bg-orange-100 text-orange-600 rounded hover:bg-orange-200"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </h3>
-                <div className="space-y-2">
-                  {mobileLines.map((line, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <select
-                        value={line.plan}
-                        onChange={(e) => updateMobileLine(idx, 'plan', e.target.value)}
-                        className="flex-1 p-2 border border-gray-200 rounded-lg text-sm"
-                      >
-                        <option value="">Kies abonnement</option>
-                        {ORANGE_MOBILE.map((m) => (
-                          <option key={m.id} value={m.id}>{m.name} - {m.data} (€{m.packPrice})</option>
-                        ))}
-                      </select>
-                      <button 
-                        onClick={() => removeMobileLine(idx)}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                  {mobileLines.length === 0 && (
-                    <p className="text-sm text-gray-400 italic">Geen mobiele lijnen</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Summary */}
-              <div>
-                <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-yellow-500" />
-                  Samenvatting
-                </h3>
-                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Maandbedrag</span>
-                    <span className="text-xl font-bold text-gray-900">€{totalPrice}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-green-600">Jouw commissie</span>
-                    <span className="text-xl font-bold text-green-600">€{commission}</span>
-                  </div>
-                  {internetPlan && mobileLines.length > 0 && (
-                    <div className="p-2 bg-green-100 rounded-lg text-center">
-                      <span className="text-sm text-green-700">✓ Pakketkorting toegepast</span>
-                    </div>
-                  )}
-                  <Link
-                    href="/calculator"
-                    className="w-full block text-center py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-colors"
-                  >
-                    Ga naar volledige calculator →
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Main Content Grid */}
@@ -427,16 +242,16 @@ export default function PremiumDashboard() {
               <p className="font-medium text-gray-900">Import</p>
               <p className="text-sm text-gray-500">Bulk upload</p>
             </Link>
-            <button 
-              onClick={() => setShowCalculator(true)}
-              className="bg-white rounded-xl border border-gray-200 p-4 hover:border-orange-300 hover:shadow-md transition-all text-left"
+            <Link 
+              href="/calculator"
+              className="bg-white rounded-xl border border-gray-200 p-4 hover:border-orange-300 hover:shadow-md transition-all"
             >
               <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center mb-3">
                 <Calculator className="w-5 h-5 text-green-600" />
               </div>
               <p className="font-medium text-gray-900">Calculator</p>
               <p className="text-sm text-gray-500">Price & savings</p>
-            </button>
+            </Link>
             <Link href="/call-center" className="bg-white rounded-xl border border-gray-200 p-4 hover:border-orange-300 hover:shadow-md transition-all">
               <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center mb-3">
                 <Phone className="w-5 h-5 text-orange-600" />
