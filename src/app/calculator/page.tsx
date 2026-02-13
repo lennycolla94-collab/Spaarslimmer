@@ -13,18 +13,16 @@ import {
   ArrowLeft,
   Save,
   User,
-  Building2,
-  MapPin,
-  Phone,
   X,
   Loader2,
   TrendingUp,
-  CheckCircle2
+  Home,
+  Building
 } from 'lucide-react';
 import Link from 'next/link';
 
 // ============================================
-// PRODUCTEN - Exacte Orange prijzen
+// ORANGE PRODUCTEN - Exacte prijzen
 // ============================================
 const INTERNET_PLANS = [
   { id: 'START', name: 'Start Fiber', price: 53, speed: '200 Mbps', commission: 15 },
@@ -37,55 +35,41 @@ const MOBILE_PLANS = [
   { id: 'SMALL', name: 'Small', price: 11.50, data: '5 GB', commission: 10 },
   { id: 'MEDIUM', name: 'Medium', price: 16.50, data: '20 GB', commission: 35 },
   { id: 'LARGE', name: 'Large', price: 21.50, data: '40 GB', commission: 50 },
-  { id: 'UNLIMITED', name: 'Unlimited', price: 32, data: 'Unlimited', commission: 60 },
+  { id: 'UNLIMITED', name: 'Unlimited', price: 32, data: '∞', commission: 60 },
 ];
 
 const TV_OPTIONS = [
-  { id: 'TV', name: 'Orange TV', price: 0, commission: 10, features: ['80+ zenders'] },
-  { id: 'TV_PLUS', name: 'Orange TV+', price: 20, commission: 10, features: ['Netflix', 'Disney+'] },
+  { id: 'TV', name: 'Orange TV', price: 0, commission: 10 },
+  { id: 'TV_PLUS', name: 'Orange TV+', price: 20, commission: 10 },
 ];
 
-// ============================================
-// INTERFACES
-// ============================================
 interface Lead {
   id: string;
   companyName: string;
   contactName: string;
-  phone: string;
-  email: string;
   city: string;
 }
 
-// Mock lead data
 const MOCK_LEADS: Record<string, Lead> = {
   'eba79e50-2f72-4cdf-8cca-6002af922a0f': {
     id: 'eba79e50-2f72-4cdf-8cca-6002af922a0f',
     companyName: 'Bakkerij De Lekkernij',
     contactName: 'Maria Peeters',
-    phone: '0472 12 34 56',
-    email: 'maria@bakkerij.be',
     city: 'Aalst'
   }
 };
 
-// ============================================
-// COMPONENT
-// ============================================
-function CalculatorContent() {
+function CalculatorPageContent() {
   const searchParams = useSearchParams();
   const leadId = searchParams.get('lead');
   
-  // States
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const [currentMonthlyCost, setCurrentMonthlyCost] = useState<number>(0);
+  const [currentCost, setCurrentCost] = useState<number>(0);
   
-  // Product selections
   const [internet, setInternet] = useState<string | null>(null);
   const [mobileLines, setMobileLines] = useState<Array<{plan: string; portability: boolean}>>([]);
   const [tv, setTv] = useState<string | null>(null);
   
-  // Calculations
   const [totals, setTotals] = useState({ 
     newMonthly: 0, 
     savings: 0, 
@@ -93,49 +77,47 @@ function CalculatorContent() {
     yearlySavings: 0
   });
 
-  // Load lead from URL
   useEffect(() => {
     if (leadId && MOCK_LEADS[leadId]) {
       setSelectedLead(MOCK_LEADS[leadId]);
     }
   }, [leadId]);
 
-  // Calculate prices
   useEffect(() => {
     let newMonthly = 0;
     let commission = 0;
 
-    // Internet
     if (internet) {
       const plan = INTERNET_PLANS.find(p => p.id === internet)!;
       newMonthly += plan.price;
       commission += plan.commission;
     }
 
-    // Mobile lines
     mobileLines.forEach((line) => {
       if (line.plan) {
         const plan = MOBILE_PLANS.find(p => p.id === line.plan)!;
         newMonthly += plan.price;
         commission += plan.commission;
         if (line.portability && ['MEDIUM', 'LARGE', 'UNLIMITED'].includes(line.plan)) {
-          commission += 20; // Portability bonus
+          commission += 20;
         }
       }
     });
 
-    // TV
     if (tv) {
       const plan = TV_OPTIONS.find(p => p.id === tv)!;
       newMonthly += plan.price;
       commission += plan.commission;
     }
 
-    const savings = Math.max(0, currentMonthlyCost - newMonthly);
-    const yearlySavings = savings * 12;
-
-    setTotals({ newMonthly, savings, commission, yearlySavings });
-  }, [internet, mobileLines, tv, currentMonthlyCost]);
+    const savings = Math.max(0, currentCost - newMonthly);
+    setTotals({ 
+      newMonthly, 
+      savings, 
+      commission,
+      yearlySavings: savings * 12
+    });
+  }, [internet, mobileLines, tv, currentCost]);
 
   const addMobileLine = () => setMobileLines([...mobileLines, { plan: '', portability: false }]);
   const removeMobileLine = (idx: number) => setMobileLines(mobileLines.filter((_, i) => i !== idx));
@@ -145,34 +127,28 @@ function CalculatorContent() {
     setMobileLines(updated);
   };
 
-  const saveOffer = () => {
-    alert('Offerte opgeslagen! (Demo)');
-  };
-
   return (
     <PremiumLayout user={{ name: 'Lenny De K.' }}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard/v2-premium" className="p-2 hover:bg-gray-100 rounded-lg">
-            <ArrowLeft className="w-5 h-5 text-gray-600" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Prijs Calculator</h1>
-            <p className="text-gray-500">Bereken de perfecte prijs en commissie voor je klant</p>
-          </div>
+      <div className="flex items-center gap-4 mb-6">
+        <Link href="/dashboard/v2-premium" className="p-2 hover:bg-gray-100 rounded-lg">
+          <ArrowLeft className="w-5 h-5 text-gray-600" />
+        </Link>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Prijs Calculator</h1>
+          <p className="text-gray-500 text-sm">Bereken de perfecte prijs en commissie voor je klant</p>
         </div>
       </div>
 
       {/* Lead Selection */}
       {!selectedLead ? (
-        <div className="bg-white rounded-xl border-2 border-dashed border-orange-300 p-8 mb-6 text-center">
+        <div className="bg-white rounded-2xl border-2 border-dashed border-orange-300 p-10 mb-6 text-center">
           <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <User className="w-8 h-8 text-orange-500" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Kies een lead</h3>
           <p className="text-gray-500 mb-4">Selecteer eerst voor welke klant je de offerte maakt</p>
-          <Link href="/leads" className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600">
+          <Link href="/leads" className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-xl hover:bg-orange-600">
             Kies Lead
           </Link>
         </div>
@@ -180,7 +156,7 @@ function CalculatorContent() {
         <div className="bg-gradient-to-r from-orange-50 to-pink-50 rounded-xl border border-orange-200 p-4 mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-pink-600 rounded-xl flex items-center justify-center text-white font-bold">
+              <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-pink-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
                 {selectedLead.companyName[0]}
               </div>
               <div>
@@ -195,7 +171,7 @@ function CalculatorContent() {
         </div>
       )}
 
-      {/* Current Monthly Cost */}
+      {/* Current Cost */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -211,17 +187,17 @@ function CalculatorContent() {
             <Euro className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="number"
-              value={currentMonthlyCost || ''}
-              onChange={(e) => setCurrentMonthlyCost(Number(e.target.value))}
+              value={currentCost || ''}
+              onChange={(e) => setCurrentCost(Number(e.target.value))}
               placeholder="0"
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
             />
           </div>
           <span className="text-gray-500">/maand</span>
         </div>
       </div>
 
-      {/* Internet Section */}
+      {/* Internet */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
@@ -255,7 +231,7 @@ function CalculatorContent() {
         </div>
       </div>
 
-      {/* Mobile Section */}
+      {/* Mobile */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -278,7 +254,7 @@ function CalculatorContent() {
 
         {mobileLines.length === 0 ? (
           <div className="text-center py-8 text-gray-400">
-            <Smartphone className="w-12 h-12 mx-auto mb-2" />
+            <Smartphone className="w-12 h-12 mx-auto mb-2 opacity-50" />
             <p>Voeg mobiele lijnen toe</p>
           </div>
         ) : (
@@ -293,7 +269,7 @@ function CalculatorContent() {
                   <option value="">Kies abonnement</option>
                   {MOBILE_PLANS.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.name} - {p.data} (€{p.price}/mnd) - €{p.commission} commissie
+                      {p.name} - {p.data} (€{p.price}) - €{p.commission} commissie
                     </option>
                   ))}
                 </select>
@@ -320,7 +296,7 @@ function CalculatorContent() {
         )}
       </div>
 
-      {/* TV Section */}
+      {/* TV */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center">
@@ -361,32 +337,33 @@ function CalculatorContent() {
             Overzicht
           </h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <p className="text-gray-400 text-sm">Nieuw maandbedrag</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div className="bg-white/10 rounded-xl p-4">
+              <p className="text-gray-400 text-sm mb-1">Nieuw maandbedrag</p>
               <p className="text-3xl font-bold">€{totals.newMonthly.toFixed(2)}</p>
             </div>
             
-            <div>
-              <p className="text-gray-400 text-sm">Klant bespaart / jaar</p>
+            <div className="bg-white/10 rounded-xl p-4">
+              <p className="text-gray-400 text-sm mb-1">Klant bespaart / jaar</p>
               <p className={`text-3xl font-bold ${totals.yearlySavings > 0 ? 'text-green-400' : 'text-gray-400'}`}>
                 €{totals.yearlySavings.toFixed(0)}
               </p>
               {totals.savings > 0 && <p className="text-sm text-green-400">€{totals.savings.toFixed(2)} / maand</p>}
             </div>
             
-            <div>
-              <p className="text-gray-400 text-sm">Jouw commissie</p>
+            <div className="bg-white/10 rounded-xl p-4">
+              <p className="text-gray-400 text-sm mb-1">Jouw commissie</p>
               <p className="text-3xl font-bold text-orange-400">€{totals.commission}</p>
-              <p className="text-sm text-gray-400">Bij verkoop (30% = €{(totals.commission * 0.3).toFixed(2)})</p>
+              <p className="text-sm text-gray-400">30% nu = €{(totals.commission * 0.3).toFixed(2)}</p>
             </div>
           </div>
 
           {selectedLead && (internet || mobileLines.some(l => l.plan)) && (
             <button 
-              onClick={saveOffer}
-              className="mt-6 w-full py-3 bg-orange-500 hover:bg-orange-600 rounded-lg font-semibold transition-colors"
+              onClick={() => alert('Offerte opgeslagen!')}
+              className="w-full py-3 bg-orange-500 hover:bg-orange-600 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
             >
+              <Save className="w-5 h-5" />
               Offerte Opslaan
             </button>
           )}
@@ -403,7 +380,7 @@ export default function CalculatorPage() {
         <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
       </div>
     }>
-      <CalculatorContent />
+      <CalculatorPageContent />
     </Suspense>
   );
 }
