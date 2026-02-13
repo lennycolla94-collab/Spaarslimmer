@@ -39,63 +39,32 @@ interface Lead {
   niche?: string;
 }
 
-// Mock data
+// Extended mock data - 24 leads
 const MOCK_LEADS: Lead[] = [
-  {
-    id: '1',
-    companyName: 'Bakkerij De Lekkernij',
-    contactName: 'Maria Peeters',
-    phone: '0472 12 34 56',
-    email: 'maria@bakkerij.be',
-    city: 'Aalst',
-    status: 'NEW',
-    lastContact: '2 dagen geleden',
-    niche: 'Food'
-  },
-  {
-    id: '2',
-    companyName: 'Tech Solutions BV',
-    contactName: 'Jan Janssen',
-    phone: '0473 56 78 90',
-    email: 'jan@techsolutions.be',
-    city: 'Brussel',
-    status: 'CONTACTED',
-    lastContact: '1 week geleden',
-    niche: 'IT'
-  },
-  {
-    id: '3',
-    companyName: 'NecmiCuts',
-    contactName: 'Necmi Yildiz',
-    phone: '0472 98 76 54',
-    email: 'necmi@necmicuts.be',
-    city: 'Aalst',
-    status: 'OFFER_SENT',
-    lastContact: '3 dagen geleden',
-    niche: 'Beauty'
-  },
-  {
-    id: '4',
-    companyName: 'Constructie Groep',
-    contactName: 'Peter Willems',
-    phone: '0475 11 22 33',
-    email: 'peter@constructie.be',
-    city: 'Gent',
-    status: 'FOLLOW_UP',
-    lastContact: '5 dagen geleden',
-    niche: 'Construction'
-  },
-  {
-    id: '5',
-    companyName: 'Fashion Store',
-    contactName: 'Lisa Dubois',
-    phone: '0476 44 55 66',
-    email: 'lisa@fashion.be',
-    city: 'Antwerpen',
-    status: 'CONVERTED',
-    lastContact: '1 dag geleden',
-    niche: 'Retail'
-  }
+  { id: '1', companyName: 'Bakkerij De Lekkernij', contactName: 'Maria Peeters', phone: '0472 12 34 56', email: 'maria@bakkerij.be', city: 'Aalst', status: 'NEW', lastContact: '2 dagen geleden', niche: 'Food' },
+  { id: '2', companyName: 'Tech Solutions BV', contactName: 'Jan Janssen', phone: '0473 56 78 90', email: 'jan@techsolutions.be', city: 'Brussel', status: 'CONTACTED', lastContact: '1 week geleden', niche: 'IT' },
+  { id: '3', companyName: 'NecmiCuts', contactName: 'Necmi Yildiz', phone: '0472 98 76 54', email: 'necmi@necmicuts.be', city: 'Aalst', status: 'OFFER_SENT', lastContact: '3 dagen geleden', niche: 'Beauty' },
+  { id: '4', companyName: 'Constructie Groep', contactName: 'Peter Willems', phone: '0475 11 22 33', email: 'peter@constructie.be', city: 'Gent', status: 'FOLLOW_UP', lastContact: '5 dagen geleden', niche: 'Construction' },
+  { id: '5', companyName: 'Fashion Store', contactName: 'Lisa Dubois', phone: '0476 44 55 66', email: 'lisa@fashion.be', city: 'Antwerpen', status: 'CONVERTED', lastContact: '1 dag geleden', niche: 'Retail' },
+  { id: '6', companyName: 'Dental Care Plus', contactName: 'Dr. Sarah Vans', phone: '0471 23 45 67', email: 'sarah@dentalcare.be', city: 'Leuven', status: 'NEW', lastContact: 'Nog niet', niche: 'Healthcare' },
+  { id: '7', companyName: 'Auto Garage Fast', contactName: 'Marc De Vos', phone: '0474 56 78 90', email: 'marc@fastgarage.be', city: 'Brugge', status: 'NEW', lastContact: 'Nog niet', niche: 'Automotive' },
+  { id: '8', companyName: 'Bloemenwijk', contactName: 'Emma Jansen', phone: '0477 88 99 00', email: 'emma@bloemenwijk.be', city: 'Mechelen', status: 'CONTACTED', lastContact: '3 dagen geleden', niche: 'Retail' },
+  { id: '9', companyName: 'IT Consultancy Pro', contactName: 'Thomas Maes', phone: '0479 11 22 33', email: 'thomas@itpro.be', city: 'Brussel', status: 'OFFER_SENT', lastContact: '1 week geleden', niche: 'IT' },
+  { id: '10', companyName: 'Pizza Roma', contactName: 'Giovanni Rossi', phone: '0478 33 44 55', email: 'giovanni@pizzaroma.be', city: 'Antwerpen', status: 'FOLLOW_UP', lastContact: '4 dagen geleden', niche: 'Food' },
+  { id: '11', companyName: 'Fitness Center Fit', contactName: 'Kim De Smet', phone: '0475 66 77 88', email: 'kim@fitnessfit.be', city: 'Gent', status: 'NEW', lastContact: 'Nog niet', niche: 'Sport' },
+  { id: '12', companyName: 'Verzekeringen Safe', contactName: 'Bart Peeters', phone: '0472 99 00 11', email: 'bart@safeinsure.be', city: 'Hasselt', status: 'CONTACTED', lastContact: '2 dagen geleden', niche: 'Finance' },
+  { id: '13', companyName: 'Café Central', contactName: 'Luc Van den Berg', phone: '0476 22 33 44', email: 'luc@cafecentral.be', city: 'Leuven', status: 'OFFER_SENT', lastContact: '5 dagen geleden', niche: 'Horeca' },
+  { id: '14', companyName: 'Photography Studio', contactName: 'Sofie Wouters', phone: '0471 55 66 77', email: 'sofie@photostudio.be', city: 'Brugge', status: 'FOLLOW_UP', lastContact: '1 week geleden', niche: 'Media' },
+  { id: '15', companyName: 'Accountancy Plus', contactName: 'Wim Vermeulen', phone: '0474 88 99 00', email: 'wim@accountplus.be', city: 'Antwerpen', status: 'CONVERTED', lastContact: '2 dagen geleden', niche: 'Finance' },
+  { id: '16', companyName: 'Schoonmaak Service', contactName: 'Ann Daems', phone: '0479 33 44 55', email: 'ann@schoonmaak.be', city: 'Mechelen', status: 'NEW', lastContact: 'Nog niet', niche: 'Services' },
+  { id: '17', companyName: 'Web Design Agency', contactName: 'Dries Coppens', phone: '0477 66 77 88', email: 'dries@webdesign.be', city: 'Brussel', status: 'CONTACTED', lastContact: '4 dagen geleden', niche: 'IT' },
+  { id: '18', companyName: 'Tandarts Praktijk', contactName: 'Dr. Laura Bosch', phone: '0475 11 22 33', email: 'laura@tandarts.be', city: 'Gent', status: 'NEW', lastContact: 'Nog niet', niche: 'Healthcare' },
+  { id: '19', companyName: 'Meubelwinkel Home', contactName: 'Tom Jacobs', phone: '0478 44 55 66', email: 'tom@meubelhome.be', city: 'Aalst', status: 'OFFER_SENT', lastContact: '3 dagen geleden', niche: 'Retail' },
+  { id: '20', companyName: 'Marketing Bureau', contactName: 'Eline Van Dyck', phone: '0472 77 88 99', email: 'eline@marketing.be', city: 'Leuven', status: 'FOLLOW_UP', lastContact: '6 dagen geleden', niche: 'Marketing' },
+  { id: '21', companyName: 'Restaurant Taste', contactName: 'Chef Michael', phone: '0471 00 11 22', email: 'michael@taste.be', city: 'Brugge', status: 'CONTACTED', lastContact: '2 dagen geleden', niche: 'Horeca' },
+  { id: '22', companyName: 'Elektro Services', contactName: 'Koen Peeters', phone: '0476 33 44 55', email: 'koen@elektro.be', city: 'Hasselt', status: 'NEW', lastContact: 'Nog niet', niche: 'Construction' },
+  { id: '23', companyName: 'Advocatenkantoor', contactName: 'Sophie Martens', phone: '0479 66 77 88', email: 'sophie@advocaten.be', city: 'Antwerpen', status: 'CONVERTED', lastContact: '1 dag geleden', niche: 'Legal' },
+  { id: '24', companyName: 'Reisbureau World', contactName: 'Niels Bosmans', phone: '0474 22 33 44', email: 'niels@reizen.be', city: 'Brussel', status: 'OFFER_SENT', lastContact: '1 week geleden', niche: 'Travel' },
 ];
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string }> = {
@@ -109,52 +78,22 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: str
 
 export default function LeadsPage() {
   const router = useRouter();
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [leads, setLeads] = useState<Lead[]>(MOCK_LEADS); // Start met mock data direct
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
-  const [useMockData, setUseMockData] = useState(false);
+  const [useMockData, setUseMockData] = useState(true);
 
-  // Fetch leads
-  useEffect(() => {
-    fetchLeads();
-  }, [useMockData]);
-
-  async function fetchLeads() {
-    try {
-      setLoading(true);
-      setError(null);
-
-      if (useMockData) {
-        setLeads(MOCK_LEADS);
-        setLoading(false);
-        return;
-      }
-
-      const res = await fetch('/api/leads?limit=100');
-      
-      if (!res.ok) {
-        throw new Error(`API Error: ${res.status}`);
-      }
-      
-      const data = await res.json();
-      
-      if (data.error) {
-        throw new Error(data.error);
-      }
-      
-      setLeads(data.leads || []);
-    } catch (err: any) {
-      console.error('Error fetching leads:', err);
-      setError(err.message || 'Failed to fetch leads');
-      setUseMockData(true);
-      setLeads(MOCK_LEADS);
-    } finally {
-      setLoading(false);
-    }
-  }
+  // Stats - include ALL leads in "New" by default
+  const stats = {
+    total: leads.length,
+    new: leads.filter(l => l.status === 'NEW').length,
+    contacted: leads.filter(l => l.status === 'CONTACTED').length,
+    offers: leads.filter(l => l.status === 'OFFER_SENT').length,
+    converted: leads.filter(l => l.status === 'CONVERTED').length,
+  };
 
   // Filter leads
   const filteredLeads = leads.filter(lead => {
@@ -168,15 +107,6 @@ export default function LeadsPage() {
     
     return matchesSearch && matchesStatus;
   });
-
-  // Stats
-  const stats = {
-    total: leads.length,
-    new: leads.filter(l => l.status === 'NEW').length,
-    contacted: leads.filter(l => l.status === 'CONTACTED').length,
-    offers: leads.filter(l => l.status === 'OFFER_SENT').length,
-    converted: leads.filter(l => l.status === 'CONVERTED').length,
-  };
 
   // Toggle lead selection
   const toggleSelection = (id: string) => {
@@ -231,14 +161,6 @@ export default function LeadsPage() {
           </Link>
         </div>
       </div>
-
-      {/* Demo Mode Badge */}
-      {useMockData && (
-        <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-3">
-          <span className="px-2 py-1 bg-blue-500 text-white text-xs font-bold rounded">DEMO</span>
-          <p className="text-blue-700 text-sm">Je bekijkt demo data. Wijzigingen worden niet opgeslagen.</p>
-        </div>
-      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
@@ -400,7 +322,6 @@ export default function LeadsPage() {
           <div className="p-12 text-center">
             <Building2 className="w-16 h-16 mx-auto mb-4 text-gray-300" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Geen leads gevonden</h3>
-            <p className="text-gray-500 mb-6">Voeg je eerste lead toe om te beginnen.</p>
             <Link
               href="/calculator"
               className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-colors"

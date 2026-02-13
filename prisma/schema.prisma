@@ -233,9 +233,10 @@ model Offer {
   effectiveCommission Float?  // Bij geaccepteerd
   
   // Status tracking
-  status          String   @default("DRAFT") // DRAFT, SENT, ACCEPTED, REJECTED, EXPIRED
+  status          String   @default("DRAFT") // DRAFT, SENT, ACCEPTED, SOLD, REJECTED, EXPIRED
   sentAt          DateTime?
   acceptedAt      DateTime?
+  soldAt          DateTime?
   
   // Communication
   emailSent       Boolean  @default(false)

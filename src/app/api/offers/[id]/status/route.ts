@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
 import { calculateOfferCommission } from '@/lib/commission';
 
-// PATCH /api/offers/[id]/status - Update offer status with automatic commission calculation
+// PATCH /api/offers/[id]/status - Update offer status
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -15,25 +15,22 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await Promise.resolve(params);
     const body = await request.json();
-    const { status, isNewCustomer, hasPortability, hasConvergence } = body;
+    const { status: newStatus } = body;
 
-    if (!status) {
+    if (!newStatus || !['DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED'].includes(newStatus)) {
       return NextResponse.json(
-        { error: 'Status is required' },
+        { error: 'Invalid status' },
         { status: 400 }
       );
     }
 
-    // Get current offer
+    // Get the offer
     const offer = await prisma.offer.findFirst({
-      where: {
+      where: { 
         id,
-        consultantId: session.user.id,
-      },
-      include: {
-        lead: true,
+        consultantId: session.user.id 
       },
     });
 
@@ -44,105 +41,60 @@ export async function PATCH(
       );
     }
 
-    // Parse products
-    const products = typeof offer.products === 'string' 
-      ? JSON.parse(offer.products) 
-      : offer.products;
-
-    // Calculate commission based on new status
-    let potentialCommission: number | null = offer.potentialCommission;
-    let effectiveCommission: number | null = offer.effectiveCommission;
-    let sentAt: Date | null = offer.sentAt;
-    let acceptedAt: Date | null = offer.acceptedAt;
-
-    const commissionOptions = {
-      isNewCustomer: isNewCustomer ?? false,
-      hasPortability: hasPortability ?? false,
-      hasConvergence: hasConvergence ?? false,
-    };
-
-    switch (status) {
-      case 'SENT':
-        // When offer is sent: calculate potential commission
-        const sentCalc = calculateOfferCommission(products, commissionOptions);
-        potentialCommission = sentCalc.potentialCommission;
-        effectiveCommission = null;
-        sentAt = new Date();
-        break;
-
-      case 'ACCEPTED':
-        // When offer is accepted: calculate effective commission
-        const acceptedCalc = calculateOfferCommission(products, commissionOptions);
-        potentialCommission = null; // Remove from potential
-        effectiveCommission = acceptedCalc.effectiveCommission;
-        acceptedAt = new Date();
-        break;
-
-      case 'REJECTED':
-      case 'EXPIRED':
-        // When rejected/expired: clear all commission
-        potentialCommission = null;
-        effectiveCommission = null;
-        break;
-
-      case 'DRAFT':
-        // Back to draft: clear commissions
-        potentialCommission = null;
-        effectiveCommission = null;
-        sentAt = null;
-        acceptedAt = null;
-        break;
+    // Calculate commission based on status
+    let updateData: any = { status: newStatus };
+    
+    if (newStatus === 'SENT') {
+      // When sent: 30% potential commission
+      updateData.sentAt = new Date();
+      
+      // Recalculate commission from products
+      const products = JSON.parse(offer.products || '[]');
+      const hasConvergence = products.some((p: any) => p.type === 'MOBILE') && 
+                            products.some((p: any) => p.type === 'INTERNET');
+      
+      const commissionCalc = calculateOfferCommission(products, 'BC', { hasConvergence });
+      updateData.potentialCommission = commissionCalc.potentialCommission;
+      
+    } else if (newStatus === 'ACCEPTED') {
+      // When accepted: full commission
+      updateData.acceptedAt = new Date();
+      
+      const products = JSON.parse(offer.products || '[]');
+      const hasConvergence = products.some((p: any) => p.type === 'MOBILE') && 
+                            products.some((p: any) => p.type === 'INTERNET');
+      
+      const commissionCalc = calculateOfferCommission(products, 'BC', { hasConvergence });
+      updateData.effectiveCommission = commissionCalc.effectiveCommission;
+      
+    } else if (newStatus === 'REJECTED' || newStatus === 'EXPIRED') {
+      // No commission
+      updateData.potentialCommission = null;
+      updateData.effectiveCommission = null;
     }
 
-    // Update offer
+    // Update the offer
     const updatedOffer = await prisma.offer.update({
       where: { id },
-      data: {
-        status,
-        potentialCommission,
-        effectiveCommission,
-        sentAt,
-        acceptedAt,
-      },
+      data: updateData,
       include: {
         lead: {
           select: {
             companyName: true,
             contactName: true,
             city: true,
+            phone: true,
           },
         },
       },
     });
 
-    // Return with commission breakdown
-    const commissionBreakdown = calculateOfferCommission(products, commissionOptions);
-
-    return NextResponse.json({
-      offer: updatedOffer,
-      commission: {
-        status: getCommissionStatusLabel(status),
-        potential: potentialCommission,
-        effective: effectiveCommission,
-        breakdown: commissionBreakdown.breakdown,
-      },
-    });
+    return NextResponse.json({ offer: updatedOffer });
   } catch (error) {
     console.error('Error updating offer status:', error);
     return NextResponse.json(
-      { error: 'Failed to update offer status' },
+      { error: 'Failed to update status' },
       { status: 500 }
     );
   }
-}
-
-function getCommissionStatusLabel(status: string): string {
-  const labels: Record<string, string> = {
-    'DRAFT': 'Nog niet verstuurd',
-    'SENT': 'Potentiële commissie',
-    'ACCEPTED': 'Effectieve commissie',
-    'REJECTED': 'Geen commissie',
-    'EXPIRED': 'Verlopen',
-  };
-  return labels[status] || status;
 }

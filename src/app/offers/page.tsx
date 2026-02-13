@@ -1,18 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { PremiumLayout } from '@/components/design-system/premium-layout';
 import { 
   FileText, 
   Plus,
-  Eye,
-  Send,
-  Download,
   CheckCircle2,
   Clock,
   XCircle,
   TrendingUp,
-  Mail,
-  ArrowLeft,
   Euro,
   ChevronDown,
   Loader2,
@@ -21,41 +17,43 @@ import {
   Building2,
   MapPin,
   Calendar,
-  Phone
+  Phone,
+  ShoppingCart,
+  ArrowRight
 } from 'lucide-react';
 import Link from 'next/link';
-import { formatEuro } from '@/lib/commission';
+import { formatEuro, getCommissionStatusLabel } from '@/lib/commission';
 
-// Status configuration
+// Status configuration - updated with SOLD status
 const STATUS_CONFIG = {
   DRAFT: { 
     label: 'Concept', 
     color: 'bg-gray-100 text-gray-700 border-gray-200',
-    icon: FileText,
     bgColor: 'bg-gray-50'
   },
   SENT: { 
     label: 'Verstuurd', 
     color: 'bg-blue-100 text-blue-700 border-blue-200',
-    icon: Send,
     bgColor: 'bg-blue-50'
   },
   ACCEPTED: { 
     label: 'Geaccepteerd', 
+    color: 'bg-purple-100 text-purple-700 border-purple-200',
+    bgColor: 'bg-purple-50'
+  },
+  SOLD: { 
+    label: '✓ Verkocht', 
     color: 'bg-green-100 text-green-700 border-green-200',
-    icon: CheckCircle2,
     bgColor: 'bg-green-50'
   },
   REJECTED: { 
     label: 'Afgewezen', 
     color: 'bg-red-100 text-red-700 border-red-200',
-    icon: XCircle,
     bgColor: 'bg-red-50'
   },
   EXPIRED: { 
     label: 'Verlopen', 
     color: 'bg-orange-100 text-orange-700 border-orange-200',
-    icon: Clock,
     bgColor: 'bg-orange-50'
   },
 };
@@ -68,7 +66,7 @@ const STATUS_OPTIONS = [
   { value: 'EXPIRED', label: 'Verlopen' },
 ];
 
-// Mock data for demo
+// Mock data with commission breakdown
 const MOCK_OFFERS = [
   {
     id: '1',
@@ -79,17 +77,29 @@ const MOCK_OFFERS = [
       phone: '0472 12 34 56'
     },
     products: JSON.stringify([
-      { type: 'INTERNET', plan: 'ZEN' },
-      { type: 'MOBILE', plan: 'MEDIUM' },
-      { type: 'MOBILE', plan: 'MEDIUM' },
-      { type: 'TV', plan: 'TV_PLUS' }
+      { type: 'INTERNET', plan: 'ZEN', retailValue: 5800, options: { convergence: true, portability: true } },
+      { type: 'MOBILE', plan: 'MEDIUM', retailValue: 1500, options: { portability: true, convergence: true } },
+      { type: 'MOBILE', plan: 'MEDIUM', retailValue: 1500, options: { portability: true, convergence: true } },
+      { type: 'TV', plan: 'TV_PLUS', retailValue: 3200, options: {} }
     ]),
-    totalRetail: 13000,
+    totalRetail: 12000, // €120/month
     totalASP: 45,
     customerSavings: 1200,
     status: 'SENT',
     potentialCommission: 55.80,
     effectiveCommission: null,
+    commissionBreakdown: {
+      items: [
+        { name: 'Internet Zen', base: 15, portability: 12, convergence: 15, total: 42 },
+        { name: 'GSM 1 - Medium', base: 35, portability: 20, convergence: 12, total: 67 },
+        { name: 'GSM 2 - Medium', base: 35, portability: 20, convergence: 12, total: 67 },
+        { name: 'TV+', base: 10, portability: 0, convergence: 0, total: 10 },
+      ],
+      baseTotal: 95,
+      portabilityTotal: 52,
+      convergenceTotal: 39,
+      grandTotal: 186
+    },
     sentAt: '2025-02-13T10:00:00Z',
     acceptedAt: null,
     createdAt: '2025-02-13T10:00:00Z'
@@ -103,15 +113,25 @@ const MOCK_OFFERS = [
       phone: '0473 56 78 90'
     },
     products: JSON.stringify([
-      { type: 'INTERNET', plan: 'GIGA' },
-      { type: 'MOBILE', plan: 'UNLIMITED' }
+      { type: 'INTERNET', plan: 'GIGA', retailValue: 6800, options: { convergence: true } },
+      { type: 'MOBILE', plan: 'UNLIMITED', retailValue: 3000, options: { convergence: true } }
     ]),
-    totalRetail: 9500,
+    totalRetail: 9800,
     totalASP: 35,
     customerSavings: 800,
-    status: 'ACCEPTED',
+    status: 'SOLD',
     potentialCommission: null,
-    effectiveCommission: 186,
+    effectiveCommission: 102,
+    commissionBreakdown: {
+      items: [
+        { name: 'Internet Giga', base: 15, portability: 0, convergence: 15, total: 30 },
+        { name: 'GSM - Unlimited', base: 60, portability: 0, convergence: 12, total: 72 },
+      ],
+      baseTotal: 75,
+      portabilityTotal: 0,
+      convergenceTotal: 27,
+      grandTotal: 102
+    },
     sentAt: '2025-02-12T14:00:00Z',
     acceptedAt: '2025-02-13T09:00:00Z',
     createdAt: '2025-02-12T14:00:00Z'
@@ -125,15 +145,25 @@ const MOCK_OFFERS = [
       phone: '0472 98 76 54'
     },
     products: JSON.stringify([
-      { type: 'INTERNET', plan: 'START' },
-      { type: 'MOBILE', plan: 'SMALL' }
+      { type: 'INTERNET', plan: 'START', retailValue: 4900, options: { convergence: true } },
+      { type: 'MOBILE', plan: 'SMALL', retailValue: 1100, options: { convergence: true } }
     ]),
-    totalRetail: 6300,
+    totalRetail: 6000,
     totalASP: 20,
     customerSavings: 450,
     status: 'DRAFT',
     potentialCommission: null,
     effectiveCommission: null,
+    commissionBreakdown: {
+      items: [
+        { name: 'Internet Start', base: 15, portability: 0, convergence: 15, total: 30 },
+        { name: 'GSM - Small', base: 10, portability: 0, convergence: 0, total: 10 },
+      ],
+      baseTotal: 25,
+      portabilityTotal: 0,
+      convergenceTotal: 15,
+      grandTotal: 40
+    },
     sentAt: null,
     acceptedAt: null,
     createdAt: '2025-02-13T08:00:00Z'
@@ -155,6 +185,13 @@ interface Offer {
   status: keyof typeof STATUS_CONFIG;
   potentialCommission: number | null;
   effectiveCommission: number | null;
+  commissionBreakdown?: {
+    items: Array<{ name: string; base: number; portability: number; convergence: number; total: number }>;
+    baseTotal: number;
+    portabilityTotal: number;
+    convergenceTotal: number;
+    grandTotal: number;
+  };
   sentAt: string | null;
   acceptedAt: string | null;
   createdAt: string;
@@ -166,9 +203,10 @@ export default function OffersPage() {
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [useMockData, setUseMockData] = useState(false);
+  const [useMockData, setUseMockData] = useState(true);
+  const [showSaleModal, setShowSaleModal] = useState<string | null>(null);
+  const [expandedBreakdown, setExpandedBreakdown] = useState<string | null>(null);
 
-  // Fetch offers
   useEffect(() => {
     fetchOffers();
   }, [statusFilter, useMockData]);
@@ -178,7 +216,6 @@ export default function OffersPage() {
       setLoading(true);
       setError(null);
 
-      // Use mock data if flag is set
       if (useMockData) {
         const filtered = statusFilter === 'ALL' 
           ? MOCK_OFFERS 
@@ -191,45 +228,30 @@ export default function OffersPage() {
       const url = `/api/offers${statusFilter !== 'ALL' ? `?status=${statusFilter}` : ''}`;
       const res = await fetch(url);
       
-      if (!res.ok) {
-        throw new Error(`API Error: ${res.status}`);
-      }
-      
+      if (!res.ok) throw new Error(`API Error: ${res.status}`);
       const data = await res.json();
-      
-      if (data.error) {
-        throw new Error(data.error);
-      }
-      
       setOffers(data.offers || []);
     } catch (err: any) {
       console.error('Error fetching offers:', err);
       setError(err.message || 'Failed to fetch offers');
-      // Fall back to mock data on error
-      if (!useMockData) {
-        setUseMockData(true);
-      }
+      setUseMockData(true);
     } finally {
       setLoading(false);
     }
   }
 
-  // Update offer status
   async function updateStatus(offerId: string, newStatus: string) {
     try {
       setUpdatingId(offerId);
       
       if (useMockData) {
-        // Update mock data locally
         setOffers(prev => prev.map(o => {
           if (o.id === offerId) {
             const updated = { ...o, status: newStatus as any };
             if (newStatus === 'SENT') {
-              updated.potentialCommission = 55.80;
+              updated.potentialCommission = o.commissionBreakdown?.grandTotal ? o.commissionBreakdown.grandTotal * 0.3 : 0;
               updated.sentAt = new Date().toISOString();
             } else if (newStatus === 'ACCEPTED') {
-              updated.potentialCommission = null;
-              updated.effectiveCommission = 186;
               updated.acceptedAt = new Date().toISOString();
             }
             return updated;
@@ -246,12 +268,10 @@ export default function OffersPage() {
       });
 
       if (!res.ok) throw new Error('Failed to update status');
-
       const data = await res.json();
       
-      setOffers(prev => prev.map(o => 
-        o.id === offerId ? { ...o, ...data.offer } : o
-      ));
+      setOffers(prev => prev.map(o => o.id === offerId ? { ...o, ...data.offer } : o));
+      fetchOffers();
     } catch (error) {
       console.error('Error updating status:', error);
       alert('Kon status niet updaten');
@@ -260,7 +280,45 @@ export default function OffersPage() {
     }
   }
 
-  // Parse products JSON
+  // NEW: Convert offer to sale
+  async function convertToSale(offerId: string) {
+    try {
+      setUpdatingId(offerId);
+      
+      if (useMockData) {
+        setOffers(prev => prev.map(o => {
+          if (o.id === offerId) {
+            return {
+              ...o,
+              status: 'SOLD',
+              potentialCommission: null,
+              effectiveCommission: o.commissionBreakdown?.grandTotal || 0,
+              acceptedAt: new Date().toISOString()
+            };
+          }
+          return o;
+        }));
+        setShowSaleModal(null);
+        return;
+      }
+
+      const res = await fetch(`/api/offers/${offerId}/convert-to-sale`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!res.ok) throw new Error('Failed to convert to sale');
+      
+      fetchOffers();
+      setShowSaleModal(null);
+    } catch (error) {
+      console.error('Error converting to sale:', error);
+      alert('Kon niet converteren naar sale');
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
   function getProducts(offer: Offer): string[] {
     try {
       const parsed = JSON.parse(offer.products);
@@ -270,16 +328,16 @@ export default function OffersPage() {
     }
   }
 
-  // Calculate totals
   const totals = {
     totalOffers: offers.length,
     sentCount: offers.filter(o => o.status === 'SENT').length,
     acceptedCount: offers.filter(o => o.status === 'ACCEPTED').length,
+    soldCount: offers.filter(o => o.status === 'SOLD').length,
     potentialCommission: offers
       .filter(o => o.status === 'SENT')
       .reduce((sum, o) => sum + (o.potentialCommission || 0), 0),
     effectiveCommission: offers
-      .filter(o => o.status === 'ACCEPTED')
+      .filter(o => o.status === 'SOLD')
       .reduce((sum, o) => sum + (o.effectiveCommission || 0), 0),
   };
 
@@ -287,6 +345,7 @@ export default function OffersPage() {
     { value: 'ALL', label: 'Alle', count: totals.totalOffers },
     { value: 'SENT', label: 'Verstuurd', count: totals.sentCount },
     { value: 'ACCEPTED', label: 'Geaccepteerd', count: totals.acceptedCount },
+    { value: 'SOLD', label: 'Verkocht', count: totals.soldCount },
   ];
 
   const filteredOffers = statusFilter === 'ALL' 
@@ -294,292 +353,350 @@ export default function OffersPage() {
     : offers.filter(o => o.status === statusFilter);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <PremiumLayout user={{ name: 'Lenny De K.' }}>
+      {/* Page Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Verkoop & Offertes</h1>
+          <p className="text-gray-500 mt-1">Beheer je offertes en converteer naar sales</p>
+        </div>
+        <div className="flex gap-3">
+          <Link
+            href="/dashboard/v2-premium"
+            className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
+          >
+            Dashboard
+          </Link>
+          <Link
+            href="/calculator"
+            className="flex items-center gap-2 px-4 py-2 text-white bg-orange-500 rounded-lg hover:bg-orange-600"
+          >
+            <Plus className="w-4 h-4" />
+            Nieuwe Offerte
+          </Link>
+        </div>
+      </div>
+
+      {/* Demo Badge */}
+      {useMockData && (
+        <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-3">
+          <span className="px-2 py-1 bg-blue-500 text-white text-xs font-bold rounded">DEMO</span>
+          <p className="text-blue-700 text-sm">Commissies worden automatisch berekend volgens SmartSN regels</p>
+        </div>
+      )}
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Verkoop & Offertes</h1>
-              <p className="text-gray-500 mt-1">Beheer je offertes en commissies</p>
+              <p className="text-sm text-blue-600 font-medium">Open Offertes</p>
+              <p className="text-2xl font-bold text-blue-900">{totals.sentCount}</p>
             </div>
-            <div className="flex gap-3">
-              <Link
-                href="/dashboard/v2-premium"
-                className="inline-flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Dashboard
-              </Link>
-              <Link
-                href="/calculator"
-                className="inline-flex items-center gap-2 px-4 py-2 text-white bg-orange-500 rounded-lg hover:bg-orange-600 transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                Nieuwe Offerte
-              </Link>
-            </div>
-          </div>
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-            <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-blue-600 font-medium">Open Offertes</p>
-                  <p className="text-2xl font-bold text-blue-900">{totals.sentCount}</p>
-                </div>
-                <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
-                  <FileText className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-green-50 rounded-xl p-4 border border-green-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-green-600 font-medium">Geaccepteerd</p>
-                  <p className="text-2xl font-bold text-green-900">{totals.acceptedCount}</p>
-                  <p className="text-xs text-green-600 mt-1">+3 deze week</p>
-                </div>
-                <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
-                  <CheckCircle2 className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-orange-50 rounded-xl p-4 border border-orange-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-orange-600 font-medium">Potentiële Commissie</p>
-                  <p className="text-2xl font-bold text-orange-900">
-                    {formatEuro(totals.potentialCommission)}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-purple-600 font-medium">Effectieve Commissie</p>
-                  <p className="text-2xl font-bold text-purple-900">
-                    {formatEuro(totals.effectiveCommission)}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
-                  <Euro className="w-6 h-6 text-white" />
-                </div>
-              </div>
+            <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
+              <FileText className="w-6 h-6 text-white" />
             </div>
           </div>
         </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Error Message */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-red-700 font-medium">Database Error</p>
-              <p className="text-red-600 text-sm">{error}</p>
+        <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-purple-600 font-medium">Geaccepteerd</p>
+              <p className="text-2xl font-bold text-purple-900">{totals.acceptedCount}</p>
             </div>
+            <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
+              <CheckCircle2 className="w-6 h-6 text-white" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-orange-50 rounded-xl p-4 border border-orange-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-orange-600 font-medium">Potentiële Commissie</p>
+              <p className="text-2xl font-bold text-orange-900">{formatEuro(totals.potentialCommission)}</p>
+            </div>
+            <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center">
+              <TrendingUp className="w-6 h-6 text-white" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-green-50 rounded-xl p-4 border border-green-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-green-600 font-medium">Effectieve Commissie</p>
+              <p className="text-2xl font-bold text-green-900">{formatEuro(totals.effectiveCommission)}</p>
+            </div>
+            <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
+              <Euro className="w-6 h-6 text-white" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="bg-white rounded-xl p-4 border border-gray-200 mb-6">
+        <div className="flex flex-wrap gap-2">
+          {filterOptions.map((option) => (
             <button
-              onClick={() => { setUseMockData(true); fetchOffers(); }}
-              className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-2"
+              key={option.value}
+              onClick={() => setStatusFilter(option.value)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                statusFilter === option.value
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
             >
-              <RefreshCw className="w-4 h-4" />
-              Use Demo Data
+              {option.label}
+              <span className={`px-2 py-0.5 rounded-full text-xs ${
+                statusFilter === option.value ? 'bg-gray-700' : 'bg-gray-200'
+              }`}>
+                {option.count}
+              </span>
             </button>
-          </div>
-        )}
+          ))}
+        </div>
+      </div>
 
-        {/* Demo Mode Badge */}
-        {useMockData && (
-          <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-3">
-            <span className="px-2 py-1 bg-blue-500 text-white text-xs font-bold rounded">DEMO</span>
-            <p className="text-blue-700 text-sm">Je bekijkt demo data. Wijzigingen worden niet opgeslagen.</p>
-          </div>
-        )}
-
-        {/* Filter Tabs */}
-        <div className="bg-white rounded-xl p-4 border border-gray-200 mb-6">
-          <div className="flex flex-wrap gap-2">
-            {filterOptions.map((option) => (
+      {/* Sale Confirmation Modal */}
+      {showSaleModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <ShoppingCart className="w-8 h-8 text-green-600" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 text-center mb-2">Converteer naar Sale?</h2>
+            <p className="text-gray-500 text-center mb-6">
+              Deze offerte wordt gemarkeerd als verkocht. De effectieve commissie wordt berekend.
+            </p>
+            <div className="flex gap-3">
               <button
-                key={option.value}
-                onClick={() => setStatusFilter(option.value)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-                  statusFilter === option.value
-                    ? 'bg-gray-900 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+                onClick={() => setShowSaleModal(null)}
+                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200"
               >
-                {option.label}
-                <span className={`px-2 py-0.5 rounded-full text-xs ${
-                  statusFilter === option.value ? 'bg-gray-700' : 'bg-gray-200'
-                }`}>
-                  {option.count}
-                </span>
+                Annuleren
               </button>
-            ))}
+              <button
+                onClick={() => convertToSale(showSaleModal)}
+                disabled={updatingId === showSaleModal}
+                className="flex-1 py-3 bg-green-500 text-white rounded-xl font-medium hover:bg-green-600 flex items-center justify-center gap-2"
+              >
+                {updatingId === showSaleModal ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-5 h-5" />
+                    Bevestig Sale
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
+      )}
 
-        {/* Loading */}
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
-          </div>
-        ) : filteredOffers.length === 0 ? (
-          <div className="bg-white rounded-2xl p-12 text-center border border-gray-200">
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FileText className="w-10 h-10 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Geen offertes gevonden</h3>
-            <p className="text-gray-500 mb-6">Maak je eerste offerte om te beginnen met verkopen.</p>
-            <Link
-              href="/calculator"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-colors"
-            >
-              <Plus className="w-5 h-5" />
-              Nieuwe Offerte
-            </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {filteredOffers.map((offer) => {
-              const status = STATUS_CONFIG[offer.status];
-              const StatusIcon = status.icon;
-              const products = getProducts(offer);
-              
-              return (
-                <div key={offer.id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
-                  <div className="p-5">
-                    {/* Header */}
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-pink-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
-                          {offer.lead.companyName[0]}
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900">{offer.lead.companyName}</h3>
-                          <p className="text-sm text-gray-500">{offer.lead.contactName}</p>
-                          <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
-                            <span className="flex items-center gap-1">
-                              <MapPin className="w-3 h-3" />
-                              {offer.lead.city}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Phone className="w-3 h-3" />
-                              {offer.lead.phone}
-                            </span>
-                          </div>
-                        </div>
+      {/* Offers Grid */}
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+        </div>
+      ) : filteredOffers.length === 0 ? (
+        <div className="bg-white rounded-2xl p-12 text-center border border-gray-200">
+          <FileText className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Geen offertes gevonden</h3>
+          <Link href="/calculator" className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-xl">
+            <Plus className="w-5 h-5" />
+            Nieuwe Offerte
+          </Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          {filteredOffers.map((offer) => {
+            const status = STATUS_CONFIG[offer.status];
+            const products = getProducts(offer);
+            const canConvertToSale = offer.status === 'ACCEPTED';
+            const isBreakdownExpanded = expandedBreakdown === offer.id;
+            
+            return (
+              <div key={offer.id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="p-5">
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-pink-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                        {offer.lead.companyName[0]}
                       </div>
-                      
-                      {/* Status Dropdown */}
-                      <div className="relative group">
-                        <button
-                          disabled={updatingId === offer.id}
-                          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border ${status.color} disabled:opacity-50`}
-                        >
-                          {updatingId === offer.id ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <StatusIcon className="w-3 h-3" />
-                          )}
-                          {status.label}
-                          <ChevronDown className="w-3 h-3" />
-                        </button>
-                        
-                        {/* Dropdown Menu */}
-                        <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-                          {STATUS_OPTIONS.map((opt) => (
-                            <button
-                              key={opt.value}
-                              onClick={() => updateStatus(offer.id, opt.value)}
-                              className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 first:rounded-t-xl last:rounded-b-xl ${
-                                offer.status === opt.value ? 'bg-orange-50 text-orange-600 font-medium' : 'text-gray-700'
-                              }`}
-                            >
-                              {opt.label}
-                            </button>
-                          ))}
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{offer.lead.companyName}</h3>
+                        <p className="text-sm text-gray-500">{offer.lead.contactName}</p>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
+                          <MapPin className="w-3 h-3" />
+                          {offer.lead.city}
                         </div>
                       </div>
                     </div>
-
-                    {/* Commission Badge */}
-                    {(offer.potentialCommission || offer.effectiveCommission) && (
-                      <div className={`mb-4 px-3 py-2 rounded-lg text-sm ${
-                        offer.effectiveCommission 
-                          ? 'bg-green-50 text-green-700 border border-green-200'
-                          : 'bg-blue-50 text-blue-700 border border-blue-200'
-                      }`}>
-                        <span className="font-medium">
-                          {offer.effectiveCommission 
-                            ? `✓ Effectieve commissie: ${formatEuro(offer.effectiveCommission)}`
-                            : `⏳ Potentiële commissie: ${formatEuro(offer.potentialCommission || 0)}`
-                          }
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Products */}
-                    <div className="mb-4">
-                      <p className="text-xs text-gray-500 uppercase mb-2">Producten</p>
-                      <div className="flex flex-wrap gap-2">
-                        {products.map((product, idx) => (
-                          <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-lg font-medium">
-                            {product}
-                          </span>
+                    
+                    {/* Status Dropdown */}
+                    <div className="relative group">
+                      <button className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border ${status.color}`}>
+                        {status.label}
+                        <ChevronDown className="w-3 h-3" />
+                      </button>
+                      
+                      <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                        {STATUS_OPTIONS.map((opt) => (
+                          <button
+                            key={opt.value}
+                            onClick={() => updateStatus(offer.id, opt.value)}
+                            className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 first:rounded-t-xl last:rounded-b-xl"
+                          >
+                            {opt.label}
+                          </button>
                         ))}
                       </div>
                     </div>
+                  </div>
 
-                    {/* Pricing */}
-                    <div className="grid grid-cols-2 gap-4 mb-4 p-4 bg-gray-50 rounded-xl">
-                      <div>
-                        <p className="text-xs text-gray-500">Maandbedrag</p>
-                        <p className="text-xl font-bold text-gray-900">{formatEuro(offer.totalRetail)}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Klant bespaart</p>
-                        <p className="text-xl font-bold text-green-600">{formatEuro(offer.customerSavings)}</p>
+                  {/* Commission Badge */}
+                  {(offer.potentialCommission || offer.effectiveCommission || offer.commissionBreakdown) && (
+                    <div className={`mb-4 px-4 py-3 rounded-xl ${
+                      offer.effectiveCommission 
+                        ? 'bg-green-50 border border-green-200'
+                        : offer.potentialCommission
+                        ? 'bg-blue-50 border border-blue-200'
+                        : 'bg-gray-50 border border-gray-200'
+                    }`}>
+                      <div className="flex items-center justify-between">
+                        <span className={`font-semibold ${
+                          offer.effectiveCommission ? 'text-green-700' : offer.potentialCommission ? 'text-blue-700' : 'text-gray-700'
+                        }`}>
+                          {offer.effectiveCommission 
+                            ? `✓ Verkocht - Effectieve commissie: ${formatEuro(offer.effectiveCommission)}`
+                            : offer.potentialCommission
+                            ? `⏳ Potentiële commissie: ${formatEuro(offer.potentialCommission)}`
+                            : `💰 Totaal commissie: ${formatEuro(offer.commissionBreakdown?.grandTotal || 0)}`
+                          }
+                        </span>
+                        {offer.commissionBreakdown && (
+                          <button
+                            onClick={() => setExpandedBreakdown(isBreakdownExpanded ? null : offer.id)}
+                            className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                          >
+                            {isBreakdownExpanded ? 'Verberg' : 'Toon breakdown'}
+                            <ChevronDown className={`w-3 h-3 transition-transform ${isBreakdownExpanded ? 'rotate-180' : ''}`} />
+                          </button>
+                        )}
                       </div>
                     </div>
+                  )}
 
-                    {/* Footer */}
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <Calendar className="w-4 h-4" />
-                        {new Date(offer.createdAt).toLocaleDateString('nl-BE', { 
-                          day: 'numeric', 
-                          month: 'short',
-                          year: 'numeric'
-                        })}
+                  {/* Commission Breakdown - ALWAYS VISIBLE */}
+                  {offer.commissionBreakdown && (
+                    <div className={`mb-4 overflow-hidden transition-all ${isBreakdownExpanded ? '' : 'max-h-24'}`}>
+                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                        <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-3">Commissie Opbouw</p>
+                        
+                        {/* Table Header */}
+                        <div className="grid grid-cols-5 gap-2 text-xs text-gray-500 mb-2 px-2">
+                          <span>Product</span>
+                          <span className="text-center">Basis</span>
+                          <span className="text-center">Portability</span>
+                          <span className="text-center">Convergentie</span>
+                          <span className="text-right">Totaal</span>
+                        </div>
+                        
+                        {/* Items */}
+                        <div className="space-y-1">
+                          {offer.commissionBreakdown.items.map((item, idx) => (
+                            <div key={idx} className="grid grid-cols-5 gap-2 text-sm py-1.5 px-2 rounded hover:bg-white">
+                              <span className="font-medium text-gray-700 truncate">{item.name}</span>
+                              <span className="text-center text-gray-600">€{item.base}</span>
+                              <span className={`text-center ${item.portability > 0 ? 'text-green-600 font-medium' : 'text-gray-400'}`}>
+                                {item.portability > 0 ? `+€${item.portability}` : '-'}
+                              </span>
+                              <span className={`text-center ${item.convergence > 0 ? 'text-purple-600 font-medium' : 'text-gray-400'}`}>
+                                {item.convergence > 0 ? `+€${item.convergence}` : '-'}
+                              </span>
+                              <span className="text-right font-semibold text-gray-900">€{item.total}</span>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {/* Total Row */}
+                        <div className="mt-3 pt-3 border-t border-gray-200 grid grid-cols-5 gap-2 text-sm px-2">
+                          <span className="font-semibold text-gray-700">TOTAAL</span>
+                          <span className="text-center font-semibold text-gray-700">€{offer.commissionBreakdown.baseTotal}</span>
+                          <span className="text-center font-semibold text-green-600">+€{offer.commissionBreakdown.portabilityTotal}</span>
+                          <span className="text-center font-semibold text-purple-600">+€{offer.commissionBreakdown.convergenceTotal}</span>
+                          <span className="text-right font-bold text-lg text-orange-600">€{offer.commissionBreakdown.grandTotal}</span>
+                        </div>
+                        
+                        {/* 30% / 100% indicator */}
+                        <div className="mt-2 flex items-center justify-between text-xs px-2">
+                          <span className="text-gray-500">
+                            {offer.status === 'SENT' && `30% nu: ${formatEuro((offer.commissionBreakdown.grandTotal || 0) * 0.3)}`}
+                            {offer.status === 'SOLD' && `100% uitbetaald: ${formatEuro(offer.commissionBreakdown.grandTotal || 0)}`}
+                            {(offer.status === 'DRAFT' || offer.status === 'ACCEPTED') && `Bij verzending: ${formatEuro((offer.commissionBreakdown.grandTotal || 0) * 0.3)} • Bij sale: ${formatEuro(offer.commissionBreakdown.grandTotal || 0)}`}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        <button className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors">
-                          <Mail className="w-4 h-4" />
+                    </div>
+                  )}
+
+                  {/* Products & Pricing */}
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {products.map((product, idx) => (
+                      <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded font-medium">
+                        {product}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <p className="text-xs text-gray-500">Maandbedrag klant</p>
+                      <p className="text-lg font-bold text-gray-900">€{(offer.totalRetail / 100).toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Klant bespaart</p>
+                      <p className="text-lg font-bold text-green-600">€{(offer.customerSavings / 100).toFixed(2)}</p>
+                    </div>
+                  </div>
+
+                  {/* Footer with Actions */}
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                    <span className="text-sm text-gray-500">
+                      {new Date(offer.createdAt).toLocaleDateString('nl-BE')}
+                    </span>
+                    
+                    <div className="flex gap-2">
+                      {/* NEW: Convert to Sale Button */}
+                      {canConvertToSale && (
+                        <button
+                          onClick={() => setShowSaleModal(offer.id)}
+                          className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium"
+                        >
+                          <ShoppingCart className="w-4 h-4" />
+                          Markeer als Sale
                         </button>
-                        <button className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors">
-                          <Download className="w-4 h-4" />
-                        </button>
-                      </div>
+                      )}
+                      
+                      {offer.status === 'SOLD' && (
+                        <span className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-lg font-medium">
+                          <CheckCircle2 className="w-4 h-4" />
+                          Verkocht
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </main>
-    </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </PremiumLayout>
   );
 }

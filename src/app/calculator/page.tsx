@@ -1,508 +1,728 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useState, useEffect } from 'react';
 import { PremiumLayout } from '@/components/design-system/premium-layout';
 import { 
-  calculateTariff, 
-  formatEuro as formatPrice,
-  type MobileLine,
-  MOBILE_PRICES_STANDALONE,
-  MOBILE_PRICES_STANDALONE_2PLUS,
-  MOBILE_PRICES_PACK_1,
-  MOBILE_PRICES_PACK_2PLUS,
-} from '@/lib/tariff-engine';
-import { 
-  TrendingDown,
-  Wifi,
-  Smartphone,
-  Tv,
-  Plus,
-  Trash2,
-  CheckCircle2,
-  ArrowRight,
-  Loader2,
-  Wallet,
-  Building2,
+  Search, 
+  Plus, 
+  Minus, 
+  Wifi, 
+  Smartphone, 
+  Tv, 
   Zap,
-  Calculator,
-  Edit3,
+  ChevronDown,
+  ArrowRight,
   Euro,
-  Gift
+  TrendingUp,
+  ShoppingCart,
+  CheckCircle2,
+  Loader2,
+  FileText,
+  User,
+  Building2,
+  MapPin,
+  Phone,
+  Mail,
+  ArrowLeft,
+  CreditCard,
+  X
 } from 'lucide-react';
-import { getCommissionPreview } from '@/lib/commission';
+import Link from 'next/link';
+import { calculateOfferCommission, formatEuro, type Product } from '@/lib/commission';
 
-const internetPlans = [
-  { value: '', label: 'Geen internet', price: 0, download: 0 },
-  { value: 'START', label: 'Start Fiber', price: 5300, download: 200 },
-  { value: 'ZEN', label: 'Zen Fiber', price: 6200, download: 500 },
-  { value: 'GIGA', label: 'Giga Fiber', price: 7200, download: 1000 },
+// ============================================
+// ORANGE PRICES - What Customer Pays
+// Source: Price List Document
+// ============================================
+const ORANGE_INTERNET = [
+  { 
+    id: 'START', 
+    name: 'Internet Start', 
+    standalonePrice: 53.00,  // Customer pays this (no mobile)
+    packPrice: 49.00,        // Customer pays this (with mobile pack)
+    speed: '100 Mbps',
+    speedDown: 100,
+    speedUp: 25,
+    features: ['100 Mbps down / 25 Mbps up']
+  },
+  { 
+    id: 'ZEN', 
+    name: 'Internet Zen', 
+    standalonePrice: 62.00,
+    packPrice: 58.00,
+    speed: '300 Mbps',
+    speedDown: 300,
+    speedUp: 50,
+    features: ['300 Mbps down / 50 Mbps up']
+  },
+  { 
+    id: 'GIGA', 
+    name: 'Internet Giga', 
+    standalonePrice: 72.00,
+    packPrice: 68.00,
+    speed: '1 Gbps',
+    speedDown: 1000,
+    speedUp: 100,
+    features: ['1 Gbps down / 100 Mbps up']
+  },
 ];
 
-const tvPlans = [
-  { value: '', label: 'Geen TV', price: 0 },
-  { value: 'TV_LIFE', label: 'Orange TV Life', price: 1000 },
-  { value: 'TV', label: 'Orange TV', price: 2000 },
-  { value: 'TV_PLUS', label: 'Orange TV Plus', price: 3200 },
+const ORANGE_MOBILE = [
+  { id: 'CHILD', name: 'Child', standalonePrice: 0, packPrice: 0, data: '1 GB', unlimitedCalls: false, unlimitedSMS: false, features: ['1 GB data', '150 min bellen', '150 SMS'] },
+  { id: 'SMALL', name: 'Small', standalonePrice: 16, packPrice: 11.50, data: '5 GB', unlimitedCalls: false, unlimitedSMS: false, features: ['5 GB data', '200 min bellen', '200 SMS'] },
+  { id: 'MEDIUM', name: 'Medium', standalonePrice: 26, packPrice: 16.50, data: '20 GB', unlimitedCalls: true, unlimitedSMS: true, features: ['20 GB data', 'Onbeperkt bellen', 'Onbeperkt SMS'] },
+  { id: 'LARGE', name: 'Large', standalonePrice: 32, packPrice: 21.50, data: '40 GB', unlimitedCalls: true, unlimitedSMS: true, features: ['40 GB data', 'Onbeperkt bellen', 'Onbeperkt SMS'] },
+  { id: 'UNLIMITED', name: 'Unlimited', standalonePrice: 42, packPrice: 32.00, data: 'Unlimited', unlimitedCalls: true, unlimitedSMS: true, features: ['Onbeperkte data', 'Onbeperkt bellen', 'Onbeperkt SMS'] },
 ];
 
-// Mock leads for demo
-const MOCK_LEADS = [
-  { id: '1', companyName: 'Bakkerij De Lekkernij', contactName: 'Maria Peeters', city: 'Aalst' },
-  { id: '2', companyName: 'Tech Solutions BV', contactName: 'Jan Janssen', city: 'Brussel' },
-  { id: '3', companyName: 'NecmiCuts', contactName: 'Necmi Yildiz', city: 'Aalst' },
+const TV_OPTIONS = [
+  { id: 'TV', name: 'Orange TV', price: 0, features: ['Basis TV'] },
+  { id: 'TV_PLUS', name: 'Orange TV+', price: 32, features: ['TV + Play', 'Netflix'] },
+  { id: 'TV_LIFE', name: 'Orange TV Life', price: 42, features: ['TV + Extra', 'Netflix', 'Apple TV'] },
 ];
+
+const ENERGY_OPTIONS = [
+  { id: 'RESIDENTIEEL', name: 'Residentieel', features: ['Elektriciteit', 'Gas'] },
+  { id: 'SOHO', name: 'SoHo', features: ['Zakelijke energie', 'BTW aftrekbaar'] },
+];
+
+interface Lead {
+  id: string;
+  companyName: string;
+  contactName: string;
+  city: string;
+  phone: string;
+  email: string;
+}
 
 export default function CalculatorPage() {
-  const router = useRouter();
-  const [internetPlan, setInternetPlan] = useState('');
-  const [isSecondAddress, setIsSecondAddress] = useState(false);
-  const [mobileLines, setMobileLines] = useState<MobileLine[]>([]);
-  const [tvPlan, setTvPlan] = useState('');
-  const [currentMonthlyCost, setCurrentMonthlyCost] = useState('');
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Lead[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  
+  // Selected lead
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  
+  // Product selection
+  const [internetPlan, setInternetPlan] = useState<string | null>(null);
   const [internetInstallType, setInternetInstallType] = useState<'NEW' | 'EASY_SWITCH' | null>(null);
-  const [selectedLead, setSelectedLead] = useState(MOCK_LEADS[0]);
-  const [creatingOffer, setCreatingOffer] = useState(false);
-  const [showLeadSelector, setShowLeadSelector] = useState(false);
-
-  const hasInternet = !!internetPlan;
-  const hasMobile = mobileLines.length > 0;
-
-  const result = useMemo(() => {
-    if (!hasInternet && !hasMobile) return null;
-    return calculateTariff({
-      internetPlan: (internetPlan as any) || 'START',
-      isSecondAddress,
-      hasMobile,
-      mobileLines,
-      tvPlan: (tvPlan as any) || 'NONE',
-      hasVasteLijn: false,
-      hasMyComfort: false,
-      wifiBoosters: 0,
-      extraDecoders: 0,
-      currentMonthlyCost: parseFloat(currentMonthlyCost) || 0,
-    });
-  }, [internetPlan, isSecondAddress, mobileLines, tvPlan, currentMonthlyCost, hasInternet, hasMobile]);
-
-  const commissionPreview = useMemo(() => {
-    if (!result) return null;
-    const products = [];
-    if (internetPlan) {
-      products.push({
-        type: 'INTERNET' as const,
-        plan: internetPlan,
-        retailValue: result.internetPrice,
-        options: { convergence: hasMobile, portability: internetInstallType === 'EASY_SWITCH' },
-      });
-    }
-    mobileLines.forEach((line) => {
-      products.push({
-        type: 'MOBILE' as const,
-        plan: line.plan,
-        retailValue: result.mobilePrice / mobileLines.length,
-        options: { portability: line.isPortability, convergence: hasInternet },
-      });
-    });
-    if (tvPlan) {
-      products.push({ type: 'TV' as const, plan: tvPlan, retailValue: result.tvPrice });
-    }
-    return getCommissionPreview(products, 'BC');
-  }, [result, internetPlan, mobileLines, tvPlan, hasInternet, internetInstallType]);
-
+  const [mobileLines, setMobileLines] = useState<Array<{ plan: string; portability: boolean }>>([]);
+  const [tvPlan, setTvPlan] = useState<string | null>(null);
+  const [energyPlan, setEnergyPlan] = useState<string | null>(null);
+  
+  // Price calculation state
+  const [totalPrice, setTotalPrice] = useState(0);
+  const [commission, setCommission] = useState({ potential: 0, effective: 0, breakdown: [] as any[] });
+  
+  // Add mobile line
   const addMobileLine = () => {
-    setMobileLines([...mobileLines, { plan: 'MEDIUM', isPortability: false }]);
+    setMobileLines([...mobileLines, { plan: '', portability: false }]);
   };
-
+  
   const removeMobileLine = (index: number) => {
     setMobileLines(mobileLines.filter((_, i) => i !== index));
   };
-
-  const updateMobileLine = (index: number, updates: Partial<MobileLine>) => {
-    const newLines = [...mobileLines];
-    newLines[index] = { ...newLines[index], ...updates };
-    setMobileLines(newLines);
+  
+  const updateMobileLine = (index: number, field: 'plan' | 'portability', value: string | boolean) => {
+    const updated = [...mobileLines];
+    updated[index] = { ...updated[index], [field]: value };
+    setMobileLines(updated);
   };
-
-  const getMobilePlanOptions = (lineIndex: number, totalLines: number) => {
-    const isMultiLine = totalLines >= 2;
-    const isFirstLine = lineIndex === 0;
-    const plans = [];
-    if (!isFirstLine) plans.push({ value: 'CHILD', label: 'Child (3GB)', price: 500 });
-    if (hasInternet) {
-      if (isMultiLine) {
-        plans.push(
-          { value: 'SMALL', label: 'Small (12GB)', price: MOBILE_PRICES_PACK_2PLUS.SMALL },
-          { value: 'MEDIUM', label: 'Medium (70GB)', price: MOBILE_PRICES_PACK_2PLUS.MEDIUM },
-          { value: 'LARGE', label: 'Large (140GB)', price: MOBILE_PRICES_PACK_2PLUS.LARGE },
-          { value: 'UNLIMITED', label: 'Unlimited', price: MOBILE_PRICES_PACK_2PLUS.UNLIMITED }
-        );
-      } else {
-        plans.push(
-          { value: 'SMALL', label: 'Small (12GB)', price: MOBILE_PRICES_PACK_1.SMALL },
-          { value: 'MEDIUM', label: 'Medium (70GB)', price: MOBILE_PRICES_PACK_1.MEDIUM },
-          { value: 'LARGE', label: 'Large (140GB)', price: MOBILE_PRICES_PACK_1.LARGE },
-          { value: 'UNLIMITED', label: 'Unlimited', price: MOBILE_PRICES_PACK_1.UNLIMITED }
-        );
+  
+  // Calculate prices and commission
+  useEffect(() => {
+    // Check for convergence (pack discount applies if at least 1 mobile + internet)
+    const hasConvergence = internetPlan && mobileLines.length > 0 && mobileLines.some(m => m.plan);
+    
+    // Calculate customer price
+    let price = 0;
+    
+    // Internet price (pack or standalone)
+    if (internetPlan) {
+      const internet = ORANGE_INTERNET.find(i => i.id === internetPlan);
+      if (internet) {
+        price += hasConvergence ? internet.packPrice : internet.standalonePrice;
       }
-    } else {
-      const basePrices = isMultiLine ? MOBILE_PRICES_STANDALONE_2PLUS : MOBILE_PRICES_STANDALONE;
-      plans.push(
-        { value: 'SMALL', label: 'Small (12GB)', price: basePrices.SMALL },
-        { value: 'MEDIUM', label: 'Medium (70GB)', price: basePrices.MEDIUM },
-        { value: 'LARGE', label: 'Large (140GB)', price: basePrices.LARGE },
-        { value: 'UNLIMITED', label: 'Unlimited', price: basePrices.UNLIMITED }
-      );
     }
-    return plans;
+    
+    // Mobile prices (pack or standalone)
+    mobileLines.forEach(line => {
+      if (line.plan) {
+        const mobile = ORANGE_MOBILE.find(m => m.id === line.plan);
+        if (mobile) {
+          price += hasConvergence ? mobile.packPrice : mobile.standalonePrice;
+        }
+      }
+    });
+    
+    // TV price
+    if (tvPlan) {
+      const tv = TV_OPTIONS.find(t => t.id === tvPlan);
+      if (tv) price += tv.price;
+    }
+    
+    setTotalPrice(price);
+    
+    // Calculate commission
+    const products: Product[] = [];
+    
+    if (internetPlan) {
+      products.push({
+        type: 'INTERNET',
+        plan: internetPlan,
+        retailValue: 0, // Commission uses fixed base, not retail
+        options: {
+          convergence: hasConvergence || false,
+          portability: internetInstallType === 'EASY_SWITCH'
+        }
+      });
+    }
+    
+    mobileLines.forEach(line => {
+      if (line.plan) {
+        products.push({
+          type: 'MOBILE',
+          plan: line.plan,
+          retailValue: 0,
+          options: {
+            portability: line.portability,
+            convergence: hasConvergence || false
+          }
+        });
+      }
+    });
+    
+    if (tvPlan) {
+      products.push({
+        type: 'TV',
+        plan: tvPlan,
+        retailValue: 0,
+        options: {}
+      });
+    }
+    
+    const commissionResult = calculateOfferCommission(products, 'BC', { hasConvergence: hasConvergence || false });
+    setCommission({
+      potential: commissionResult.potentialCommission,
+      effective: commissionResult.effectiveCommission,
+      breakdown: commissionResult.breakdown
+    });
+    
+  }, [internetPlan, mobileLines, tvPlan, internetInstallType]);
+  
+  // Search for leads
+  const searchLeads = async (query: string) => {
+    if (!query || query.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    
+    setIsSearching(true);
+    try {
+      const res = await fetch(`/api/leads/search?q=${encodeURIComponent(query)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSearchResults(data.leads || []);
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+    } finally {
+      setIsSearching(false);
+    }
   };
-
-  async function createOffer() {
-    if (!result || !commissionPreview) return;
-    setCreatingOffer(true);
-    await new Promise(r => setTimeout(r, 1000));
-    router.push('/offers');
-  }
+  
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => searchLeads(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   return (
     <PremiumLayout user={{ name: 'Lenny De K.' }}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Prijs Calculator</h1>
-          <p className="text-gray-500 mt-1">Bereken de perfecte prijs en commissie</p>
-        </div>
-        <Link
-          href="/leads"
-          className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          <ArrowRight className="w-4 h-4 rotate-180" />
-          Terug naar leads
-        </Link>
-      </div>
-
-      {/* Selected Lead Card - FIXED COLORS */}
-      <div className="bg-gradient-to-r from-orange-500 to-pink-600 rounded-2xl p-6 text-white mb-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center text-2xl font-bold text-white">
-              {selectedLead.companyName[0]}
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-white">{selectedLead.companyName}</h3>
-              <p className="text-orange-100">{selectedLead.contactName}</p>
-              <p className="text-sm text-orange-200">{selectedLead.city}</p>
-            </div>
-          </div>
-          <div className="text-right">
-            <p className="text-sm text-orange-100 mb-1">Voor klant</p>
-            <button 
-              onClick={() => setShowLeadSelector(!showLeadSelector)}
-              className="text-white underline text-sm hover:text-orange-100"
-            >
-              Wijzig lead
-            </button>
-          </div>
-        </div>
-        
-        {/* Lead Selector Dropdown */}
-        {showLeadSelector && (
-          <div className="mt-4 p-4 bg-white rounded-xl">
-            <p className="text-sm font-medium text-gray-700 mb-2">Selecteer een lead:</p>
-            <div className="space-y-2">
-              {MOCK_LEADS.map((lead) => (
-                <button
-                  key={lead.id}
-                  onClick={() => { setSelectedLead(lead); setShowLeadSelector(false); }}
-                  className={`w-full p-3 rounded-lg text-left transition-colors ${
-                    selectedLead.id === lead.id 
-                      ? 'bg-orange-100 border-2 border-orange-500' 
-                      : 'bg-gray-50 hover:bg-gray-100'
-                  }`}
-                >
-                  <p className="font-medium text-gray-900">{lead.companyName}</p>
-                  <p className="text-sm text-gray-500">{lead.contactName} • {lead.city}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column - Products */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Current Cost - FIXED */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                <Euro className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">Huidige Maandkosten</h3>
-                <p className="text-sm text-gray-500">Wat betaalt de klant nu?</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="relative flex-1 max-w-xs">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-lg">€</span>
-                <input
-                  type="number"
-                  placeholder="0"
-                  value={currentMonthlyCost}
-                  onChange={(e) => setCurrentMonthlyCost(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-lg font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
-                />
-              </div>
-              <span className="text-gray-500">/maand</span>
-            </div>
-          </div>
-
-          {/* Internet - FIXED */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
-                <Wifi className="w-5 h-5 text-orange-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">Internet</h3>
-                <p className="text-sm text-gray-500">Kies het internet pakket</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-              {internetPlans.filter(p => p.value).map((plan) => (
-                <button
-                  key={plan.value}
-                  onClick={() => { setInternetPlan(plan.value); setInternetInstallType(null); }}
-                  className={`p-4 rounded-xl border-2 text-left transition-all ${
-                    internetPlan === plan.value ? 'border-orange-500 bg-orange-50' : 'border-gray-200 hover:border-orange-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-semibold text-gray-900">{plan.label}</span>
-                    {internetPlan === plan.value && <CheckCircle2 className="w-5 h-5 text-orange-500" />}
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">
-                    €{((plan.price - (hasMobile ? 400 : 0)) / 100).toFixed(0)}
-                    <span className="text-sm font-normal text-gray-500">/maand</span>
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">{plan.download} Mbps</p>
-                </button>
-              ))}
-            </div>
-            {hasInternet && (
-              <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl">
-                <div className="flex items-center gap-2 mb-3">
-                  <Zap className="w-5 h-5 text-orange-600" />
-                  <h4 className="font-semibold text-gray-900">Type installatie</h4>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setInternetInstallType('NEW')}
-                    className={`p-4 rounded-xl border-2 text-left transition-all ${
-                      internetInstallType === 'NEW' ? 'border-orange-500 bg-white' : 'border-gray-200 bg-white hover:border-orange-300'
-                    }`}
-                  >
-                    <span className="font-semibold text-gray-900">Nieuwe installatie</span>
-                    <p className="text-sm text-gray-500 mt-1">Nieuwe aansluiting</p>
-                  </button>
-                  <button
-                    onClick={() => setInternetInstallType('EASY_SWITCH')}
-                    className={`p-4 rounded-xl border-2 text-left transition-all ${
-                      internetInstallType === 'EASY_SWITCH' ? 'border-orange-500 bg-white' : 'border-gray-200 bg-white hover:border-orange-300'
-                    }`}
-                  >
-                    <span className="font-semibold text-gray-900">Easy Switch</span>
-                    <p className="text-sm text-gray-500 mt-1">Nummerbehoud (+€12)</p>
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Mobile - FIXED */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+      {/* Search Modal */}
+      {showSearchModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                  <Smartphone className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">Mobiel</h3>
-                  <p className="text-sm text-gray-500">Voeg mobiele lijnen toe</p>
-                </div>
-              </div>
-              <button
-                onClick={addMobileLine}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-orange-600 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                GSM toevoegen
+              <h2 className="text-xl font-bold text-gray-900">Zoek Lead</h2>
+              <button onClick={() => setShowSearchModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                <X className="w-5 h-5" />
               </button>
             </div>
-            {mobileLines.length === 0 ? (
-              <div className="text-center py-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                <Smartphone className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                <p className="text-gray-500">Voeg mobiele lijnen toe</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {mobileLines.map((line, index) => (
-                  <div key={index} className="p-4 bg-gray-50 rounded-xl border border-gray-200">
-                    <div className="flex justify-between items-center mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold">{index + 1}</div>
-                        <span className="font-medium text-gray-900">GSM #{index + 1}</span>
-                      </div>
-                      <button onClick={() => removeMobileLine(index)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <select
-                        className="w-full p-3 bg-white border border-gray-200 rounded-xl text-gray-900"
-                        value={line.plan}
-                        onChange={(e) => updateMobileLine(index, { plan: e.target.value as any })}
-                      >
-                        {getMobilePlanOptions(index, mobileLines.length).map((plan) => (
-                          <option key={plan.value} value={plan.value}>{plan.label} - {formatPrice(plan.price)}</option>
-                        ))}
-                      </select>
-                      <label className="flex items-center gap-2 p-3 bg-white rounded-xl border border-gray-200 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={line.isPortability}
-                          onChange={(e) => updateMobileLine(index, { isPortability: e.target.checked })}
-                          className="w-4 h-4 text-blue-600 rounded"
-                        />
-                        <span className="text-sm text-gray-700">Nummerbehoud (+€20)</span>
-                      </label>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            {mobileLines.length >= 2 && (
-              <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl">
-                <div className="flex items-center gap-3 text-green-800">
-                  <Gift className="w-5 h-5" />
-                  <div>
-                    <strong className="text-green-900">Multi-line korting toegepast!</strong>
-                    <p className="text-sm text-green-700">Alle {mobileLines.length} lijnen krijgen de 2+ prijs</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* TV - FIXED */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
-                <Tv className="w-5 h-5 text-purple-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">TV (optioneel)</h3>
-                <p className="text-sm text-gray-500">Voeg TV toe aan je pakket</p>
-              </div>
+            
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Zoek op naam of bedrijf..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                autoFocus
+              />
+              {isSearching && (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 animate-spin text-gray-400" />
+              )}
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {tvPlans.map((plan) => (
-                <button
-                  key={plan.value}
-                  onClick={() => setTvPlan(plan.value)}
-                  className={`p-4 rounded-xl border-2 text-left transition-all ${
-                    tvPlan === plan.value ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'
-                  }`}
-                >
-                  <span className="font-medium text-gray-900">{plan.label}</span>
-                  {plan.price > 0 && (
-                    <p className="text-xl font-bold text-gray-900 mt-1">{formatPrice(plan.price)}</p>
-                  )}
-                </button>
-              ))}
+            
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {searchResults.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">Geen resultaten gevonden</p>
+              ) : (
+                searchResults.map((lead) => (
+                  <button
+                    key={lead.id}
+                    onClick={() => {
+                      setSelectedLead(lead);
+                      setShowSearchModal(false);
+                      setSearchQuery('');
+                      setSearchResults([]);
+                    }}
+                    className="w-full text-left p-3 rounded-xl hover:bg-gray-50 border border-gray-100 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <User className="w-5 h-5 text-orange-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{lead.companyName}</p>
+                        <p className="text-sm text-gray-500">{lead.contactName} • {lead.city}</p>
+                      </div>
+                    </div>
+                  </button>
+                ))
+              )}
             </div>
           </div>
         </div>
+      )}
 
-        {/* Right Column - Results - FIXED */}
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <div className="sticky top-24 space-y-4">
-            {result ? (
-              <>
-                {/* Customer Savings */}
-                <div className="bg-gradient-to-br from-green-600 to-emerald-700 text-white rounded-xl p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <TrendingDown className="w-6 h-6" />
-                    <h3 className="text-lg font-semibold">Klant Voordeel</h3>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="p-3 bg-white/10 rounded-lg">
-                      <p className="text-green-100 text-sm">Nu</p>
-                      <p className="text-xl font-bold text-white">{formatPrice((parseFloat(currentMonthlyCost) || 0) * 100)}</p>
-                    </div>
-                    <div className="p-3 bg-white/20 rounded-lg">
-                      <p className="text-green-100 text-sm">Met SmartSN</p>
-                      <p className="text-xl font-bold text-white">{formatPrice(result.totalMonthly)}</p>
-                    </div>
-                  </div>
-                  <div className="text-center p-4 bg-white/10 rounded-xl">
-                    <p className="text-green-100 text-sm mb-1">Nieuwe prijs</p>
-                    <p className="text-4xl font-bold text-white">{formatPrice(result.totalMonthly)}</p>
-                    <p className="text-green-200 text-xs mt-1">per maand</p>
-                  </div>
-                </div>
+          <h1 className="text-2xl font-bold text-gray-900">Nieuwe Offerte</h1>
+          <p className="text-gray-500 mt-1">Configureer de offerte voor je klant</p>
+        </div>
+        <div className="flex gap-2">
+          <Link
+            href="/dashboard/v2-premium"
+            className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
+          >
+            Annuleren
+          </Link>
+          <button
+            disabled={!selectedLead || !internetPlan}
+            className="flex items-center gap-2 px-4 py-2 text-white bg-orange-500 rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <FileText className="w-4 h-4" />
+            Offerte Opslaan
+          </button>
+        </div>
+      </div>
 
-                {/* Commission */}
-                {commissionPreview && commissionPreview.effective > 0 && (
-                  <div className="bg-gradient-to-br from-orange-500 to-pink-600 text-white rounded-xl p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <Wallet className="w-6 h-6" />
-                      <h3 className="text-lg font-semibold">Jouw Commissie</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Lead & Products */}
+        <div className="lg:col-span-2 space-y-6">
+          
+          {/* Lead Selection */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <User className="w-5 h-5 text-orange-500" />
+              Lead
+            </h2>
+            
+            {selectedLead ? (
+              <div className="p-4 bg-orange-50 rounded-xl border border-orange-100">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-pink-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">
+                      {selectedLead.companyName[0]}
                     </div>
-                    <div className="space-y-3">
-                      <div className="p-3 bg-white/10 rounded-lg">
-                        <p className="text-orange-100 text-sm">Potentiële (bij versturen)</p>
-                        <p className="text-xl font-bold text-white">€{commissionPreview.potential.toFixed(0)}</p>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{selectedLead.companyName}</h3>
+                      <p className="text-gray-600">{selectedLead.contactName}</p>
+                      <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-4 h-4" />
+                          {selectedLead.city}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Phone className="w-4 h-4" />
+                          {selectedLead.phone}
+                        </span>
                       </div>
-                      <div className="p-3 bg-white/20 rounded-lg border border-white/30">
-                        <p className="text-orange-100 text-sm">Effectieve (bij tekenen)</p>
-                        <p className="text-2xl font-bold text-white">€{commissionPreview.effective.toFixed(0)}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowSearchModal(true)}
+                    className="px-3 py-1.5 text-sm text-orange-600 bg-white border border-orange-200 rounded-lg hover:bg-orange-50"
+                  >
+                    Wijzig
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowSearchModal(true)}
+                className="w-full p-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-orange-500 hover:bg-orange-50 transition-all flex flex-col items-center gap-3"
+              >
+                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                  <Search className="w-6 h-6 text-gray-400" />
+                </div>
+                <div className="text-center">
+                  <p className="font-medium text-gray-700">Selecteer een lead</p>
+                  <p className="text-sm text-gray-500">Zoek op naam, bedrijf of stad</p>
+                </div>
+              </button>
+            )}
+          </div>
+
+          {/* Internet */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Wifi className="w-5 h-5 text-blue-500" />
+                Internet
+              </h2>
+              {internetPlan && (
+                <button
+                  onClick={() => { setInternetPlan(null); setInternetInstallType(null); }}
+                  className="text-sm text-red-500 hover:text-red-600"
+                >
+                  Verwijderen
+                </button>
+              )}
+            </div>
+            
+            {!internetPlan ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {ORANGE_INTERNET.map((plan) => (
+                  <button
+                    key={plan.id}
+                    onClick={() => setInternetPlan(plan.id)}
+                    className="p-4 border border-gray-200 rounded-xl hover:border-orange-500 hover:shadow-md transition-all text-left"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-gray-900">{plan.name}</span>
+                      <span className="text-orange-600 font-bold">{plan.speed}</span>
+                    </div>
+                    <p className="text-sm text-gray-500">{plan.features[0]}</p>
+                    <p className="text-lg font-bold text-gray-900 mt-2">€{plan.standalonePrice}/mnd</p>
+                    <p className="text-xs text-green-600">€{plan.packPrice} in pack</p>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div>
+                {(() => {
+                  const plan = ORANGE_INTERNET.find(p => p.id === internetPlan)!;
+                  return (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl">
+                        <div>
+                          <p className="font-semibold text-gray-900">{plan.name}</p>
+                          <p className="text-sm text-blue-600">{plan.speed}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-gray-900">€{mobileLines.length > 0 ? plan.packPrice : plan.standalonePrice}/mnd</p>
+                          {mobileLines.length > 0 && (
+                            <p className="text-xs text-green-600">-€4 packkorting</p>
+                          )}
+                        </div>
                       </div>
+                      
+                      {/* Installation Type */}
+                      <div>
+                        <p className="text-sm font-medium text-gray-700 mb-2">Installatie Type</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            onClick={() => setInternetInstallType('NEW')}
+                            className={`p-3 rounded-lg border text-left transition-colors ${
+                              internetInstallType === 'NEW'
+                                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            <p className="font-medium">Nieuwe Aansluiting</p>
+                            <p className="text-xs text-gray-500">Geen Easy Switch</p>
+                          </button>
+                          <button
+                            onClick={() => setInternetInstallType('EASY_SWITCH')}
+                            className={`p-3 rounded-lg border text-left transition-colors ${
+                              internetInstallType === 'EASY_SWITCH'
+                                ? 'border-green-500 bg-green-50 text-green-700'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            <p className="font-medium flex items-center gap-1">
+                              Easy Switch
+                              <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs rounded">+€12</span>
+                            </p>
+                            <p className="text-xs text-gray-500">+€12 commissie bonus</p>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+
+          {/* Mobile */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Smartphone className="w-5 h-5 text-purple-500" />
+                Mobiele Abonnementen
+                <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full">
+                  +{mobileLines.length}
+                </span>
+              </h2>
+              <button
+                onClick={addMobileLine}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm text-orange-600 bg-orange-50 rounded-lg hover:bg-orange-100"
+              >
+                <Plus className="w-4 h-4" />
+                Toevoegen
+              </button>
+            </div>
+            
+            <div className="space-y-3">
+              {mobileLines.map((line, index) => (
+                <div key={index} className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-medium text-gray-700">Lijn {index + 1}</span>
+                    <button
+                      onClick={() => removeMobileLine(index)}
+                      className="p-1 text-red-500 hover:bg-red-50 rounded"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <select
+                      value={line.plan}
+                      onChange={(e) => updateMobileLine(index, 'plan', e.target.value)}
+                      className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    >
+                      <option value="">Kies abonnement</option>
+                      {ORANGE_MOBILE.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name} - {m.data} ({mobileLines.length > 0 && internetPlan ? `€${m.packPrice}` : `€${m.standalonePrice}`})
+                        </option>
+                      ))}
+                    </select>
+                    
+                    {line.plan && ['MEDIUM', 'LARGE', 'UNLIMITED'].includes(line.plan) && (
+                      <label className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50">
+                        <input
+                          type="checkbox"
+                          checked={line.portability}
+                          onChange={(e) => updateMobileLine(index, 'portability', e.target.checked)}
+                          className="w-4 h-4 text-orange-500 rounded focus:ring-orange-500"
+                        />
+                        <span className="text-sm text-gray-700">Nummer overzetten</span>
+                        <span className="ml-auto px-1.5 py-0.5 bg-green-100 text-green-700 text-xs rounded">+€20</span>
+                      </label>
+                    )}
+                  </div>
+                  
+                  {line.plan && (
+                    <div className="mt-3 text-sm text-gray-500">
+                      {(() => {
+                        const mobile = ORANGE_MOBILE.find(m => m.id === line.plan)!;
+                        return mobile.features.join(' • ');
+                      })()}
+                    </div>
+                  )}
+                </div>
+              ))}
+              
+              {mobileLines.length === 0 && (
+                <p className="text-center text-gray-400 py-4">Geen mobiele lijnen toegevoegd</p>
+              )}
+            </div>
+          </div>
+
+          {/* TV */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Tv className="w-5 h-5 text-pink-500" />
+                TV Optie
+              </h2>
+              {tvPlan && (
+                <button
+                  onClick={() => setTvPlan(null)}
+                  className="text-sm text-red-500 hover:text-red-600"
+                >
+                  Verwijderen
+                </button>
+              )}
+            </div>
+            
+            {!tvPlan ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {TV_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    onClick={() => setTvPlan(option.id)}
+                    className="p-4 border border-gray-200 rounded-xl hover:border-orange-500 hover:shadow-md transition-all text-left"
+                  >
+                    <span className="font-semibold text-gray-900">{option.name}</span>
+                    <p className="text-xs text-gray-500 mt-1">{option.features.join(' • ')}</p>
+                    <p className="text-lg font-bold text-gray-900 mt-2">
+                      {option.price > 0 ? `€${option.price}/mnd` : 'Inbegrepen'}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="p-4 bg-pink-50 rounded-xl">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold text-gray-900">
+                      {TV_OPTIONS.find(t => t.id === tvPlan)?.name}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {TV_OPTIONS.find(t => t.id === tvPlan)?.features.join(' • ')}
+                    </p>
+                  </div>
+                  <p className="text-lg font-bold text-gray-900">
+                    {TV_OPTIONS.find(t => t.id === tvPlan)?.price === 0 
+                      ? 'Inbegrepen' 
+                      : `€${TV_OPTIONS.find(t => t.id === tvPlan)?.price}/mnd`}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Column - Summary */}
+        <div className="space-y-6">
+          {/* Commission Preview */}
+          <div className="bg-gradient-to-br from-orange-500 to-pink-600 rounded-xl p-6 text-white">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5" />
+              Jouw Commissie
+            </h2>
+            
+            {commission.effective > 0 ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-orange-100">Bij verzending (30%)</span>
+                  <span className="text-xl font-bold">{formatEuro(commission.potential)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-orange-100">Bij sale (100%)</span>
+                  <span className="text-3xl font-bold">{formatEuro(commission.effective)}</span>
+                </div>
+                
+                {/* Commission Breakdown */}
+                {commission.breakdown.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-white/20">
+                    <p className="text-sm text-orange-100 mb-2">Opbouw:</p>
+                    <div className="space-y-1 text-sm">
+                      {commission.breakdown.map((item, idx) => (
+                        <div key={idx} className="flex justify-between text-orange-100">
+                          <span>{idx + 1}. {item.baseCommission > 0 && 'Basis'} {item.bonuses.convergence > 0 && '+ Convergentie'} {item.bonuses.portability > 0 && '+ Portability'}</span>
+                          <span>€{item.total}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
-
-                {/* CTA */}
-                <button
-                  onClick={createOffer}
-                  disabled={creatingOffer || !internetInstallType}
-                  className="w-full py-4 bg-gradient-to-r from-orange-500 to-pink-600 text-white rounded-xl font-semibold text-lg hover:opacity-90 transition-opacity disabled:opacity-50"
-                >
-                  {creatingOffer ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Aanmaken...
-                    </span>
-                  ) : !internetInstallType ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <Zap className="w-5 h-5" />
-                      Selecteer installatie type
-                    </span>
-                  ) : (
-                    <span className="flex items-center justify-center gap-2">
-                      Maak Offerte
-                      <ArrowRight className="w-5 h-5" />
-                    </span>
-                  )}
-                </button>
-              </>
+              </div>
             ) : (
-              <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">
-                <Calculator className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                <p className="text-gray-500">Voeg producten toe om prijs te berekenen</p>
+              <p className="text-orange-100">Selecteer producten om je commissie te zien</p>
+            )}
+          </div>
+
+          {/* Price Summary */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-gray-500" />
+              Prijs Overzicht
+            </h2>
+            
+            <div className="space-y-3">
+              {/* Internet */}
+              {internetPlan && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">
+                    {ORANGE_INTERNET.find(i => i.id === internetPlan)?.name}
+                  </span>
+                  <span className="font-medium text-gray-900">
+                    €{mobileLines.length > 0 ? ORANGE_INTERNET.find(i => i.id === internetPlan)?.packPrice : ORANGE_INTERNET.find(i => i.id === internetPlan)?.standalonePrice}/mnd
+                  </span>
+                </div>
+              )}
+              
+              {/* Mobile */}
+              {mobileLines.map((line, idx) => line.plan && (
+                <div key={idx} className="flex justify-between text-sm">
+                  <span className="text-gray-600">
+                    GSM {idx + 1}: {ORANGE_MOBILE.find(m => m.id === line.plan)?.name}
+                  </span>
+                  <span className="font-medium text-gray-900">
+                    €{internetPlan ? ORANGE_MOBILE.find(m => m.id === line.plan)?.packPrice : ORANGE_MOBILE.find(m => m.id === line.plan)?.standalonePrice}/mnd
+                  </span>
+                </div>
+              ))}
+              
+              {/* TV */}
+              {tvPlan && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">{TV_OPTIONS.find(t => t.id === tvPlan)?.name}</span>
+                  <span className="font-medium text-gray-900">
+                    {TV_OPTIONS.find(t => t.id === tvPlan)?.price === 0 ? 'Inbegrepen' : `€${TV_OPTIONS.find(t => t.id === tvPlan)?.price}/mnd`}
+                  </span>
+                </div>
+              )}
+              
+              <div className="pt-3 border-t border-gray-100">
+                <div className="flex justify-between">
+                  <span className="font-semibold text-gray-900">Totaal per maand</span>
+                  <span className="text-2xl font-bold text-gray-900">€{totalPrice.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Pack Savings */}
+            {mobileLines.length > 0 && internetPlan && (
+              <div className="mt-4 p-3 bg-green-50 rounded-lg">
+                <p className="text-sm text-green-700 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
+                  Pakket voordeel: €{mobileLines.length * 4} per maand
+                </p>
               </div>
             )}
+          </div>
+
+          {/* Quick Actions */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <h3 className="font-semibold text-gray-900 mb-3">Snelle Acties</h3>
+            <div className="space-y-2">
+              <button
+                onClick={() => { setInternetPlan('GIGA'); setInternetInstallType('EASY_SWITCH'); }}
+                className="w-full p-3 text-left border border-gray-200 rounded-lg hover:border-orange-500 hover:bg-orange-50 transition-all"
+              >
+                <p className="font-medium text-gray-900">Giga + Easy Switch</p>
+                <p className="text-xs text-gray-500">1 Gbps + €12 bonus</p>
+              </button>
+              <button
+                onClick={() => { addMobileLine(); updateMobileLine(mobileLines.length, 'plan', 'MEDIUM'); }}
+                className="w-full p-3 text-left border border-gray-200 rounded-lg hover:border-orange-500 hover:bg-orange-50 transition-all"
+              >
+                <p className="font-medium text-gray-900">Medium + Portability</p>
+                <p className="text-xs text-gray-500">20 GB + €20 bonus</p>
+              </button>
+            </div>
           </div>
         </div>
       </div>
