@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { leadId, products, isNewCustomer, hasPortability, hasConvergence } = body;
+    const { leadId, products, totalRetail, totalASP, customerSavings } = body;
 
     if (!leadId || !products || !Array.isArray(products)) {
       return NextResponse.json(
@@ -80,9 +80,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate totals
-    const totalRetail = products.reduce((sum: number, p: any) => sum + (p.retailValue || 0), 0);
-    const totalASP = products.reduce((sum: number, p: any) => sum + (p.aspValue || 0), 0);
+    // Calculate commission preview (but don't assign yet - only when SENT)
+    const { calculateOfferCommission } = await import('@/lib/commission');
+    const commissionCalc = calculateOfferCommission(
+      products.map((p: any) => ({
+        type: p.type,
+        plan: p.plan,
+        retailValue: p.retailValue,
+        options: p.options || {},
+      })),
+      'BC' // Default to BC level
+    );
 
     // Create offer (DRAFT status - no commission yet)
     const offer = await prisma.offer.create({
@@ -90,10 +98,12 @@ export async function POST(request: NextRequest) {
         leadId,
         consultantId: session.user.id,
         products: JSON.stringify(products),
-        totalRetail,
-        totalASP,
-        customerSavings: body.customerSavings || 0,
+        totalRetail: totalRetail || 0,
+        totalASP: totalASP || 0,
+        customerSavings: customerSavings || 0,
         status: 'DRAFT',
+        // Pre-calculate commission for preview
+        potentialCommission: commissionCalc.potentialCommission,
       },
       include: {
         lead: {
@@ -101,12 +111,19 @@ export async function POST(request: NextRequest) {
             companyName: true,
             contactName: true,
             city: true,
+            phone: true,
           },
         },
       },
     });
 
-    return NextResponse.json({ offer });
+    return NextResponse.json({ 
+      offer,
+      commission: {
+        potential: commissionCalc.potentialCommission,
+        effective: commissionCalc.effectiveCommission,
+      }
+    });
   } catch (error) {
     console.error('Error creating offer:', error);
     return NextResponse.json(
