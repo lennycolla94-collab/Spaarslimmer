@@ -51,7 +51,6 @@ const navSections = [
     icon: '👥',
     items: [
       { icon: Target, label: 'Leads', href: '/leads', count: 156 },
-      { icon: Download, label: 'Import Leads', href: '/leads/import' },
       { icon: Calendar, label: 'Appointments', href: '/appointments', count: 8 },
       { icon: FileText, label: 'Offers', href: '/offers', badge: '3 New' },
     ]
@@ -61,7 +60,7 @@ const navSections = [
     icon: '💰',
     items: [
       { icon: Wallet, label: 'Commission', href: '/commission', amount: '€18.6K', highlight: true },
-      { icon: Calculator, label: 'Calculator', href: '/calculator' },
+      { icon: Target, label: 'Fidelity', href: '/team', amount: '€2.4K' },
     ]
   },
   {
@@ -69,7 +68,6 @@ const navSections = [
     icon: '🏆',
     items: [
       { icon: Gift, label: 'Incentives', href: '/incentives', badge: '4 Active' },
-      { icon: Trophy, label: 'PQS Ranking', href: '/incentives', count: 8 },
     ]
   },
   {
@@ -77,7 +75,6 @@ const navSections = [
     icon: '👨‍👩‍👧‍👦',
     items: [
       { icon: Users, label: 'Mijn Team', href: '/team', count: 3 },
-      { icon: Target, label: 'Fidelity', href: '/team', amount: '€2.4K' },
     ]
   },
   {
@@ -85,6 +82,7 @@ const navSections = [
     icon: '📞',
     items: [
       { icon: Phone, label: 'Call Center', href: '/call-center', status: 'active' },
+      { icon: Calculator, label: 'Calculator', href: '/calculator' },
     ]
   },
 ];
@@ -187,6 +185,13 @@ export function PremiumLayout({ children, user }: PremiumLayoutProps) {
                   >
                     <Settings className="w-4 h-4" />
                     Settings
+                  </Link>
+                  <Link
+                    href="/leads/import"
+                    className="flex items-center gap-3 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800"
+                  >
+                    <Download className="w-4 h-4" />
+                    Import Leads
                   </Link>
                   <button
                     onClick={() => signOut()}
