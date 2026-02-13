@@ -201,6 +201,7 @@ function CalculatorContent() {
   const [currentCost, setCurrentCost] = useState<number>(0);
   const [internet, setInternet] = useState<string | null>(null);
   const [isSecondAddress, setIsSecondAddress] = useState(false);
+  const [secondAddressInternet, setSecondAddressInternet] = useState<string | null>(null);
   const [mobileLines, setMobileLines] = useState<Array<{plan: string; portability: boolean}>>([]);
   const [tv, setTv] = useState<string>('NONE');
   const [extraDecoders, setExtraDecoders] = useState(0);
@@ -229,11 +230,17 @@ function CalculatorContent() {
     if (internet) {
       const hasMobile = mobileLines.length > 0;
       let price = hasMobile ? INTERNET_PACK[internet as keyof typeof INTERNET_PACK] : INTERNET_STANDALONE[internet as keyof typeof INTERNET_STANDALONE];
-      if (isSecondAddress) price -= 10;
       total += price;
       commission += INTERNET_COMMISSION;
       if (comfort && internet === 'GIGA') total += 5;
       else if (comfort) total += 10;
+    }
+    
+    // Second address internet (with €10 discount)
+    if (isSecondAddress && secondAddressInternet) {
+      let secondPrice = INTERNET_STANDALONE[secondAddressInternet as keyof typeof INTERNET_STANDALONE] - 10;
+      total += secondPrice;
+      commission += INTERNET_COMMISSION;
     }
 
     if (mobileLines.length > 0) {
@@ -279,7 +286,7 @@ function CalculatorContent() {
       yearlySavings: savings * 12,
       commission
     });
-  }, [internet, isSecondAddress, mobileLines, tv, extraDecoders, landline, comfort, wifiBoosters, currentCost]);
+  }, [internet, isSecondAddress, secondAddressInternet, mobileLines, tv, extraDecoders, landline, comfort, wifiBoosters, currentCost]);
 
   useEffect(() => {
     if (!internet) {
@@ -290,6 +297,12 @@ function CalculatorContent() {
       setWifiBoosters(0);
     }
   }, [internet]);
+  
+  useEffect(() => {
+    if (!isSecondAddress) {
+      setSecondAddressInternet(null);
+    }
+  }, [isSecondAddress]);
 
   const addMobileLine = () => setMobileLines([...mobileLines, { plan: '', portability: false }]);
   const removeMobileLine = (idx: number) => setMobileLines(mobileLines.filter((_, i) => i !== idx));
@@ -397,10 +410,48 @@ function CalculatorContent() {
                 <input type="checkbox" checked={isSecondAddress} onChange={(e) => setIsSecondAddress(e.target.checked)} className="hidden" />
                 <div className="flex-1">
                   <span className="font-bold text-gray-900 dark:text-white">2de Adres</span>
-                  <span className="text-green-700 dark:text-green-400 font-bold ml-2">-€10 levenslang</span>
+                  <span className="text-green-700 dark:text-green-400 font-bold ml-2">-€10 levenslang korting</span>
                 </div>
                 <Building2 className="w-5 h-5 text-green-600 dark:text-green-400" />
               </label>
+
+              {/* Second Address Internet Selection */}
+              {isSecondAddress && (
+                <div className="mt-6 p-5 bg-green-50/50 dark:bg-green-500/5 rounded-xl border-2 border-green-200 dark:border-green-500/20">
+                  <h3 className="font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <Building2 className="w-5 h-5 text-green-600" />
+                    Internet voor 2de Adres
+                    <span className="text-sm font-normal text-green-600 dark:text-green-400">(-€10 korting toegepast)</span>
+                  </h3>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { key: 'START', name: 'Start Fiber', speed: '200 Mbps', price: 43 },
+                      { key: 'ZEN', name: 'Zen Fiber', speed: '500 Mbps', price: 52 },
+                      { key: 'GIGA', name: 'Giga Fiber', speed: '1000 Mbps', price: 62 }
+                    ].map((opt) => (
+                      <button
+                        key={opt.key}
+                        onClick={() => setSecondAddressInternet(secondAddressInternet === opt.key ? null : opt.key)}
+                        className={`p-4 rounded-xl border-2 text-left transition-all ${
+                          secondAddressInternet === opt.key 
+                            ? 'border-green-500 bg-green-50 dark:bg-green-500/20 shadow-lg' 
+                            : 'border-gray-200 dark:border-slate-600 hover:border-green-300 bg-white dark:bg-slate-800'
+                        }`}
+                      >
+                        <h4 className="font-bold text-gray-900 dark:text-white text-sm">{opt.name}</h4>
+                        <p className="text-2xl font-black text-gray-900 dark:text-white mt-1">€{opt.price}<span className="text-xs font-normal text-gray-500">/maand</span></p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{opt.speed}</p>
+                        {secondAddressInternet === opt.key && (
+                          <div className="mt-2 flex items-center gap-1 text-green-600 text-xs font-bold">
+                            <CheckCircle2 className="w-4 h-4" />
+                            Geselecteerd
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </SectionCard>
 
             {/* Mobile */}
@@ -660,11 +711,22 @@ function CalculatorContent() {
                   <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-slate-800/50 rounded-lg">
                     <div className="flex items-center gap-2">
                       <Wifi className="w-4 h-4 text-orange-500" />
-                      <span className="font-medium text-gray-700 dark:text-gray-300">Internet</span>
-                      {isSecondAddress && <span className="text-xs bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded">-€10</span>}
+                      <span className="font-medium text-gray-700 dark:text-gray-300">Internet (Hoofdadres)</span>
                     </div>
                     <span className="font-bold text-gray-900 dark:text-white">
-                      €{((hasConvergence ? INTERNET_PACK : INTERNET_STANDALONE)[internet as keyof typeof INTERNET_STANDALONE] - (isSecondAddress ? 10 : 0)).toFixed(0)}
+                      €{(hasConvergence ? INTERNET_PACK : INTERNET_STANDALONE)[internet as keyof typeof INTERNET_STANDALONE]}
+                    </span>
+                  </div>
+                )}
+                {isSecondAddress && secondAddressInternet && (
+                  <div className="flex justify-between items-center p-3 bg-green-50 dark:bg-green-500/10 rounded-lg border border-green-200 dark:border-green-500/20">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="w-4 h-4 text-green-600" />
+                      <span className="font-medium text-gray-700 dark:text-gray-300">Internet (2de Adres)</span>
+                      <span className="text-xs bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded">-€10</span>
+                    </div>
+                    <span className="font-bold text-gray-900 dark:text-white">
+                      €{INTERNET_STANDALONE[secondAddressInternet as keyof typeof INTERNET_STANDALONE] - 10}
                     </span>
                   </div>
                 )}
