@@ -177,8 +177,8 @@ export default function FidelityPage() {
           <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full border border-gray-200 dark:border-slate-700">
             <div className="p-6 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Fidelity Tarieven</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Jouw maandelijkse vergoeding per product</p>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Jouw Maandfee Tarieven</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Wat jij verdient per actieve klant per maand</p>
               </div>
               <button 
                 onClick={() => setShowRatesModal(false)}
@@ -196,6 +196,11 @@ export default function FidelityPage() {
                     <span className="font-bold text-orange-600 dark:text-orange-400">€{item.rate.toFixed(2)}/maand</span>
                   </div>
                 ))}
+              </div>
+              <div className="mt-4 p-3 bg-orange-50 dark:bg-orange-500/10 rounded-lg">
+                <p className="text-xs text-orange-700 dark:text-orange-400 text-center">
+                  💡 Dit verdien jij elke maand voor elke klant die actief blijft
+                </p>
               </div>
             </div>
           </div>
@@ -227,28 +232,28 @@ export default function FidelityPage() {
       <div className="bg-gradient-to-r from-orange-500 to-pink-600 rounded-2xl p-6 text-white mb-8">
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <Handshake className="w-5 h-5" />
-          Jouw Fidelity Vergoedingen
+          Jouw Maandelijkse Vergoedingen
         </h2>
         <p className="text-sm text-orange-100 mb-4">
-          Voor elke actieve dienst ontvang je maandelijkse fidelity fees. 
-          Klik op "Tarieven" voor het volledige overzicht per product.
+          Dit is wat JIJ elke maand verdient voor elke actieve klant. 
+          Passief inkomen zolang de klant actief blijft.
         </p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
           <div className="bg-white/10 rounded-lg p-3">
-            <p className="text-orange-200 text-xs">Internet</p>
+            <p className="text-orange-200 text-xs">Per Internet klant</p>
             <p className="font-bold">€0.35/maand</p>
           </div>
           <div className="bg-white/10 rounded-lg p-3">
-            <p className="text-orange-200 text-xs">Orange Mobile Medium</p>
+            <p className="text-orange-200 text-xs">Per Mobile Medium</p>
             <p className="font-bold">€1.00/maand</p>
           </div>
           <div className="bg-white/10 rounded-lg p-3">
-            <p className="text-orange-200 text-xs">Go Extreme</p>
+            <p className="text-orange-200 text-xs">Per Go Extreme</p>
             <p className="font-bold">€1.75/maand</p>
           </div>
           <div className="bg-white/10 rounded-lg p-3">
-            <p className="text-orange-200 text-xs">En meer...</p>
-            <p className="font-bold">13 producten</p>
+            <p className="text-orange-200 text-xs">Alle producten</p>
+            <p className="font-bold">13 tarieven</p>
           </div>
         </div>
       </div>
@@ -342,8 +347,8 @@ export default function FidelityPage() {
               <tr>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Klant</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Status</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-orange-600 dark:text-orange-400">Maandfee</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Totaal Verdiend</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-orange-600 dark:text-orange-400">Jouw Maandfee</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Totaal Ontvangen</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Contract</th>
                 <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900 dark:text-white">Acties</th>
               </tr>
@@ -425,11 +430,11 @@ export default function FidelityPage() {
 
                 <div className="space-y-3 mb-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Maandfee</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">Jouw maandfee</span>
                     <span className="font-bold text-orange-600 dark:text-orange-400">€{client.monthlyFee.toFixed(2)}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Totaal verdiend</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">Totaal ontvangen</span>
                     <span className="font-bold text-green-600 dark:text-green-400">€{client.totalEarned.toFixed(2)}</span>
                   </div>
                   <div className="flex items-center justify-between">
