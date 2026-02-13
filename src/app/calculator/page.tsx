@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
@@ -38,7 +38,8 @@ import {
   X,
   Building2,
   MapPin,
-  Phone
+  Phone,
+  ZapIcon
 } from 'lucide-react';
 import { getCommissionPreview } from '@/lib/commission';
 
@@ -64,6 +65,18 @@ interface Lead {
   phone: string;
 }
 
+// Debounce hook
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
 export default function CalculatorPage() {
   const router = useRouter();
   const [internetPlan, setInternetPlan] = useState('');
@@ -73,12 +86,17 @@ export default function CalculatorPage() {
   const [currentMonthlyCost, setCurrentMonthlyCost] = useState('');
   const [creatingOffer, setCreatingOffer] = useState(false);
   
+  // NEW: Internet installation type
+  const [internetInstallType, setInternetInstallType] = useState<'NEW' | 'EASY_SWITCH' | null>(null);
+  
   // Lead selection
   const [leads, setLeads] = useState<Lead[]>([]);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [showLeadModal, setShowLeadModal] = useState(false);
   const [leadSearch, setLeadSearch] = useState('');
   const [loadingLeads, setLoadingLeads] = useState(false);
+  const [searchResults, setSearchResults] = useState<Lead[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   
   // Extras
   const [hasVasteLijn, setHasVasteLijn] = useState(false);
@@ -89,7 +107,34 @@ export default function CalculatorPage() {
   const hasInternet = !!internetPlan;
   const hasMobile = mobileLines.length > 0;
 
-  // Fetch leads
+  // Debounced search
+  const debouncedSearch = useDebounce(leadSearch, 300);
+
+  // Live search API
+  useEffect(() => {
+    async function searchLeads() {
+      if (!debouncedSearch || debouncedSearch.length < 2) {
+        setSearchResults([]);
+        return;
+      }
+      
+      try {
+        setIsSearching(true);
+        const res = await fetch(`/api/leads/search?q=${encodeURIComponent(debouncedSearch)}&limit=10`);
+        if (res.ok) {
+          const data = await res.json();
+          setSearchResults(data.leads || []);
+        }
+      } catch (error) {
+        console.error('Error searching leads:', error);
+      } finally {
+        setIsSearching(false);
+      }
+    }
+    searchLeads();
+  }, [debouncedSearch]);
+
+  // Fetch all leads on mount (fallback)
   useEffect(() => {
     async function fetchLeads() {
       try {
@@ -136,7 +181,10 @@ export default function CalculatorPage() {
         type: 'INTERNET' as const,
         plan: internetPlan,
         retailValue: result.internetPrice,
-        options: { convergence: hasMobile },
+        options: { 
+          convergence: hasMobile,
+          portability: internetInstallType === 'EASY_SWITCH' // NEW: Internet portability
+        },
       });
     }
     
@@ -161,13 +209,7 @@ export default function CalculatorPage() {
     }
 
     return getCommissionPreview(products, 'BC');
-  }, [result, internetPlan, mobileLines, tvPlan, hasInternet]);
-
-  const filteredLeads = leads.filter(l => 
-    l.companyName.toLowerCase().includes(leadSearch.toLowerCase()) ||
-    l.contactName?.toLowerCase().includes(leadSearch.toLowerCase()) ||
-    l.city?.toLowerCase().includes(leadSearch.toLowerCase())
-  );
+  }, [result, internetPlan, mobileLines, tvPlan, hasInternet, internetInstallType]);
 
   const addMobileLine = () => {
     setMobileLines([...mobileLines, { plan: 'MEDIUM', isPortability: false }]);
@@ -190,6 +232,12 @@ export default function CalculatorPage() {
       return;
     }
     
+    // NEW: Check if internet installation type is selected
+    if (hasInternet && !internetInstallType) {
+      alert('Selecteer of het een nieuwe installatie of easy switch is voor het internet.');
+      return;
+    }
+    
     try {
       setCreatingOffer(true);
       
@@ -201,7 +249,10 @@ export default function CalculatorPage() {
           plan: internetPlan,
           retailValue: result.internetPrice,
           aspValue: 15,
-          options: { convergence: hasMobile },
+          options: { 
+            convergence: hasMobile,
+            portability: internetInstallType === 'EASY_SWITCH'
+          },
         });
       }
       
@@ -340,8 +391,43 @@ export default function CalculatorPage() {
                   value={leadSearch}
                   onChange={(e) => setLeadSearch(e.target.value)}
                   className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                  autoFocus
                 />
+                {isSearching && (
+                  <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 animate-spin text-orange-500" />
+                )}
               </div>
+              
+              {/* Live Search Results */}
+              {searchResults.length > 0 && (
+                <div className="mt-2 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-auto">
+                  {searchResults.map((lead) => (
+                    <button
+                      key={lead.id}
+                      onClick={() => {
+                        setSelectedLead(lead);
+                        setShowLeadModal(false);
+                        setLeadSearch('');
+                        setSearchResults([]);
+                      }}
+                      className="w-full p-3 text-left hover:bg-orange-50 border-b border-gray-100 last:border-0 flex items-center gap-3"
+                    >
+                      <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-pink-600 rounded-lg flex items-center justify-center text-white font-bold">
+                        {lead.companyName[0]}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900">{lead.companyName}</p>
+                        <p className="text-sm text-gray-500">{lead.contactName} • {lead.city}</p>
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-gray-400" />
+                    </button>
+                  ))}
+                </div>
+              )}
+              
+              {leadSearch.length >= 2 && !isSearching && searchResults.length === 0 && (
+                <p className="mt-2 text-sm text-gray-500">Geen leads gevonden voor "{leadSearch}"</p>
+              )}
             </div>
 
             <div className="flex-1 overflow-auto p-4">
@@ -349,7 +435,7 @@ export default function CalculatorPage() {
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
                 </div>
-              ) : filteredLeads.length === 0 ? (
+              ) : leads.length === 0 ? (
                 <div className="text-center py-12">
                   <Building2 className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                   <p className="text-gray-500">Geen leads gevonden</p>
@@ -362,44 +448,41 @@ export default function CalculatorPage() {
                   </Link>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {filteredLeads.map((lead) => (
-                    <button
-                      key={lead.id}
-                      onClick={() => {
-                        setSelectedLead(lead);
-                        setShowLeadModal(false);
-                      }}
-                      className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                        selectedLead?.id === lead.id
-                          ? 'border-orange-500 bg-orange-50'
-                          : 'border-gray-200 hover:border-orange-300'
-                      }`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-pink-600 rounded-xl flex items-center justify-center text-white font-bold">
-                          {lead.companyName[0]}
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900">{lead.companyName}</h3>
-                          <p className="text-sm text-gray-500">{lead.contactName}</p>
-                          <div className="flex items-center gap-4 mt-1 text-xs text-gray-400">
-                            <span className="flex items-center gap-1">
+                <div>
+                  <p className="text-sm text-gray-500 mb-3">Alle leads ({leads.length})</p>
+                  <div className="space-y-2">
+                    {leads.slice(0, 10).map((lead) => (
+                      <button
+                        key={lead.id}
+                        onClick={() => {
+                          setSelectedLead(lead);
+                          setShowLeadModal(false);
+                        }}
+                        className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                          selectedLead?.id === lead.id
+                            ? 'border-orange-500 bg-orange-50'
+                            : 'border-gray-200 hover:border-orange-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-pink-600 rounded-xl flex items-center justify-center text-white font-bold">
+                            {lead.companyName[0]}
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-900">{lead.companyName}</h3>
+                            <p className="text-sm text-gray-500">{lead.contactName}</p>
+                            <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
                               <MapPin className="w-3 h-3" />
                               {lead.city || 'Onbekend'}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Phone className="w-3 h-3" />
-                              {lead.phone}
-                            </span>
+                            </div>
                           </div>
+                          {selectedLead?.id === lead.id && (
+                            <CheckCircle2 className="w-6 h-6 text-orange-500" />
+                          )}
                         </div>
-                        {selectedLead?.id === lead.id && (
-                          <CheckCircle2 className="w-6 h-6 text-orange-500" />
-                        )}
-                      </div>
-                    </button>
-                  ))}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -423,10 +506,8 @@ export default function CalculatorPage() {
                       <h3 className="text-xl font-bold">{selectedLead.companyName}</h3>
                       <p className="text-orange-100">{selectedLead.contactName}</p>
                       <div className="flex items-center gap-3 mt-1 text-sm text-orange-200">
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
-                          {selectedLead.city || 'Onbekend'}
-                        </span>
+                        <MapPin className="w-4 h-4" />
+                        {selectedLead.city || 'Onbekend'}
                       </div>
                     </div>
                   </div>
@@ -443,9 +524,7 @@ export default function CalculatorPage() {
                 onClick={() => setShowLeadModal(true)}
                 className="w-full p-6 bg-gray-50 border-2 border-dashed border-gray-300 rounded-2xl text-center hover:border-orange-400 hover:bg-orange-50 transition-colors"
               >
-                <div className="w-16 h-16 bg-gray-200 rounded-xl flex items-center justify-center mx-auto mb-3">
-                  <Building2 className="w-8 h-8 text-gray-400" />
-                </div>
+                <Building2 className="w-16 h-16 mx-auto mb-3 text-gray-300" />
                 <h3 className="font-semibold text-gray-700">Kies een lead</h3>
                 <p className="text-sm text-gray-500 mt-1">Selecteer eerst voor welke klant je de offerte maakt</p>
               </button>
@@ -496,7 +575,10 @@ export default function CalculatorPage() {
                   {internetPlans.filter(p => p.value).map((plan) => (
                     <button
                       key={plan.value}
-                      onClick={() => setInternetPlan(plan.value)}
+                      onClick={() => {
+                        setInternetPlan(plan.value);
+                        setInternetInstallType(null); // Reset when changing plan
+                      }}
                       className={`p-4 rounded-xl border-2 text-left transition-all ${
                         internetPlan === plan.value
                           ? 'border-orange-500 bg-orange-50'
@@ -516,8 +598,49 @@ export default function CalculatorPage() {
                   ))}
                 </div>
 
+                {/* NEW: Internet Installation Type */}
                 {hasInternet && (
-                  <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
+                  <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-xl">
+                    <div className="flex items-center gap-2 mb-3">
+                      <ZapIcon className="w-5 h-5 text-orange-600" />
+                      <h4 className="font-semibold text-gray-900">Type installatie</h4>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-3">Is dit een nieuwe installatie of easy switch (nummerbehoud)?</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => setInternetInstallType('NEW')}
+                        className={`p-4 rounded-xl border-2 text-left transition-all ${
+                          internetInstallType === 'NEW'
+                            ? 'border-orange-500 bg-white'
+                            : 'border-gray-200 bg-white hover:border-orange-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-semibold">Nieuwe installatie</span>
+                          {internetInstallType === 'NEW' && <CheckCircle2 className="w-5 h-5 text-orange-500" />}
+                        </div>
+                        <p className="text-sm text-gray-500">Nieuwe aansluiting</p>
+                      </button>
+                      <button
+                        onClick={() => setInternetInstallType('EASY_SWITCH')}
+                        className={`p-4 rounded-xl border-2 text-left transition-all ${
+                          internetInstallType === 'EASY_SWITCH'
+                            ? 'border-orange-500 bg-white'
+                            : 'border-gray-200 bg-white hover:border-orange-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-semibold">Easy Switch</span>
+                          {internetInstallType === 'EASY_SWITCH' && <CheckCircle2 className="w-5 h-5 text-orange-500" />}
+                        </div>
+                        <p className="text-sm text-gray-500">Nummerbehoud (+€12 commissie)</p>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {hasInternet && (
+                  <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors mt-4">
                     <input
                       type="checkbox"
                       checked={isSecondAddress}
@@ -860,8 +983,8 @@ export default function CalculatorPage() {
                           <p className="text-orange-200 mb-2">Opbouw:</p>
                           {internetPlan && (
                             <div className="flex justify-between text-orange-100">
-                              <span>Internet</span>
-                              <span>€15</span>
+                              <span>Internet {internetInstallType === 'EASY_SWITCH' ? '(Easy Switch)' : '(Nieuw)'}</span>
+                              <span>€15{internetInstallType === 'EASY_SWITCH' ? ' + €12' : ''}</span>
                             </div>
                           )}
                           {mobileLines.map((line, idx) => (
@@ -869,7 +992,7 @@ export default function CalculatorPage() {
                               <span>GSM #{idx + 1} ({line.plan})</span>
                               <span>
                                 €{line.plan === 'CHILD' ? 1 : line.plan === 'SMALL' ? 10 : line.plan === 'MEDIUM' ? 35 : line.plan === 'LARGE' ? 50 : 60}
-                                {line.isPortability && ' + €20'}
+                                {line.isPortability ? ' + €20' : ''}
                               </span>
                             </div>
                           ))}
@@ -898,7 +1021,7 @@ export default function CalculatorPage() {
                     <div className="space-y-3">
                       {result.internetPrice > 0 && (
                         <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                          <span className="text-gray-600">Internet</span>
+                          <span className="text-gray-600">Internet {internetInstallType === 'EASY_SWITCH' ? '(Easy Switch)' : ''}</span>
                           <span className="font-semibold">{formatPrice(result.internetPrice)}</span>
                         </div>
                       )}
@@ -932,7 +1055,7 @@ export default function CalculatorPage() {
                   {/* CTA Button */}
                   <button
                     onClick={createOffer}
-                    disabled={creatingOffer || !selectedLead}
+                    disabled={creatingOffer || !selectedLead || (hasInternet && !internetInstallType)}
                     className="w-full inline-flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-orange-500 to-pink-600 text-white rounded-xl font-semibold text-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {creatingOffer ? (
@@ -944,6 +1067,11 @@ export default function CalculatorPage() {
                       <>
                         <Building2 className="w-5 h-5" />
                         Kies eerst een lead
+                      </>
+                    ) : hasInternet && !internetInstallType ? (
+                      <>
+                        <ZapIcon className="w-5 h-5" />
+                        Selecteer installatie type
                       </>
                     ) : (
                       <>
