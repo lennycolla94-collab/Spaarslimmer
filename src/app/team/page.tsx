@@ -25,8 +25,73 @@ import {
   LayoutGrid,
   List,
   FileText,
-  BarChart3
+  BarChart3,
+  Handshake,
+  Crown,
+  Target,
+  Award
 } from 'lucide-react';
+
+// Maandelijkse fees per product (van prijslijst)
+const MONTHLY_FEES = {
+  'Internet': 0.35,
+  'Energy': 0.35,
+  'Orange Mobile Child': 0.25,
+  'Orange Mobile Small': 0.50,
+  'Orange Mobile Medium': 1.00,
+  'Orange Mobile Large': 1.25,
+  'Orange Mobile Unlimited': 1.50,
+  'Go Light': 0.40,
+  'Go Plus': 0.80,
+  'Go Intense': 1.00,
+  'Go Extreme': 1.75,
+  'EasyInternet@Home': 0.50,
+  'Internet Everywhere': 0.05,
+};
+
+// Upline fidelity percentages
+const UPLINE_STRUCTURE = [
+  { 
+    level: 'Level 0 (Jij)', 
+    role: 'Business Consultant',
+    commission: '100%',
+    personalRate: '100%',
+    fromDownline: 'N/A',
+    example: '€45/maand = €45'
+  },
+  { 
+    level: 'Level 1 (Direct)', 
+    role: 'Sponsor/Mentor',
+    commission: '+€2/klant',
+    personalRate: '100%',
+    fromDownline: '€2 per maand per klant',
+    example: '5 klanten = +€10/maand'
+  },
+  { 
+    level: 'Level 2', 
+    role: 'Senior Consultant',
+    commission: '+€1/klant',
+    personalRate: '100% + team bonus',
+    fromDownline: '€1 per maand per klant',
+    example: '5 klanten = +€5/maand'
+  },
+  { 
+    level: 'Level 3-4', 
+    role: 'Premier Consultant',
+    commission: '+€0.50/klant',
+    personalRate: '100% + team bonus',
+    fromDownline: '€0.50 per maand per klant',
+    example: '5 klanten = +€2.50/maand'
+  },
+  { 
+    level: 'Level 5-7', 
+    role: 'Leader/Premier Leader',
+    commission: '+€0.25/klant',
+    personalRate: '100% + infinity bonus',
+    fromDownline: '€0.25 per maand per klant',
+    example: '5 klanten = +€1.25/maand'
+  },
+];
 
 // Mock data voor maandelijkse fidelity fees
 const FIDELITY_CLIENTS = [
@@ -34,142 +99,110 @@ const FIDELITY_CLIENTS = [
     id: '1',
     companyName: 'Bakkerij De Lekkernij',
     contactName: 'Maria Peeters',
-    monthlyFee: 45,
+    monthlyFee: 2.10,
+    products: ['Internet', 'TV', '2x Orange Mobile Small'],
     startDate: '2024-01-15',
     status: 'ACTIVE',
-    totalEarned: 540,
+    totalEarned: 29.40,
     lastPayment: '2025-02-01',
     contractDuration: 14,
-    products: ['Internet', 'TV', '2x Mobiel'],
-    notes: 'TeVreden klant, altijd op tijd'
+    notes: 'Tevreden klant, altijd op tijd'
   },
   {
     id: '2',
     companyName: 'Tech Solutions BV',
     contactName: 'Jan Janssen',
-    monthlyFee: 89,
+    monthlyFee: 4.10,
+    products: ['Internet', 'TV Plus', '4x Orange Mobile Medium'],
     startDate: '2024-03-20',
     status: 'ACTIVE',
-    totalEarned: 801,
+    totalEarned: 36.90,
     lastPayment: '2025-02-01',
-    contractDuration: 12,
-    products: ['Giga Internet', 'TV Plus', '4x Mobiel'],
+    contractDuration: 9,
     notes: 'Groot account, upsell mogelijk'
   },
   {
     id: '3',
     companyName: 'NecmiCuts',
     contactName: 'Necmi Yildiz',
-    monthlyFee: 32,
+    monthlyFee: 1.35,
+    products: ['Internet', 'Orange Mobile Small'],
     startDate: '2024-06-10',
     status: 'ACTIVE',
-    totalEarned: 224,
+    totalEarned: 9.45,
     lastPayment: '2025-02-01',
     contractDuration: 7,
-    products: ['Internet', 'Mobiel'],
     notes: ''
   },
   {
     id: '4',
     companyName: 'Fashion Store',
     contactName: 'Lisa Dubois',
-    monthlyFee: 28,
+    monthlyFee: 1.20,
+    products: ['Internet', 'Orange Mobile Small'],
     startDate: '2024-08-05',
     status: 'PAUSED',
-    totalEarned: 168,
+    totalEarned: 7.20,
     lastPayment: '2024-12-01',
-    contractDuration: 4,
-    products: ['Internet', 'Mobiel'],
+    contractDuration: 6,
     notes: 'Tijdelijk gepauzeerd - seizoenswerk'
   },
   {
     id: '5',
     companyName: 'Constructie Groep',
     contactName: 'Peter Willems',
-    monthlyFee: 67,
+    monthlyFee: 3.60,
+    products: ['Internet', 'TV', '3x Orange Mobile Medium'],
     startDate: '2024-02-28',
     status: 'ACTIVE',
-    totalEarned: 804,
+    totalEarned: 43.20,
     lastPayment: '2025-02-01',
     contractDuration: 12,
-    products: ['Zen Internet', 'TV', '3x Mobiel'],
     notes: 'Langlopend contract'
   },
   {
     id: '6',
     companyName: 'Dental Care Plus',
     contactName: 'Dr. Sarah Vans',
-    monthlyFee: 54,
+    monthlyFee: 2.70,
+    products: ['Internet', 'TV Life', '2x Orange Mobile Medium'],
     startDate: '2024-09-15',
     status: 'ACTIVE',
-    totalEarned: 270,
+    totalEarned: 13.50,
     lastPayment: '2025-02-01',
     contractDuration: 5,
-    products: ['Internet', 'TV Life', '2x Mobiel'],
     notes: ''
-  },
-  {
-    id: '7',
-    companyName: 'AutoService Quick',
-    contactName: 'Tom Vermeer',
-    monthlyFee: 41,
-    startDate: '2024-04-12',
-    status: 'CANCELLED',
-    totalEarned: 328,
-    lastPayment: '2024-10-01',
-    contractDuration: 6,
-    products: ['Internet', 'Mobiel'],
-    notes: 'Gestopt - te duur'
-  },
-  {
-    id: '8',
-    companyName: 'Beauty Lounge',
-    contactName: 'Emma Claes',
-    monthlyFee: 38,
-    startDate: '2024-11-20',
-    status: 'ACTIVE',
-    totalEarned: 76,
-    lastPayment: '2025-02-01',
-    contractDuration: 2,
-    products: ['Internet', 'Mobiel'],
-    notes: 'Nieuwe klant'
   },
 ];
 
 const STATUS_CONFIG = {
-  ACTIVE: { label: 'Actief', color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircle2 },
-  PAUSED: { label: 'Gepauzeerd', color: 'bg-yellow-100 text-yellow-700 border-yellow-200', icon: PauseCircle },
-  CANCELLED: { label: 'Gestopt', color: 'bg-red-100 text-red-700 border-red-200', icon: XCircle },
+  ACTIVE: { label: 'Actief', color: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-500/20 dark:text-green-400 dark:border-green-500/30', icon: CheckCircle2 },
+  PAUSED: { label: 'Gepauzeerd', color: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-500/20 dark:text-yellow-400 dark:border-yellow-500/30', icon: PauseCircle },
+  CANCELLED: { label: 'Gestopt', color: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-500/20 dark:text-red-400 dark:border-red-500/30', icon: XCircle },
 };
 
 export default function FidelityPage() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
-  const [sortBy, setSortBy] = useState<'monthlyFee' | 'totalEarned' | 'startDate'>('monthlyFee');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
 
   // Stats
+  const activeClients = FIDELITY_CLIENTS.filter(c => c.status === 'ACTIVE');
   const stats = {
-    totalClients: FIDELITY_CLIENTS.filter(c => c.status === 'ACTIVE').length,
-    totalMonthly: FIDELITY_CLIENTS.filter(c => c.status === 'ACTIVE').reduce((sum, c) => sum + c.monthlyFee, 0),
+    totalClients: activeClients.length,
+    totalMonthly: activeClients.reduce((sum, c) => sum + c.monthlyFee, 0),
     totalEarned: FIDELITY_CLIENTS.reduce((sum, c) => sum + c.totalEarned, 0),
-    yearlyProjection: FIDELITY_CLIENTS.filter(c => c.status === 'ACTIVE').reduce((sum, c) => sum + c.monthlyFee, 0) * 12,
+    yearlyProjection: activeClients.reduce((sum, c) => sum + c.monthlyFee, 0) * 12,
   };
 
-  // Filter & sort
+  // Filter
   const filteredClients = FIDELITY_CLIENTS.filter(client => {
     const matchesSearch = 
       client.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       client.contactName.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'ALL' || client.status === statusFilter;
     return matchesSearch && matchesStatus;
-  }).sort((a, b) => {
-    const multiplier = sortOrder === 'asc' ? 1 : -1;
-    if (sortBy === 'monthlyFee') return (a.monthlyFee - b.monthlyFee) * multiplier;
-    if (sortBy === 'totalEarned') return (a.totalEarned - b.totalEarned) * multiplier;
-    return (new Date(a.startDate).getTime() - new Date(b.startDate).getTime()) * multiplier;
   });
 
   const toggleSelection = (id: string) => {
@@ -178,16 +211,29 @@ export default function FidelityPage() {
     );
   };
 
-  const selectAll = () => {
-    if (selectedClients.length === filteredClients.length) {
-      setSelectedClients([]);
-    } else {
-      setSelectedClients(filteredClients.map(c => c.id));
-    }
-  };
-
   return (
     <PremiumLayout user={{ name: 'Lenny De K.' }}>
+      {/* Commission Structure Banner */}
+      <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-6 text-white mb-8">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Handshake className="w-5 h-5" />
+          Upline Vergoedingen (Fidelity per Maand)
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          {UPLINE_STRUCTURE.map((level, idx) => (
+            <div key={idx} className={`p-4 rounded-xl ${idx === 0 ? 'bg-white/20 border-2 border-white' : 'bg-white/10'}`}>
+              <p className="text-xs text-purple-200 mb-1">{level.level}</p>
+              <p className="font-semibold text-sm">{level.role}</p>
+              <p className="text-lg font-bold text-yellow-300 mt-1">{level.commission}</p>
+              <p className="text-xs text-purple-100 mt-2">{level.example}</p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-4 text-sm text-purple-100">
+          💡 Jij verdient maandelijkse fees per klant. Level 1 ontvangt €2/maand per klant, Level 2 €1/maand, Level 3-4 €0.50/maand, Level 5-7 €0.25/maand
+        </p>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -209,26 +255,26 @@ export default function FidelityPage() {
           </div>
           <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{stats.totalClients}</p>
         </div>
-        <div className="bg-green-50 dark:bg-green-500/10 rounded-xl border border-green-200 dark:border-green-500/20 p-4">
+        <div className="bg-orange-50 dark:bg-orange-500/10 rounded-xl border border-orange-200 dark:border-orange-500/20 p-4">
           <div className="flex items-center gap-2 mb-2">
-            <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
-            <span className="text-sm text-green-600 dark:text-green-400">Maandelijks</span>
+            <DollarSign className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+            <span className="text-sm text-orange-600 dark:text-orange-400">Maandelijks</span>
           </div>
-          <p className="text-2xl font-bold text-green-900 dark:text-green-100">€{stats.totalMonthly}</p>
+          <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">€{stats.totalMonthly.toFixed(2)}</p>
         </div>
         <div className="bg-purple-50 dark:bg-purple-500/10 rounded-xl border border-purple-200 dark:border-purple-500/20 p-4">
           <div className="flex items-center gap-2 mb-2">
             <Wallet className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             <span className="text-sm text-purple-600 dark:text-purple-400">Totaal Verdiend</span>
           </div>
-          <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">€{stats.totalEarned.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">€{stats.totalEarned.toFixed(2)}</p>
         </div>
-        <div className="bg-orange-50 dark:bg-orange-500/10 rounded-xl border border-orange-200 dark:border-orange-500/20 p-4">
+        <div className="bg-green-50 dark:bg-green-500/10 rounded-xl border border-green-200 dark:border-green-500/20 p-4">
           <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-            <span className="text-sm text-orange-600 dark:text-orange-400">Jaarlijks</span>
+            <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
+            <span className="text-sm text-green-600 dark:text-green-400">Jaarlijks</span>
           </div>
-          <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">€{stats.yearlyProjection.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-green-900 dark:text-green-100">€{stats.yearlyProjection.toFixed(2)}</p>
         </div>
       </div>
 
@@ -255,21 +301,6 @@ export default function FidelityPage() {
             <option value="PAUSED">Gepauzeerd</option>
             <option value="CANCELLED">Gestopt</option>
           </select>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
-            className="px-4 py-2.5 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 dark:text-white"
-          >
-            <option value="monthlyFee">Maandfee</option>
-            <option value="totalEarned">Totaal verdiend</option>
-            <option value="startDate">Startdatum</option>
-          </select>
-          <button
-            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-            className="px-4 py-2.5 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
-          >
-            <ArrowUpDown className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-          </button>
           <div className="flex items-center bg-gray-100 dark:bg-slate-900 rounded-lg p-1">
             <button
               onClick={() => setViewMode('list')}
@@ -294,7 +325,6 @@ export default function FidelityPage() {
       {/* Results count */}
       <div className="mb-4 text-sm text-gray-500 dark:text-gray-400">
         {filteredClients.length} klanten gevonden
-        {selectedClients.length > 0 && ` • ${selectedClients.length} geselecteerd`}
       </div>
 
       {/* LIST VIEW */}
@@ -303,20 +333,11 @@ export default function FidelityPage() {
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700">
               <tr>
-                <th className="px-6 py-4 text-left w-10">
-                  <input
-                    type="checkbox"
-                    checked={selectedClients.length === filteredClients.length && filteredClients.length > 0}
-                    onChange={selectAll}
-                    className="w-4 h-4 text-orange-600 rounded border-gray-300 dark:border-slate-600 dark:bg-slate-800"
-                  />
-                </th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Klant</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Status</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Maandfee</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Totaal Verdiend</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Contract</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Laatste Betaling</th>
                 <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900 dark:text-white">Acties</th>
               </tr>
             </thead>
@@ -327,14 +348,6 @@ export default function FidelityPage() {
                 return (
                   <tr key={client.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
                     <td className="px-6 py-4">
-                      <input
-                        type="checkbox"
-                        checked={selectedClients.includes(client.id)}
-                        onChange={() => toggleSelection(client.id)}
-                        className="w-4 h-4 text-orange-600 rounded border-gray-300 dark:border-slate-600 dark:bg-slate-800"
-                      />
-                    </td>
-                    <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-pink-600 rounded-lg flex items-center justify-center text-white font-bold">
                           {client.companyName[0]}
@@ -342,6 +355,7 @@ export default function FidelityPage() {
                         <div>
                           <p className="font-semibold text-gray-900 dark:text-white">{client.companyName}</p>
                           <p className="text-sm text-gray-500 dark:text-gray-400">{client.contactName}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">{client.products.join(', ')}</p>
                         </div>
                       </div>
                     </td>
@@ -352,18 +366,14 @@ export default function FidelityPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="font-semibold text-gray-900 dark:text-white">€{client.monthlyFee}/maand</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{client.products.join(', ')}</p>
+                      <p className="font-semibold text-orange-600 dark:text-orange-400">€{client.monthlyFee.toFixed(2)}/maand</p>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="font-semibold text-green-600">€{client.totalEarned.toLocaleString()}</p>
+                      <p className="font-semibold text-green-600 dark:text-green-400">€{client.totalEarned.toFixed(2)}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">{client.contractDuration} maanden</p>
                     </td>
                     <td className="px-6 py-4">
                       <p className="text-sm text-gray-600 dark:text-gray-400">{new Date(client.startDate).toLocaleDateString('nl-BE')}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{new Date(client.lastPayment).toLocaleDateString('nl-BE')}</p>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
@@ -409,19 +419,15 @@ export default function FidelityPage() {
                 <div className="space-y-3 mb-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-500 dark:text-gray-400">Maandfee</span>
-                    <span className="font-bold text-gray-900 dark:text-white">€{client.monthlyFee}</span>
+                    <span className="font-bold text-orange-600 dark:text-orange-400">€{client.monthlyFee.toFixed(2)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-500 dark:text-gray-400">Totaal verdiend</span>
-                    <span className="font-bold text-green-600">€{client.totalEarned}</span>
+                    <span className="font-bold text-green-600 dark:text-green-400">€{client.totalEarned.toFixed(2)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-500 dark:text-gray-400">Contract</span>
                     <span className="text-sm text-gray-900 dark:text-white">{client.contractDuration} maanden</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Laatste betaling</span>
-                    <span className="text-sm text-gray-900 dark:text-white">{new Date(client.lastPayment).toLocaleDateString('nl-BE')}</span>
                   </div>
                 </div>
 
@@ -452,21 +458,6 @@ export default function FidelityPage() {
           <button className="px-6 py-3 bg-gradient-to-r from-orange-500 to-pink-600 text-white rounded-xl font-medium hover:shadow-lg transition-all">
             Nieuwe Klant Toevoegen
           </button>
-        </div>
-      )}
-
-      {/* Bulk actions */}
-      {selectedClients.length > 0 && (
-        <div className="fixed bottom-6 left-[280px] right-6 bg-gray-900 dark:bg-slate-800 text-white rounded-xl p-4 flex items-center justify-between shadow-lg border border-gray-700 dark:border-slate-700">
-          <p className="text-sm"><span className="font-semibold">{selectedClients.length}</span> klanten geselecteerd</p>
-          <div className="flex items-center gap-3">
-            <button className="px-4 py-2 text-sm font-medium bg-white/10 hover:bg-white/20 rounded-lg transition-colors">
-              Exporteren
-            </button>
-            <button className="px-4 py-2 text-sm font-medium bg-white/10 hover:bg-white/20 rounded-lg transition-colors">
-              Status wijzigen
-            </button>
-          </div>
         </div>
       )}
     </PremiumLayout>

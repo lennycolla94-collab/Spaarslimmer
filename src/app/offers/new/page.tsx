@@ -52,11 +52,11 @@ export default function NewOfferPage() {
       <PremiumLayout user={{ name: 'Lenny De K.' }}>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="text-center">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle2 className="w-10 h-10 text-green-600" />
+            <div className="w-20 h-20 bg-green-100 dark:bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle2 className="w-10 h-10 text-green-600 dark:text-green-400" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Offerte Aangemaakt!</h2>
-            <p className="text-gray-500">Je wordt doorgestuurd naar de offers pagina...</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Offerte Aangemaakt!</h2>
+            <p className="text-gray-500 dark:text-gray-400">Je wordt doorgestuurd naar de offers pagina...</p>
           </div>
         </div>
       </PremiumLayout>
