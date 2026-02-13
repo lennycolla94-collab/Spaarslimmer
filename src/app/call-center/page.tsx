@@ -784,13 +784,15 @@ export default function CallCenterPage() {
                     <MessageSquare className="w-4 h-4" />
                     Notitie
                   </button>
-                  <Link 
-                    href={`/calculator?leadId=${currentLead.id}`}
-                    className="flex items-center justify-center gap-2 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-medium transition-colors"
+                  <a 
+                    href={`/calculator?lead=${currentLead.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 rounded-xl font-medium transition-all shadow-lg"
                   >
                     <FileText className="w-4 h-4" />
-                    Offerte
-                  </Link>
+                    Offerte Maken
+                  </a>
                 </div>
               </div>
             )}
