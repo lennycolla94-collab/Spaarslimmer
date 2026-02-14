@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { PremiumLayout } from '@/components/design-system/premium-layout';
 import { 
   ArrowLeft, 
@@ -24,14 +24,23 @@ const MOCK_LEADS = [
 
 export default function NewOfferPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const leadIdFromUrl = searchParams.get('lead');
   const [formData, setFormData] = useState({
-    leadId: '',
+    leadId: leadIdFromUrl || '',
     products: [] as string[],
     notes: '',
     status: 'DRAFT'
   });
+  
+  // Update form when URL param changes
+  useEffect(() => {
+    if (leadIdFromUrl) {
+      setFormData(prev => ({ ...prev, leadId: leadIdFromUrl }));
+    }
+  }, [leadIdFromUrl]);
 
   const handleSubmit = async (e: React.FormEvent, sendNow = false) => {
     e.preventDefault();

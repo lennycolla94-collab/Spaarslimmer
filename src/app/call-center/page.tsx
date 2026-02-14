@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { PremiumLayout } from '@/components/design-system/premium-layout';
 import { 
   Phone, 
@@ -191,6 +192,9 @@ export default function CallCenterPage() {
   const [callResult, setCallResult] = useState('');
   const [callNotes, setCallNotes] = useState('');
   const [activeTab, setActiveTab] = useState('INFO');
+  
+  // Router
+  const router = useRouter();
 
   useEffect(() => {
     let interval: any;
@@ -266,6 +270,13 @@ export default function CallCenterPage() {
     setCallNotes('');
     setShowCallResultModal(false);
     setIsCalling(false);
+    
+    // Redirect based on result
+    if (callResult === 'APPOINTMENT') {
+      router.push(`/appointments/new?lead=${currentLead.id}`);
+    } else if (callResult === 'OFFER_SENT') {
+      router.push(`/offers/new?lead=${currentLead.id}`);
+    }
   };
 
   const getResultLabel = (result: string) => {
