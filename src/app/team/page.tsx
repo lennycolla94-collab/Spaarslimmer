@@ -30,7 +30,14 @@ import {
   Sparkles,
   Lock,
   Unlock,
-  AlertCircle
+  AlertCircle,
+  Wallet,
+  Calendar,
+  TrendingUpIcon,
+  MoreHorizontal,
+  Edit3,
+  Trash2,
+  Download
 } from 'lucide-react';
 
 // ===== MLM RANKS & CRITERIA =====
@@ -281,6 +288,92 @@ const USER_DATA = {
   }
 };
 
+// ===== FIDELITY COMMISSIE TARIEVEN =====
+// Maandelijkse commissie per actief product
+const FIDELITY_RATES: Record<string, number> = {
+  'Internet': 0.35,
+  'Energy': 0.35,
+  'Orange Mobile Child': 0.25,
+  'Orange Mobile Small': 0.50,
+  'Orange Mobile Medium': 1.00,
+  'Orange Mobile Large': 1.25,
+  'Orange Mobile Unlimited': 1.50,
+  'Go Light': 0.40,
+  'Go Plus': 0.80,
+  'Go Intense': 1.00,
+  'Go Extreme': 1.75,
+  'EasyInternet@Home': 0.50,
+  'Internet Everywhere': 0.05,
+};
+
+// Mock Fidelity klanten met hun producten
+const FIDELITY_CLIENTS = [
+  {
+    id: '1',
+    companyName: 'Bakkerij De Lekkernij',
+    contactName: 'Maria Peeters',
+    products: [
+      { name: 'Internet', variant: 'Zen', quantity: 1 },
+      { name: 'Orange Mobile Small', variant: '', quantity: 2 },
+    ],
+    startDate: '2024-01-15',
+    status: 'ACTIVE',
+    contractDuration: 14, // maanden actief
+  },
+  {
+    id: '2',
+    companyName: 'Tech Solutions BV',
+    contactName: 'Jan Janssen',
+    products: [
+      { name: 'Internet', variant: 'Giga', quantity: 1 },
+      { name: 'Orange Mobile Medium', variant: '', quantity: 4 },
+      { name: 'Go Plus', variant: '', quantity: 1 },
+    ],
+    startDate: '2024-03-20',
+    status: 'ACTIVE',
+    contractDuration: 11,
+  },
+  {
+    id: '3',
+    companyName: 'NecmiCuts',
+    contactName: 'Necmi Yildiz',
+    products: [
+      { name: 'Internet', variant: 'Start', quantity: 1 },
+      { name: 'Orange Mobile Small', variant: '', quantity: 1 },
+    ],
+    startDate: '2024-06-10',
+    status: 'ACTIVE',
+    contractDuration: 8,
+  },
+  {
+    id: '4',
+    companyName: 'Fashion Store',
+    contactName: 'Lisa Dubois',
+    products: [
+      { name: 'Internet', variant: 'Start', quantity: 1 },
+      { name: 'Orange Mobile Child', variant: '', quantity: 1 },
+      { name: 'EasyInternet@Home', variant: '', quantity: 1 },
+    ],
+    startDate: '2024-08-05',
+    status: 'ACTIVE',
+    contractDuration: 6,
+  },
+  {
+    id: '5',
+    companyName: 'Café Central',
+    contactName: 'Pierre Martin',
+    products: [
+      { name: 'Internet', variant: 'Zen', quantity: 1 },
+      { name: 'Orange Mobile Large', variant: '', quantity: 2 },
+      { name: 'Go Extreme', variant: '', quantity: 1 },
+      { name: 'Energy', variant: '', quantity: 1 },
+    ],
+    startDate: '2024-02-18',
+    status: 'ACTIVE',
+    contractDuration: 12,
+  },
+];
+
 // Custom Infinity Icon component
 function InfinityIcon({ className }: { className?: string }) {
   return (
@@ -291,7 +384,7 @@ function InfinityIcon({ className }: { className?: string }) {
 }
 
 export default function TeamPage() {
-  const [activeTab, setActiveTab] = useState('structure');
+  const [activeTab, setActiveTab] = useState('fidelity');
   const [expandedLevels, setExpandedLevels] = useState<number[]>([1]);
   const [showMLMDetails, setShowMLMDetails] = useState(false);
   const [liveIBAmount, setLiveIBAmount] = useState(USER_DATA.infinityBonus.thisMonth);
@@ -454,7 +547,8 @@ export default function TeamPage() {
       {/* Tabs */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-1 mb-6 inline-flex">
         {[
-          { id: 'structure', label: 'Team Structuur', icon: Network },
+          { id: 'fidelity', label: 'Fidelity', icon: Wallet },
+          { id: 'structure', label: 'Team', icon: Network },
           { id: 'infinity', label: 'Infinity Bonus', icon: InfinityIcon },
           { id: 'criteria', label: 'MLM Criteria', icon: Award },
         ].map((tab) => (
@@ -472,6 +566,167 @@ export default function TeamPage() {
           </button>
         ))}
       </div>
+
+      {/* ===== TAB: FIDELITY ===== */}
+      {activeTab === 'fidelity' && (
+        <div className="space-y-6">
+          {/* Fidelity Overview Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-6 text-white">
+              <div className="flex items-center gap-2 mb-2">
+                <Wallet className="w-5 h-5" />
+                <span className="text-sm text-green-100">Deze Maand</span>
+              </div>
+              <p className="text-3xl font-bold">
+                €{FIDELITY_CLIENTS
+                  .filter(c => c.status === 'ACTIVE')
+                  .reduce((total, client) => {
+                    const clientCommission = client.products.reduce((sum, p) => {
+                      const rate = FIDELITY_RATES[p.name] || 0;
+                      return sum + (rate * p.quantity);
+                    }, 0);
+                    return total + clientCommission;
+                  }, 0).toFixed(2)}
+              </p>
+              <p className="text-sm text-green-100">passieve inkomsten</p>
+            </div>
+
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-6">
+              <div className="flex items-center gap-2 mb-2">
+                <Users className="w-5 h-5 text-blue-500" />
+                <span className="text-sm text-gray-500 dark:text-gray-400">Actieve Klanten</span>
+              </div>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                {FIDELITY_CLIENTS.filter(c => c.status === 'ACTIVE').length}
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {FIDELITY_CLIENTS.reduce((sum, c) => sum + c.products.reduce((pSum, p) => pSum + p.quantity, 0), 0)} producten
+              </p>
+            </div>
+
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-6">
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="w-5 h-5 text-purple-500" />
+                <span className="text-sm text-gray-500 dark:text-gray-400">Gem. Contract</span>
+              </div>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                {Math.round(FIDELITY_CLIENTS.reduce((sum, c) => sum + c.contractDuration, 0) / FIDELITY_CLIENTS.length)}
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">maanden</p>
+            </div>
+
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-6">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUpIcon className="w-5 h-5 text-orange-500" />
+                <span className="text-sm text-gray-500 dark:text-gray-400">Jaarlijks</span>
+              </div>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                €{(FIDELITY_CLIENTS
+                  .filter(c => c.status === 'ACTIVE')
+                  .reduce((total, client) => {
+                    const clientCommission = client.products.reduce((sum, p) => {
+                      const rate = FIDELITY_RATES[p.name] || 0;
+                      return sum + (rate * p.quantity);
+                    }, 0);
+                    return total + clientCommission;
+                  }, 0) * 12).toFixed(0)}
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">geschat</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Fidelity Clients List */}
+            <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
+                    <Wallet className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">Fidelity Overzicht</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Maandelijke commissies per klant</p>
+                  </div>
+                </div>
+                <button className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                  <Download className="w-4 h-4" />
+                  Exporteer
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {FIDELITY_CLIENTS.map((client) => {
+                  const monthlyCommission = client.products.reduce((sum, p) => {
+                    const rate = FIDELITY_RATES[p.name] || 0;
+                    return sum + (rate * p.quantity);
+                  }, 0);
+
+                  return (
+                    <div key={client.id} className="p-4 bg-gray-50 dark:bg-slate-700/50 rounded-xl">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h3 className="font-semibold text-gray-900 dark:text-white">{client.companyName}</h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{client.contactName} • {client.contractDuration} maanden actief</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xl font-bold text-green-600 dark:text-green-400">€{monthlyCommission.toFixed(2)}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">per maand</p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        {client.products.map((product, idx) => {
+                          const rate = FIDELITY_RATES[product.name] || 0;
+                          const total = rate * product.quantity;
+                          return (
+                            <span 
+                              key={idx}
+                              className="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-slate-600 rounded text-xs"
+                            >
+                              <span className="text-gray-700 dark:text-gray-200">
+                                {product.quantity}x {product.name} {product.variant && `(${product.variant})`}
+                              </span>
+                              <span className="text-green-600 dark:text-green-400 font-medium">
+                                €{total.toFixed(2)}
+                              </span>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Fidelity Rates Info */}
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-6">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Commissie Tarieven</h3>
+                <div className="space-y-2 max-h-80 overflow-y-auto">
+                  {Object.entries(FIDELITY_RATES).map(([product, rate]) => (
+                    <div key={product} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-slate-700 last:border-0">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">{product}</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">€{rate.toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl p-6 text-white">
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <Info className="w-5 h-5" />
+                  Wat is Fidelity?
+                </h3>
+                <p className="text-sm text-blue-100 leading-relaxed">
+                  Fidelity is je maandelijkse passieve inkomen. Voor elk actief product dat je klanten hebben, 
+                  ontvang je elke maand een commissie. Dit loopt van €0.05 tot €1.75 per product per maand.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ===== TAB: TEAM STRUCTUUR ===== */}
       {activeTab === 'structure' && (

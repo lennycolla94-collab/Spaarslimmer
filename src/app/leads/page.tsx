@@ -9,12 +9,10 @@ import {
   Search, 
   Filter, 
   Phone, 
-  Mail, 
   MapPin, 
   Building2,
   Edit,
   Trash2,
-  CheckCircle2,
   X,
   Download,
   ChevronDown,
@@ -25,9 +23,11 @@ import {
   List,
   Calendar,
   MoreHorizontal,
-  XCircle,
-  FileText,
-  Eye
+  CheckCircle2,
+  Clock,
+  User,
+  ChevronRight,
+  Archive
 } from 'lucide-react';
 
 interface Lead {
@@ -42,11 +42,11 @@ interface Lead {
   niche?: string;
 }
 
-// Generate 156 realistic leads
-const CITIES = ['Antwerpen', 'Gent', 'Brussel', 'Leuven', 'Brugge', 'Hasselt', 'Mechelen', 'Aalst', 'Sint-Niklaas', 'Kortrijk', 'Oostende', 'Genk', 'Roeselare', 'Turnhout', 'Mechelen', 'Lier', 'Heist-op-den-Berg', 'Herentals', 'Geel', 'Lokeren'];
-const FIRST_NAMES = ['Jan', 'Maria', 'Peter', 'Anna', 'Luc', 'Sarah', 'Marc', 'Emma', 'Bart', 'Lisa', 'Tom', 'Sophie', 'Koen', 'Laura', 'Wim', 'Eline', 'Dries', 'Nina', 'Jef', 'Sofie'];
-const LAST_NAMES = ['Peeters', 'Janssens', 'Maes', 'Jacobs', 'Mertens', 'Willems', 'Claes', 'Goossens', 'Wouters', 'De Smet', 'Van den Berg', 'Dubois', 'Lambert', 'Martens', 'Vermeulen', 'Bosch', 'Vandenberghe', 'Desmet', 'Lemmens', 'De Vos'];
-const NICHES = ['Retail', 'Horeca', 'IT', 'Healthcare', 'Construction', 'Finance', 'Food', 'Beauty', 'Automotive', 'Services', 'Legal', 'Education', 'Manufacturing', 'Transport'];
+// Generate realistic leads
+const CITIES = ['Antwerpen', 'Gent', 'Brussel', 'Leuven', 'Brugge', 'Hasselt', 'Mechelen', 'Aalst', 'Sint-Niklaas', 'Kortrijk'];
+const FIRST_NAMES = ['Jan', 'Maria', 'Peter', 'Anna', 'Luc', 'Sarah', 'Marc', 'Emma', 'Bart', 'Lisa'];
+const LAST_NAMES = ['Peeters', 'Janssens', 'Maes', 'Jacobs', 'Mertens', 'Willems', 'Claes', 'Goossens', 'Wouters', 'De Smet'];
+const NICHES = ['Retail', 'Horeca', 'IT', 'Healthcare', 'Construction', 'Finance', 'Food', 'Beauty'];
 const STATUSES = ['NEW', 'NEW', 'NEW', 'CONTACTED', 'CONTACTED', 'OFFER_SENT', 'FOLLOW_UP', 'CONVERTED'];
 
 function generateLeads(count: number): Lead[] {
@@ -57,7 +57,7 @@ function generateLeads(count: number): Lead[] {
     const city = CITIES[Math.floor(Math.random() * CITIES.length)];
     const niche = NICHES[Math.floor(Math.random() * NICHES.length)];
     const status = STATUSES[Math.floor(Math.random() * STATUSES.length)];
-    const companyName = `${lastName} ${['BV', 'NV', 'Solutions', 'Group', 'Services'][Math.floor(Math.random() * 5)]}`;
+    const companyName = `${lastName} ${['BV', 'NV', 'Solutions', 'Group'][Math.floor(Math.random() * 4)]}`;
     const phone = `04${Math.floor(Math.random() * 10)}${Math.floor(Math.random() * 10)} ${Math.floor(Math.random() * 100).toString().padStart(2, '0')} ${Math.floor(Math.random() * 100).toString().padStart(2, '0')} ${Math.floor(Math.random() * 100).toString().padStart(2, '0')}`;
     const daysAgo = Math.floor(Math.random() * 30);
     const lastContact = daysAgo === 0 ? 'Vandaag' : daysAgo === 1 ? 'Gisteren' : daysAgo < 7 ? `${daysAgo} dagen geleden` : daysAgo < 14 ? '1 week geleden' : '2+ weken geleden';
@@ -79,43 +79,34 @@ function generateLeads(count: number): Lead[] {
 
 const MOCK_LEADS: Lead[] = generateLeads(156);
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string; borderColor: string; darkColor: string; darkBg: string; darkBorder: string }> = {
-  NEW: { 
-    label: 'Nieuw', 
-    color: 'text-blue-700', bgColor: 'bg-blue-50', borderColor: 'border-blue-200',
-    darkColor: 'dark:text-blue-300', darkBg: 'dark:bg-blue-500/20', darkBorder: 'dark:border-blue-500/30'
-  },
-  CONTACTED: { 
-    label: 'Gecontacteerd', 
-    color: 'text-yellow-700', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200',
-    darkColor: 'dark:text-yellow-300', darkBg: 'dark:bg-yellow-500/20', darkBorder: 'dark:border-yellow-500/30'
-  },
-  OFFER_SENT: { 
-    label: 'Offerte Verstuurd', 
-    color: 'text-purple-700', bgColor: 'bg-purple-50', borderColor: 'border-purple-200',
-    darkColor: 'dark:text-purple-300', darkBg: 'dark:bg-purple-500/20', darkBorder: 'dark:border-purple-500/30'
-  },
-  FOLLOW_UP: { 
-    label: 'Follow-up', 
-    color: 'text-orange-700', bgColor: 'bg-orange-50', borderColor: 'border-orange-200',
-    darkColor: 'dark:text-orange-300', darkBg: 'dark:bg-orange-500/20', darkBorder: 'dark:border-orange-500/30'
-  },
-  CONVERTED: { 
-    label: 'Omgezet', 
-    color: 'text-green-700', bgColor: 'bg-green-50', borderColor: 'border-green-200',
-    darkColor: 'dark:text-green-300', darkBg: 'dark:bg-green-500/20', darkBorder: 'dark:border-green-500/30'
-  },
-  LOST: { 
-    label: 'Verloren', 
-    color: 'text-red-700', bgColor: 'bg-red-50', borderColor: 'border-red-200',
-    darkColor: 'dark:text-red-300', darkBg: 'dark:bg-red-500/20', darkBorder: 'dark:border-red-500/30'
-  },
+// Status badge mapping using new design tokens
+const getStatusBadgeClass = (status: string): string => {
+  const map: Record<string, string> = {
+    NEW: 'status-badge--new',
+    CONTACTED: 'status-badge--contacted',
+    OFFER_SENT: 'status-badge--qualified',
+    FOLLOW_UP: 'status-badge--followup',
+    CONVERTED: 'status-badge--won',
+    LOST: 'status-badge--lost',
+  };
+  return map[status] || 'status-badge--new';
+};
+
+const getStatusLabel = (status: string): string => {
+  const map: Record<string, string> = {
+    NEW: 'Nieuw',
+    CONTACTED: 'Gecontacteerd',
+    OFFER_SENT: 'Offerte Verstuurd',
+    FOLLOW_UP: 'Follow-up',
+    CONVERTED: 'Omgezet',
+    LOST: 'Verloren',
+  };
+  return map[status] || status;
 };
 
 const NicheIcons: Record<string, string> = {
-  'Retail': '🏪', 'Horeca': '🍽️', 'IT': '💻', 'Healthcare': '🏥', 'Construction': '🏗️',
-  'Finance': '💰', 'Food': '🍕', 'Beauty': '💅', 'Automotive': '🚗', 'Services': '🛠️',
-  'Legal': '⚖️', 'Education': '🎓', 'Manufacturing': '🏭', 'Transport': '🚚',
+  'Retail': '🏪', 'Horeca': '🍽️', 'IT': '💻', 'Healthcare': '🏥', 
+  'Construction': '🏗️', 'Finance': '💰', 'Food': '🍕', 'Beauty': '💅',
 };
 
 export default function LeadsPage() {
@@ -126,6 +117,7 @@ export default function LeadsPage() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
@@ -165,6 +157,7 @@ export default function LeadsPage() {
   const openEditModal = (lead: Lead) => {
     setEditingLead({ ...lead });
     setShowEditModal(true);
+    setOpenDropdown(null);
   };
 
   const saveEdit = () => {
@@ -177,6 +170,7 @@ export default function LeadsPage() {
   const openDeleteModal = (lead: Lead) => {
     setDeletingLead(lead);
     setShowDeleteModal(true);
+    setOpenDropdown(null);
   };
 
   const confirmDelete = () => {
@@ -190,11 +184,20 @@ export default function LeadsPage() {
     window.open(`/calculator?lead=${leadId}`, '_blank');
   };
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setOpenDropdown(null);
+    if (openDropdown) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [openDropdown]);
+
   if (loading) {
     return (
       <PremiumLayout>
         <div className="flex items-center justify-center h-[60vh]">
-          <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+          <div className="spinner spinner--lg"></div>
         </div>
       </PremiumLayout>
     );
@@ -205,15 +208,15 @@ export default function LeadsPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Leads</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Beheer en volg al je leads ({stats.total} totaal)</p>
+          <h1 className="heading-2">Leads</h1>
+          <p className="body-small">Beheer en volg al je leads ({stats.total} totaal)</p>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/leads/import" className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+          <Link href="/leads/import" className="btn btn--secondary">
             <Download className="w-4 h-4" />
             Importeren
           </Link>
-          <Link href="/calculator" className="flex items-center gap-2 px-4 py-2 text-white bg-gradient-to-r from-orange-500 to-pink-600 rounded-lg hover:shadow-lg transition-all">
+          <Link href="/leads/new" className="btn btn--primary">
             <Plus className="w-4 h-4" />
             Nieuwe Lead
           </Link>
@@ -223,56 +226,47 @@ export default function LeadsPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
         {[
-          { label: 'Totaal', value: stats.total, color: 'gray' },
-          { label: 'Nieuw', value: stats.new, color: 'blue' },
-          { label: 'Gecontacteerd', value: stats.contacted, color: 'yellow' },
-          { label: 'Offerte', value: stats.offers, color: 'purple' },
-          { label: 'Omgezet', value: stats.converted, color: 'green' },
+          { label: 'Totaal', value: stats.total, active: statusFilter === 'ALL', onClick: () => setStatusFilter('ALL') },
+          { label: 'Nieuw', value: stats.new, active: statusFilter === 'NEW', onClick: () => setStatusFilter('NEW') },
+          { label: 'Gecontacteerd', value: stats.contacted, active: statusFilter === 'CONTACTED', onClick: () => setStatusFilter('CONTACTED') },
+          { label: 'Offerte', value: stats.offers, active: statusFilter === 'OFFER_SENT', onClick: () => setStatusFilter('OFFER_SENT') },
+          { label: 'Omgezet', value: stats.converted, active: statusFilter === 'CONVERTED', onClick: () => setStatusFilter('CONVERTED') },
         ].map((stat, i) => (
-          <div key={i} className={`${
-            stat.color === 'gray' ? 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700' :
-            stat.color === 'blue' ? 'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/20' :
-            stat.color === 'yellow' ? 'bg-yellow-50 dark:bg-yellow-500/10 border-yellow-200 dark:border-yellow-500/20' :
-            stat.color === 'purple' ? 'bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/20' :
-            'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/20'
-          } rounded-xl border p-4 hover:shadow-md transition-shadow`}>
-            <p className={`text-sm ${
-              stat.color === 'gray' ? 'text-gray-500 dark:text-gray-400' :
-              stat.color === 'blue' ? 'text-blue-600 dark:text-blue-400' :
-              stat.color === 'yellow' ? 'text-yellow-600 dark:text-yellow-400' :
-              stat.color === 'purple' ? 'text-purple-600 dark:text-purple-400' :
-              'text-green-600 dark:text-green-400'
-            } font-medium`}>{stat.label}</p>
-            <p className={`text-2xl font-bold ${
-              stat.color === 'gray' ? 'text-gray-900 dark:text-white' :
-              stat.color === 'blue' ? 'text-blue-900 dark:text-blue-100' :
-              stat.color === 'yellow' ? 'text-yellow-900 dark:text-yellow-100' :
-              stat.color === 'purple' ? 'text-purple-900 dark:text-purple-100' :
-              'text-green-900 dark:text-green-100'
-            }`}>{stat.value}</p>
-          </div>
+          <button
+            key={i}
+            onClick={stat.onClick}
+            className={`stat-filter-card ${stat.active ? 'stat-filter-card--active' : ''}`}
+          >
+            <p className="stat-filter-label">{stat.label}</p>
+            <p className="stat-filter-value">{stat.value}</p>
+          </button>
         ))}
       </div>
 
-      {/* Filters & Search & View Toggle */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4 mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Zoek op bedrijf, contact, stad..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 dark:text-white"
-            />
+      {/* Filter Bar */}
+      <div className="filter-bar">
+        <div className="filter-bar-section">
+          {/* Search */}
+          <div className="global-search">
+            <div className="search-input-wrapper">
+              <Search className="search-icon" />
+              <input
+                type="text"
+                placeholder="Zoek op bedrijf, contact, stad..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="search-input"
+              />
+              <kbd className="search-shortcut">⌘K</kbd>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-gray-400" />
+
+          {/* Status Filter */}
+          <div className="filter-dropdown">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2.5 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 dark:text-white"
+              className="form-select"
             >
               <option value="ALL">Alle statussen</option>
               <option value="NEW">Nieuw</option>
@@ -283,106 +277,146 @@ export default function LeadsPage() {
               <option value="LOST">Verloren</option>
             </select>
           </div>
-          <div className="flex items-center bg-gray-100 dark:bg-slate-900 rounded-lg p-1">
-            <button onClick={() => setViewMode('list')} className={`flex items-center gap-2 px-3 py-2 rounded-md transition-all ${
-              viewMode === 'list' ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'
-            }`}>
+        </div>
+
+        <div className="filter-bar-actions">
+          {/* View Toggle */}
+          <div className="view-toggle">
+            <button 
+              onClick={() => setViewMode('list')} 
+              className={`view-toggle-btn ${viewMode === 'list' ? 'view-toggle-btn--active' : ''}`}
+            >
               <List className="w-4 h-4" />
-              <span className="text-sm font-medium">Lijst</span>
             </button>
-            <button onClick={() => setViewMode('grid')} className={`flex items-center gap-2 px-3 py-2 rounded-md transition-all ${
-              viewMode === 'grid' ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'
-            }`}>
+            <button 
+              onClick={() => setViewMode('grid')} 
+              className={`view-toggle-btn ${viewMode === 'grid' ? 'view-toggle-btn--active' : ''}`}
+            >
               <LayoutGrid className="w-4 h-4" />
-              <span className="text-sm font-medium">Grid</span>
             </button>
           </div>
         </div>
       </div>
 
-      <div className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+      {/* Results Count */}
+      <div className="mb-4 body-small">
         Toont {filteredLeads.length} van {stats.total} leads
       </div>
 
       {/* LIST VIEW */}
       {viewMode === 'list' && (
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700">
+        <div className="data-table-container">
+          <table className="data-table">
+            <thead>
               <tr>
-                <th className="px-6 py-4 text-left">
-                  <input type="checkbox" checked={selectedLeads.length === filteredLeads.length && filteredLeads.length > 0} onChange={selectAll}
-                    className="w-4 h-4 text-orange-600 rounded border-gray-300 dark:border-slate-600 dark:bg-slate-800" />
+                <th className="col-select">
+                  <input 
+                    type="checkbox" 
+                    checked={selectedLeads.length === filteredLeads.length && filteredLeads.length > 0} 
+                    onChange={selectAll}
+                    className="checkbox" 
+                  />
                 </th>
-                {['Bedrijf', 'Contact', 'Locatie', 'Status', 'Laatste Contact', 'Acties'].map(h => (
-                  <th key={h} className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">{h}</th>
-                ))}
+                <th className="col-primary">Bedrijf & Contact</th>
+                <th>Status</th>
+                <th>Locatie</th>
+                <th className="col-right">Laatste Contact</th>
+                <th className="col-actions"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-              {filteredLeads.map((lead) => {
-                const status = STATUS_CONFIG[lead.status] || STATUS_CONFIG.NEW;
-                return (
-                  <tr key={lead.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
-                    <td className="px-6 py-4">
-                      <input type="checkbox" checked={selectedLeads.includes(lead.id)} onChange={() => toggleSelection(lead.id)}
-                        className="w-4 h-4 text-orange-600 rounded border-gray-300 dark:border-slate-600 dark:bg-slate-800" />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-pink-600 rounded-lg flex items-center justify-center text-white font-bold">
-                          {lead.companyName[0]}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-900 dark:text-white">{lead.companyName}</p>
-                          {lead.niche && <span className="text-xs text-gray-500 dark:text-gray-400">{lead.niche}</span>}
-                        </div>
+            <tbody>
+              {filteredLeads.map((lead) => (
+                <tr key={lead.id} className="table-row">
+                  <td className="col-select">
+                    <input 
+                      type="checkbox" 
+                      checked={selectedLeads.includes(lead.id)} 
+                      onChange={() => toggleSelection(lead.id)}
+                      className="checkbox" 
+                    />
+                  </td>
+                  <td className="col-primary">
+                    <div className="table-cell-main">
+                      <div className="avatar-sm">
+                        {lead.companyName[0]}
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
                       <div>
-                        <p className="text-sm text-gray-900 dark:text-gray-200">{lead.contactName}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{lead.phone}</p>
+                        <div className="table-cell-title">{lead.companyName}</div>
+                        <div className="table-cell-subtitle">{lead.contactName} • {lead.phone}</div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
-                        <MapPin className="w-4 h-4 text-gray-400" />
-                        {lead.city}
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`status-badge ${getStatusBadgeClass(lead.status)}`}>
+                      {getStatusLabel(lead.status)}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="text-[var(--text-secondary)]">{lead.city}</span>
+                  </td>
+                  <td className="col-right">
+                    <span className="text-[var(--text-secondary)]">{lead.lastContact}</span>
+                  </td>
+                  <td className="col-actions">
+                    <div className="table-actions">
+                      <a 
+                        href={`tel:${lead.phone}`} 
+                        className="btn-icon" 
+                        title="Bellen"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Phone className="w-4 h-4" />
+                      </a>
+                      <button 
+                        className="btn-icon" 
+                        title="Afspraak"
+                        onClick={(e) => { e.stopPropagation(); makeOffer(lead.id); }}
+                      >
+                        <Calendar className="w-4 h-4" />
+                      </button>
+                      <div className="dropdown">
+                        <button 
+                          className="btn-icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenDropdown(openDropdown === lead.id ? null : lead.id);
+                          }}
+                        >
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                        {openDropdown === lead.id && (
+                          <div className="dropdown-menu">
+                            <button className="dropdown-item" onClick={() => openEditModal(lead)}>
+                              <Edit className="w-4 h-4" />
+                              <span>Bewerken</span>
+                            </button>
+                            <button className="dropdown-item" onClick={() => makeOffer(lead.id)}>
+                              <Target className="w-4 h-4" />
+                              <span>Offerte maken</span>
+                            </button>
+                            <div className="dropdown-divider"></div>
+                            <button className="dropdown-item dropdown-item--danger" onClick={() => openDeleteModal(lead)}>
+                              <Trash2 className="w-4 h-4" />
+                              <span>Verwijderen</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${status.bgColor} ${status.color} ${status.darkBg} ${status.darkColor} ${status.borderColor} ${status.darkBorder} border`}>
-                        {status.label}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{lead.lastContact}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-1">
-                        <a href={`tel:${lead.phone}`} className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-500/20 rounded-lg transition-colors" title="Bellen">
-                          <Phone className="w-4 h-4" />
-                        </a>
-                        <button onClick={() => makeOffer(lead.id)} className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-500/20 rounded-lg transition-colors" title="Offerte maken">
-                          <Target className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => openEditModal(lead)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/20 rounded-lg transition-colors" title="Bewerken">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => openDeleteModal(lead)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/20 rounded-lg transition-colors" title="Verwijderen">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                    </div>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
+          
           {filteredLeads.length === 0 && (
-            <div className="p-12 text-center">
-              <Building2 className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Geen leads gevonden</h3>
-              <Link href="/calculator" className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-colors">
+            <div className="empty-state">
+              <div className="empty-state-icon">🏢</div>
+              <h3 className="empty-state-title">Geen leads gevonden</h3>
+              <p className="empty-state-description">
+                Je hebt nog geen leads. Voeg je eerste lead toe om te beginnen.
+              </p>
+              <Link href="/leads/new" className="btn btn--primary">
                 <Plus className="w-5 h-5" />
                 Nieuwe Lead
               </Link>
@@ -393,65 +427,94 @@ export default function LeadsPage() {
 
       {/* GRID VIEW */}
       {viewMode === 'grid' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="leads-grid">
           {filteredLeads.map((lead) => {
-            const status = STATUS_CONFIG[lead.status] || STATUS_CONFIG.NEW;
             const icon = NicheIcons[lead.niche || ''] || '🏢';
             return (
-              <div key={lead.id} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 hover:shadow-lg transition-all group">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-500/20 dark:to-pink-500/20 rounded-xl flex items-center justify-center text-2xl">
-                      {icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-gray-900 dark:text-white truncate">{lead.companyName}</h3>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{lead.niche}</p>
-                    </div>
+              <article key={lead.id} className="lead-card">
+                {/* Header */}
+                <div className="lead-card-header">
+                  <div className="lead-card-avatar">
+                    <span>{lead.companyName[0]}</span>
                   </div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${status.bgColor} ${status.color} ${status.darkBg} ${status.darkColor} ${status.borderColor} ${status.darkBorder} border`}>
-                    {status.label}
+                  <div className="lead-card-title">
+                    <h3 className="lead-card-company">{lead.companyName}</h3>
+                    <span className="lead-card-industry">{lead.niche}</span>
+                  </div>
+                  <span className={`status-badge ${getStatusBadgeClass(lead.status)}`}>
+                    {getStatusLabel(lead.status)}
                   </span>
                 </div>
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <Phone className="w-4 h-4 text-gray-400" />
+
+                {/* Contact Info */}
+                <div className="lead-card-contact">
+                  <div className="contact-item">
+                    <Phone className="contact-icon" />
                     <span>{lead.phone}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <MapPin className="w-4 h-4 text-gray-400" />
+                  <div className="contact-item">
+                    <MapPin className="contact-icon" />
                     <span>{lead.city}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <Calendar className="w-4 h-4 text-gray-400" />
-                    <span>{lead.lastContact}</span>
+                  <div className="contact-item">
+                    <User className="contact-icon" />
+                    <span>{lead.contactName}</span>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <a href={`tel:${lead.phone}`} className="flex items-center justify-center gap-1 px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium">
+
+                {/* Meta Info */}
+                <div className="lead-card-meta">
+                  <span className="meta-item">
+                    <Clock className="w-3 h-3" />
+                    {lead.lastContact}
+                  </span>
+                </div>
+
+                {/* Actions */}
+                <div className="lead-card-actions">
+                  <a 
+                    href={`tel:${lead.phone}`}
+                    className="btn btn--primary btn--block"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <Phone className="w-4 h-4" />
                     Bellen
                   </a>
-                  <button onClick={() => makeOffer(lead.id)} className="flex items-center justify-center gap-1 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium">
-                    <Calendar className="w-4 h-4" />
-                    Afspraak
-                  </button>
-                  <button onClick={() => makeOffer(lead.id)} className="flex items-center justify-center gap-1 px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium">
-                    <Phone className="w-4 h-4" />
-                    Bel nu
-                  </button>
+                  
+                  <div className="dropdown">
+                    <button 
+                      className="btn btn--secondary btn--icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenDropdown(openDropdown === lead.id ? null : lead.id);
+                      }}
+                    >
+                      <MoreHorizontal className="w-4 h-4" />
+                    </button>
+                    {openDropdown === lead.id && (
+                      <div className="dropdown-menu">
+                        <button className="dropdown-item" onClick={() => makeOffer(lead.id)}>
+                          <Calendar className="w-4 h-4" />
+                          <span>Afspraak maken</span>
+                        </button>
+                        <button className="dropdown-item" onClick={() => openEditModal(lead)}>
+                          <Edit className="w-4 h-4" />
+                          <span>Bewerken</span>
+                        </button>
+                        <button className="dropdown-item">
+                          <Archive className="w-4 h-4" />
+                          <span>Archiveren</span>
+                        </button>
+                        <div className="dropdown-divider"></div>
+                        <button className="dropdown-item dropdown-item--danger" onClick={() => openDeleteModal(lead)}>
+                          <Trash2 className="w-4 h-4" />
+                          <span>Verwijderen</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center justify-center gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-slate-700">
-                  <button onClick={() => openEditModal(lead)} className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/20 rounded-lg transition-colors">
-                    <Edit className="w-3.5 h-3.5" />
-                    Bewerken
-                  </button>
-                  <button onClick={() => openDeleteModal(lead)} className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/20 rounded-lg transition-colors">
-                    <Trash2 className="w-3.5 h-3.5" />
-                    Verwijder
-                  </button>
-                </div>
-              </div>
+              </article>
             );
           })}
         </div>
@@ -459,10 +522,13 @@ export default function LeadsPage() {
 
       {/* Empty State for Grid */}
       {viewMode === 'grid' && filteredLeads.length === 0 && (
-        <div className="p-12 text-center">
-          <Building2 className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Geen leads gevonden</h3>
-          <Link href="/calculator" className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-colors">
+        <div className="empty-state">
+          <div className="empty-state-icon">🏢</div>
+          <h3 className="empty-state-title">Geen leads gevonden</h3>
+          <p className="empty-state-description">
+            Je hebt nog geen leads. Voeg je eerste lead toe om te beginnen.
+          </p>
+          <Link href="/leads/new" className="btn btn--primary">
             <Plus className="w-5 h-5" />
             Nieuwe Lead
           </Link>
@@ -471,61 +537,69 @@ export default function LeadsPage() {
 
       {/* Bulk Actions */}
       {selectedLeads.length > 0 && (
-        <div className="fixed bottom-6 left-[280px] right-6 bg-gray-900 dark:bg-slate-800 text-white rounded-xl p-4 flex items-center justify-between shadow-lg border border-gray-700 dark:border-slate-700">
-          <p className="text-sm"><span className="font-semibold">{selectedLeads.length}</span> leads geselecteerd</p>
+        <div className="fixed bottom-6 left-[280px] right-6 bg-[var(--bg-card)] rounded-xl p-4 flex items-center justify-between shadow-xl border border-white/5 z-50">
+          <p className="text-sm text-[var(--text-secondary)]">
+            <strong className="text-[var(--text-primary)]">{selectedLeads.length}</strong> leads geselecteerd
+          </p>
           <div className="flex items-center gap-3">
-            <button className="px-4 py-2 text-sm font-medium bg-white/10 hover:bg-white/20 rounded-lg transition-colors">Exporteren</button>
-            <button className="px-4 py-2 text-sm font-medium bg-white/10 hover:bg-white/20 rounded-lg transition-colors">Status wijzigen</button>
-            <button className="px-4 py-2 text-sm font-medium bg-red-500 hover:bg-red-600 rounded-lg transition-colors">Verwijderen</button>
+            <button className="btn btn--secondary btn--sm">Exporteren</button>
+            <button className="btn btn--secondary btn--sm">Status wijzigen</button>
+            <button className="btn btn--danger btn--sm">Verwijderen</button>
           </div>
         </div>
       )}
 
       {/* EDIT MODAL */}
       {showEditModal && editingLead && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-slate-700">
-            <div className="p-6 border-b border-gray-200 dark:border-slate-700">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Lead Bewerken</h2>
-                <button onClick={() => setShowEditModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg">
-                  <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                </button>
-              </div>
+        <div className="modal-overlay is-open">
+          <div className="modal" role="dialog" aria-modal="true">
+            <div className="modal-header">
+              <h3 className="modal-title">Lead Bewerken</h3>
+              <button className="modal-close" onClick={() => setShowEditModal(false)}>
+                <X className="w-5 h-5" />
+              </button>
             </div>
-            <div className="p-6 space-y-4">
-              {[
-                { label: 'Bedrijfsnaam', value: editingLead.companyName, key: 'companyName', type: 'text' },
-                { label: 'Contactpersoon', value: editingLead.contactName, key: 'contactName', type: 'text' },
-                { label: 'Telefoon', value: editingLead.phone, key: 'phone', type: 'text' },
-                { label: 'Email', value: editingLead.email, key: 'email', type: 'email' },
-                { label: 'Stad', value: editingLead.city, key: 'city', type: 'text' },
-              ].map((field) => (
-                <div key={field.key}>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{field.label}</label>
-                  <input type={field.type} value={field.value}
-                    onChange={(e) => setEditingLead({...editingLead, [field.key]: e.target.value})}
-                    className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 dark:text-white" />
+            <div className="modal-body">
+              <div className="space-y-4">
+                {[
+                  { label: 'Bedrijfsnaam', value: editingLead.companyName, key: 'companyName', type: 'text' },
+                  { label: 'Contactpersoon', value: editingLead.contactName, key: 'contactName', type: 'text' },
+                  { label: 'Telefoon', value: editingLead.phone, key: 'phone', type: 'text' },
+                  { label: 'Email', value: editingLead.email, key: 'email', type: 'email' },
+                  { label: 'Stad', value: editingLead.city, key: 'city', type: 'text' },
+                ].map((field) => (
+                  <div key={field.key}>
+                    <label className="form-label">{field.label}</label>
+                    <input 
+                      type={field.type} 
+                      value={field.value}
+                      onChange={(e) => setEditingLead({...editingLead, [field.key]: e.target.value})}
+                      className="form-input"
+                    />
+                  </div>
+                ))}
+                <div>
+                  <label className="form-label">Status</label>
+                  <select 
+                    value={editingLead.status} 
+                    onChange={(e) => setEditingLead({...editingLead, status: e.target.value})}
+                    className="form-select"
+                  >
+                    <option value="NEW">Nieuw</option>
+                    <option value="CONTACTED">Gecontacteerd</option>
+                    <option value="OFFER_SENT">Offerte Verstuurd</option>
+                    <option value="FOLLOW_UP">Follow-up</option>
+                    <option value="CONVERTED">Omgezet</option>
+                    <option value="LOST">Verloren</option>
+                  </select>
                 </div>
-              ))}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
-                <select value={editingLead.status} onChange={(e) => setEditingLead({...editingLead, status: e.target.value})}
-                  className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 dark:text-white">
-                  <option value="NEW">Nieuw</option>
-                  <option value="CONTACTED">Gecontacteerd</option>
-                  <option value="OFFER_SENT">Offerte Verstuurd</option>
-                  <option value="FOLLOW_UP">Follow-up</option>
-                  <option value="CONVERTED">Omgezet</option>
-                  <option value="LOST">Verloren</option>
-                </select>
               </div>
             </div>
-            <div className="p-6 border-t border-gray-200 dark:border-slate-700 flex justify-end gap-3">
-              <button onClick={() => setShowEditModal(false)} className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+            <div className="modal-footer">
+              <button className="btn btn--secondary" onClick={() => setShowEditModal(false)}>
                 Annuleren
               </button>
-              <button onClick={saveEdit} className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+              <button className="btn btn--primary" onClick={saveEdit}>
                 Opslaan
               </button>
             </div>
@@ -535,22 +609,22 @@ export default function LeadsPage() {
 
       {/* DELETE MODAL */}
       {showDeleteModal && deletingLead && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md p-6 border border-gray-200 dark:border-slate-700">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-red-100 dark:bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
+        <div className="modal-overlay is-open">
+          <div className="modal modal--sm" role="dialog" aria-modal="true">
+            <div className="modal-body text-center pt-8">
+              <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="w-8 h-8 text-[var(--error)]" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Lead Verwijderen</h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Weet je zeker dat je <strong className="text-gray-900 dark:text-white">{deletingLead.companyName}</strong> wilt verwijderen? 
+              <h3 className="modal-title justify-center">Lead Verwijderen</h3>
+              <p className="text-[var(--text-secondary)] mb-6">
+                Weet je zeker dat je <strong className="text-[var(--text-primary)]">{deletingLead.companyName}</strong> wilt verwijderen? 
                 Deze actie kan niet ongedaan worden gemaakt.
               </p>
               <div className="flex justify-center gap-3">
-                <button onClick={() => setShowDeleteModal(false)} className="px-6 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                <button className="btn btn--secondary" onClick={() => setShowDeleteModal(false)}>
                   Annuleren
                 </button>
-                <button onClick={confirmDelete} className="px-6 py-2 bg-red-500 text-white hover:bg-red-600 rounded-lg transition-colors">
+                <button className="btn btn--danger" onClick={confirmDelete}>
                   Verwijderen
                 </button>
               </div>
@@ -558,6 +632,575 @@ export default function LeadsPage() {
           </div>
         </div>
       )}
+
+      {/* Styles */}
+      <style jsx>{`
+        /* Stat Filter Cards */
+        .stat-filter-card {
+          background: var(--bg-card);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: var(--radius-lg);
+          padding: var(--space-md);
+          text-align: left;
+          transition: var(--transition-base);
+          cursor: pointer;
+        }
+
+        .stat-filter-card:hover {
+          border-color: rgba(255, 255, 255, 0.1);
+          transform: translateY(-2px);
+        }
+
+        .stat-filter-card--active {
+          background: rgba(255, 107, 53, 0.1);
+          border-color: rgba(255, 107, 53, 0.3);
+        }
+
+        .stat-filter-label {
+          font-size: var(--text-sm);
+          color: var(--text-tertiary);
+          margin-bottom: 4px;
+        }
+
+        .stat-filter-value {
+          font-size: var(--text-2xl);
+          font-weight: var(--font-bold);
+          color: var(--text-primary);
+        }
+
+        .stat-filter-card--active .stat-filter-value {
+          color: var(--primary-orange);
+        }
+
+        /* Filter Bar */
+        .filter-bar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: var(--space-lg);
+          padding: var(--space-lg);
+          background: var(--bg-card);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: var(--radius-lg);
+          margin-bottom: var(--space-lg);
+        }
+
+        .filter-bar-section {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          gap: var(--space-md);
+        }
+
+        .filter-bar-actions {
+          display: flex;
+          align-items: center;
+          gap: var(--space-sm);
+        }
+
+        /* Global Search */
+        .global-search {
+          flex: 1;
+          max-width: 400px;
+        }
+
+        .search-input-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+        }
+
+        .search-icon {
+          position: absolute;
+          left: var(--space-md);
+          color: var(--text-tertiary);
+          width: 18px;
+          height: 18px;
+        }
+
+        .search-input {
+          width: 100%;
+          height: 44px;
+          padding: 0 80px 0 48px;
+          background: var(--bg-tertiary);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: var(--radius-md);
+          color: var(--text-primary);
+          font-size: var(--text-sm);
+          transition: var(--transition-base);
+        }
+
+        .search-input:focus {
+          outline: none;
+          border-color: var(--primary-orange);
+          box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+        }
+
+        .search-input::placeholder {
+          color: var(--text-tertiary);
+        }
+
+        .search-shortcut {
+          position: absolute;
+          right: var(--space-md);
+          padding: 4px 8px;
+          background: var(--bg-primary);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: var(--radius-sm);
+          font-size: var(--text-xs);
+          color: var(--text-tertiary);
+          font-family: monospace;
+        }
+
+        /* View Toggle */
+        .view-toggle {
+          display: flex;
+          background: var(--bg-tertiary);
+          border-radius: var(--radius-md);
+          padding: 4px;
+        }
+
+        .view-toggle-btn {
+          padding: 8px 12px;
+          border-radius: var(--radius-sm);
+          color: var(--text-tertiary);
+          transition: var(--transition-fast);
+        }
+
+        .view-toggle-btn:hover {
+          color: var(--text-primary);
+        }
+
+        .view-toggle-btn--active {
+          background: var(--bg-card);
+          color: var(--text-primary);
+          box-shadow: var(--shadow-sm);
+        }
+
+        /* Data Table */
+        .data-table-container {
+          background: var(--bg-card);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: var(--radius-lg);
+          overflow: hidden;
+        }
+
+        .data-table {
+          width: 100%;
+          border-collapse: separate;
+          border-spacing: 0;
+        }
+
+        .data-table thead {
+          background: var(--bg-tertiary);
+        }
+
+        .data-table th {
+          padding: var(--space-md) var(--space-lg);
+          text-align: left;
+          font-size: var(--text-xs);
+          font-weight: var(--font-semibold);
+          color: var(--text-tertiary);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .data-table td {
+          padding: var(--space-md) var(--space-lg);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .table-row {
+          transition: var(--transition-fast);
+        }
+
+        .table-row:hover {
+          background: var(--bg-hover);
+        }
+
+        .col-select {
+          width: 48px;
+        }
+
+        .col-primary {
+          width: 40%;
+        }
+
+        .col-right {
+          text-align: right;
+        }
+
+        .col-actions {
+          width: 120px;
+        }
+
+        .table-cell-main {
+          display: flex;
+          align-items: center;
+          gap: var(--space-md);
+        }
+
+        .table-cell-title {
+          font-size: var(--text-base);
+          font-weight: var(--font-semibold);
+          color: var(--text-primary);
+          margin-bottom: 2px;
+        }
+
+        .table-cell-subtitle {
+          font-size: var(--text-sm);
+          color: var(--text-tertiary);
+        }
+
+        .avatar-sm {
+          width: 40px;
+          height: 40px;
+          border-radius: var(--radius-md);
+          background: var(--primary-gradient);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-weight: var(--font-semibold);
+          font-size: var(--text-base);
+          flex-shrink: 0;
+        }
+
+        .table-actions {
+          display: flex;
+          gap: var(--space-sm);
+          opacity: 0;
+          transition: var(--transition-fast);
+        }
+
+        .table-row:hover .table-actions {
+          opacity: 1;
+        }
+
+        .btn-icon {
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: transparent;
+          border: none;
+          border-radius: var(--radius-sm);
+          color: var(--text-secondary);
+          cursor: pointer;
+          transition: var(--transition-fast);
+        }
+
+        .btn-icon:hover {
+          background: var(--bg-tertiary);
+          color: var(--text-primary);
+        }
+
+        /* Checkbox */
+        .checkbox {
+          width: 18px;
+          height: 18px;
+          border: 2px solid rgba(255, 255, 255, 0.2);
+          border-radius: var(--radius-sm);
+          background: transparent;
+          cursor: pointer;
+          appearance: none;
+          transition: var(--transition-fast);
+        }
+
+        .checkbox:checked {
+          background: var(--primary-orange);
+          border-color: var(--primary-orange);
+        }
+
+        /* Leads Grid */
+        .leads-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+          gap: var(--space-lg);
+        }
+
+        /* Lead Card */
+        .lead-card {
+          background: var(--bg-card);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: var(--radius-lg);
+          padding: var(--space-lg);
+          transition: var(--transition-base);
+        }
+
+        .lead-card:hover {
+          border-color: rgba(255, 107, 53, 0.3);
+          box-shadow: var(--shadow-lg);
+          transform: translateY(-2px);
+        }
+
+        .lead-card-header {
+          display: flex;
+          align-items: flex-start;
+          gap: var(--space-md);
+          margin-bottom: var(--space-md);
+        }
+
+        .lead-card-avatar {
+          width: 48px;
+          height: 48px;
+          border-radius: var(--radius-md);
+          background: var(--primary-gradient);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-weight: var(--font-bold);
+          font-size: var(--text-lg);
+          flex-shrink: 0;
+        }
+
+        .lead-card-title {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .lead-card-company {
+          font-size: var(--text-lg);
+          font-weight: var(--font-semibold);
+          color: var(--text-primary);
+          margin-bottom: 2px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .lead-card-industry {
+          font-size: var(--text-sm);
+          color: var(--text-tertiary);
+        }
+
+        .lead-card-contact {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-sm);
+          margin-bottom: var(--space-md);
+          padding: var(--space-md) 0;
+          border-top: 1px solid rgba(255, 255, 255, 0.05);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .contact-item {
+          display: flex;
+          align-items: center;
+          gap: var(--space-sm);
+          font-size: var(--text-sm);
+          color: var(--text-secondary);
+        }
+
+        .contact-icon {
+          color: var(--text-tertiary);
+          width: 16px;
+          height: 16px;
+        }
+
+        .lead-card-meta {
+          display: flex;
+          align-items: center;
+          gap: var(--space-md);
+          margin-bottom: var(--space-md);
+        }
+
+        .meta-item {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: var(--text-xs);
+          color: var(--text-tertiary);
+        }
+
+        .lead-card-actions {
+          display: grid;
+          grid-template-columns: 1fr auto;
+          gap: var(--space-sm);
+        }
+
+        /* Dropdown */
+        .dropdown {
+          position: relative;
+        }
+
+        .dropdown-menu {
+          position: absolute;
+          top: calc(100% + 8px);
+          right: 0;
+          min-width: 200px;
+          background: var(--bg-card);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: var(--radius-md);
+          box-shadow: var(--shadow-xl);
+          padding: var(--space-sm);
+          z-index: 100;
+        }
+
+        .dropdown-item {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          gap: var(--space-sm);
+          padding: var(--space-sm) var(--space-md);
+          background: transparent;
+          border: none;
+          border-radius: var(--radius-sm);
+          color: var(--text-primary);
+          font-size: var(--text-sm);
+          text-align: left;
+          cursor: pointer;
+          transition: var(--transition-fast);
+        }
+
+        .dropdown-item:hover {
+          background: var(--bg-tertiary);
+        }
+
+        .dropdown-item--danger {
+          color: var(--error);
+        }
+
+        .dropdown-item--danger:hover {
+          background: rgba(239, 68, 68, 0.1);
+        }
+
+        .dropdown-divider {
+          height: 1px;
+          background: rgba(255, 255, 255, 0.05);
+          margin: var(--space-sm) 0;
+        }
+
+        /* Empty State */
+        .empty-state {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: var(--space-3xl) var(--space-xl);
+          text-align: center;
+          min-height: 400px;
+        }
+
+        .empty-state-icon {
+          width: 80px;
+          height: 80px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(255, 107, 53, 0.1);
+          border-radius: var(--radius-xl);
+          font-size: 40px;
+          margin-bottom: var(--space-lg);
+        }
+
+        .empty-state-title {
+          font-size: var(--text-2xl);
+          font-weight: var(--font-semibold);
+          color: var(--text-primary);
+          margin-bottom: var(--space-sm);
+        }
+
+        .empty-state-description {
+          font-size: var(--text-base);
+          color: var(--text-secondary);
+          max-width: 400px;
+          margin-bottom: var(--space-xl);
+          line-height: var(--leading-relaxed);
+        }
+
+        /* Modal */
+        .modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.7);
+          backdrop-filter: blur(4px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+          opacity: 0;
+          visibility: hidden;
+          transition: var(--transition-base);
+        }
+
+        .modal-overlay.is-open {
+          opacity: 1;
+          visibility: visible;
+        }
+
+        .modal {
+          background: var(--bg-card);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: var(--radius-xl);
+          width: 90%;
+          max-width: 600px;
+          max-height: 90vh;
+          display: flex;
+          flex-direction: column;
+          box-shadow: var(--shadow-xl);
+          transform: scale(0.95);
+          transition: var(--transition-base);
+        }
+
+        .modal--sm {
+          max-width: 400px;
+        }
+
+        .modal-overlay.is-open .modal {
+          transform: scale(1);
+        }
+
+        .modal-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: var(--space-lg);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .modal-title {
+          font-size: var(--text-xl);
+          font-weight: var(--font-semibold);
+          color: var(--text-primary);
+        }
+
+        .modal-close {
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: transparent;
+          border: none;
+          border-radius: var(--radius-sm);
+          color: var(--text-secondary);
+          cursor: pointer;
+          transition: var(--transition-fast);
+        }
+
+        .modal-close:hover {
+          background: var(--bg-tertiary);
+          color: var(--text-primary);
+        }
+
+        .modal-body {
+          flex: 1;
+          padding: var(--space-lg);
+          overflow-y: auto;
+        }
+
+        .modal-footer {
+          display: flex;
+          justify-content: flex-end;
+          gap: var(--space-sm);
+          padding: var(--space-lg);
+          border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+      `}</style>
     </PremiumLayout>
   );
 }
