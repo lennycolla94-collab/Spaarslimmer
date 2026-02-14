@@ -43,7 +43,7 @@ export default function DashboardPage() {
 
   // Prevent hydration mismatch
   if (!mounted) {
-    return <div className="min-h-screen bg-gray-100" />;
+    return <div className="min-h-screen bg-gray-100 dark:bg-slate-900" />;
   }
 
   // Show dashboard
@@ -57,7 +57,7 @@ export default function DashboardPage() {
         )}
         <button
           onClick={() => setShowSelector(true)}
-          className="fixed bottom-6 right-6 z-50 p-4 bg-white rounded-full shadow-xl border border-gray-200 hover:shadow-2xl transition-all"
+          className="fixed bottom-6 right-6 z-50 p-4 bg-white dark:bg-slate-800 rounded-full shadow-xl border border-gray-200 dark:border-slate-700 hover:shadow-2xl transition-all"
           title="Wissel design/thema"
         >
           <Palette className="w-6 h-6 text-orange-500" />
@@ -68,13 +68,13 @@ export default function DashboardPage() {
 
   // Show design selector
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
+    <div className="min-h-screen bg-gray-100 dark:bg-slate-900 flex items-center justify-center p-8">
       <div className="max-w-5xl w-full">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
             Kies je Dashboard Design
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
             Twee unieke designs, elk met hun eigen karakter. 
             Kies je favoriete layout én thema (Dark/Light).
           </p>
@@ -82,13 +82,13 @@ export default function DashboardPage() {
 
         {/* Theme Mode Selector */}
         <div className="flex justify-center mb-8">
-          <div className="bg-white rounded-2xl shadow-lg p-2 flex gap-2">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-2 flex gap-2">
             <button
               onClick={() => handleSetThemeMode('light')}
               className={`px-6 py-3 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
                 themeMode === 'light'
                   ? 'bg-amber-100 text-amber-700 border-2 border-amber-300'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700'
               }`}
             >
               <Sun className="w-5 h-5" />
@@ -99,7 +99,7 @@ export default function DashboardPage() {
               className={`px-6 py-3 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
                 themeMode === 'dark'
                   ? 'bg-slate-800 text-white border-2 border-slate-600'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700'
               }`}
             >
               <Moon className="w-5 h-5" />
@@ -130,8 +130,8 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Design A</h3>
-              <ul className="space-y-2 text-gray-600">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Design A</h3>
+              <ul className="space-y-2 text-gray-600 dark:text-gray-400">
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-green-500" />
                   {themeMode === 'dark' ? 'Donkere sidebar' : 'Lichte sidebar met blauw accent'}
@@ -173,8 +173,8 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Design B</h3>
-              <ul className="space-y-2 text-gray-600">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Design B</h3>
+              <ul className="space-y-2 text-gray-600 dark:text-gray-400">
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-green-500" />
                   Moderne lichte sidebar met gradient
