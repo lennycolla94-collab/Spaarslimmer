@@ -108,21 +108,21 @@ function SectionCard({
   disabled?: boolean;
 }) {
   const colors = {
-    orange: 'bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/20',
-    blue: 'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/20',
-    purple: 'bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/20',
-    pink: 'bg-pink-50 dark:bg-pink-500/10 border-pink-200 dark:border-pink-500/20',
-    yellow: 'bg-yellow-50 dark:bg-yellow-500/10 border-yellow-200 dark:border-yellow-500/20',
-    gray: 'bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700'
+    orange: 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700',
+    blue: 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700',
+    purple: 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700',
+    pink: 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700',
+    yellow: 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700',
+    gray: 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'
   };
   
   const iconColors = {
-    orange: 'text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-500/20',
-    blue: 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-500/20',
-    purple: 'text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-500/20',
-    pink: 'text-pink-600 dark:text-pink-400 bg-pink-100 dark:bg-pink-500/20',
-    yellow: 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-500/20',
-    gray: 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-slate-700'
+    orange: 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-slate-700',
+    blue: 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-slate-700',
+    purple: 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-slate-700',
+    pink: 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-slate-700',
+    yellow: 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-slate-700',
+    gray: 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-slate-700'
   };
 
   return (
@@ -403,21 +403,21 @@ function CalculatorContent() {
                 })}
               </div>
 
-              <label className="flex items-center gap-4 p-4 bg-green-50 dark:bg-green-500/10 border-2 border-green-200 dark:border-green-500/20 rounded-xl cursor-pointer hover:bg-green-100 dark:hover:bg-green-500/20 transition-colors">
+              <label className="flex items-center gap-4 p-4 bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
                 <div className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${isSecondAddress ? 'bg-green-500 border-green-500' : 'border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800'}`}>
                   {isSecondAddress && <CheckCircle2 className="w-4 h-4 text-white" />}
                 </div>
                 <input type="checkbox" checked={isSecondAddress} onChange={(e) => setIsSecondAddress(e.target.checked)} className="hidden" />
                 <div className="flex-1">
                   <span className="font-bold text-gray-900 dark:text-white">2de Adres</span>
-                  <span className="text-green-700 dark:text-green-400 font-bold ml-2">-€10 levenslang korting</span>
+                  <span className="text-gray-500 dark:text-gray-400 font-bold ml-2">-€10 levenslang korting</span>
                 </div>
-                <Building2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                <Building2 className="w-5 h-5 text-gray-500 dark:text-gray-400" />
               </label>
 
               {/* Second Address Internet Selection */}
               {isSecondAddress && (
-                <div className="mt-6 p-5 bg-green-50/50 dark:bg-green-500/5 rounded-xl border-2 border-green-200 dark:border-green-500/20">
+                <div className="mt-6 p-5 bg-white dark:bg-slate-800 rounded-xl border-2 border-gray-200 dark:border-slate-700">
                   <h3 className="font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                     <Building2 className="w-5 h-5 text-green-600" />
                     Internet voor 2de Adres
@@ -442,7 +442,7 @@ function CalculatorContent() {
                         <p className="text-2xl font-black text-gray-900 dark:text-white mt-1">€{opt.price}<span className="text-xs font-normal text-gray-500">/maand</span></p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">{opt.speed}</p>
                         {secondAddressInternet === opt.key && (
-                          <div className="mt-2 flex items-center gap-1 text-green-600 text-xs font-bold">
+                          <div className="mt-2 flex items-center gap-1 text-gray-500 text-xs font-bold">
                             <CheckCircle2 className="w-4 h-4" />
                             Geselecteerd
                           </div>
@@ -464,9 +464,9 @@ function CalculatorContent() {
               </div>
 
               {mobileLines.length === 0 ? (
-                <div className="text-center py-12 bg-gray-50 dark:bg-slate-800/50 rounded-xl border-2 border-dashed border-gray-200 dark:border-slate-700">
+                <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-xl border-2 border-dashed border-gray-200 dark:border-slate-700">
                   <div className="w-16 h-16 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <Smartphone className="w-8 h-8 text-gray-400" />
+                    <Smartphone className="w-8 h-8 text-gray-500 dark:text-gray-400" />
                   </div>
                   <p className="text-gray-500 dark:text-gray-400 font-medium">Nog geen mobiele lijnen toegevoegd</p>
                   <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Klik op "GSM toevoegen" om te starten</p>
@@ -517,16 +517,16 @@ function CalculatorContent() {
                             </div>
                             <input type="checkbox" checked={line.portability} onChange={(e) => updateMobileLine(idx, 'portability', e.target.checked)} className="hidden" />
                             <span className="font-medium text-gray-700 dark:text-gray-300">Nummerbehoud</span>
-                            <span className="ml-auto px-2 py-1 bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 text-xs font-bold rounded-full">+€20 bonus</span>
+                            <span className="ml-auto px-2 py-1 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 text-xs font-bold rounded-full">+€20 bonus</span>
                           </label>
                         )}
                       </div>
                     </div>
                   ))}
                   {mobileLines.length >= 2 && (
-                    <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-500/10 dark:to-emerald-500/10 rounded-xl border border-green-200 dark:border-green-500/20">
-                      <Sparkles className="w-5 h-5 text-green-600 dark:text-green-400" />
-                      <span className="font-semibold text-green-800 dark:text-green-300">Multi-line korting toegepast!</span>
+                    <div className="flex items-center gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700">
+                      <Sparkles className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                      <span className="font-semibold text-gray-700 dark:text-gray-300">Multi-line korting toegepast!</span>
                     </div>
                   )}
                 </div>
@@ -719,11 +719,11 @@ function CalculatorContent() {
                   </div>
                 )}
                 {isSecondAddress && secondAddressInternet && (
-                  <div className="flex justify-between items-center p-3 bg-green-50 dark:bg-green-500/10 rounded-lg border border-green-200 dark:border-green-500/20">
+                  <div className="flex justify-between items-center p-3 bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
                     <div className="flex items-center gap-2">
-                      <Building2 className="w-4 h-4 text-green-600" />
+                      <Building2 className="w-4 h-4 text-gray-500" />
                       <span className="font-medium text-gray-700 dark:text-gray-300">Internet (2de Adres)</span>
-                      <span className="text-xs bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded">-€10</span>
+                      <span className="text-xs bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded">-€10</span>
                     </div>
                     <span className="font-bold text-gray-900 dark:text-white">
                       €{INTERNET_STANDALONE[secondAddressInternet as keyof typeof INTERNET_STANDALONE] - 10}
@@ -801,7 +801,7 @@ function CalculatorContent() {
                   </div>
                 )}
                 <div className="pt-3 border-t-2 border-gray-200 dark:border-slate-700">
-                  <div className="flex justify-between items-center p-3 bg-gradient-to-r from-orange-50 to-pink-50 dark:from-orange-500/10 dark:to-pink-500/10 rounded-xl">
+                  <div className="flex justify-between items-center p-3 bg-white dark:bg-slate-800 rounded-xl">
                     <span className="font-bold text-gray-900 dark:text-white text-lg">Totaal per maand</span>
                     <span className="font-black text-2xl text-gray-900 dark:text-white">€{results.newMonthly.toFixed(2)}</span>
                   </div>

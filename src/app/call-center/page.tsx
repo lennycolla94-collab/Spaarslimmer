@@ -284,68 +284,68 @@ export default function CallCenterPage() {
       {/* Edit Lead Modal */}
       {showEditModal && editingLead && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Lead Bewerken</h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Lead Bewerken</h2>
               <button onClick={() => setShowEditModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Bedrijfsnaam</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bedrijfsnaam</label>
                 <input
                   type="text"
                   value={editingLead.companyName}
                   onChange={(e) => setEditingLead({...editingLead, companyName: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-slate-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Contactpersoon</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contactpersoon</label>
                 <input
                   type="text"
                   value={editingLead.contactName}
                   onChange={(e) => setEditingLead({...editingLead, contactName: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-slate-900 dark:text-white"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Telefoon</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Telefoon</label>
                   <input
                     type="text"
                     value={editingLead.phone}
                     onChange={(e) => setEditingLead({...editingLead, phone: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-slate-900 dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
                   <input
                     type="email"
                     value={editingLead.email}
                     onChange={(e) => setEditingLead({...editingLead, email: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-slate-900 dark:text-white"
                   />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Stad</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Stad</label>
                   <input
                     type="text"
                     value={editingLead.city}
                     onChange={(e) => setEditingLead({...editingLead, city: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-slate-900 dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Provincie</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Provincie</label>
                   <select
                     value={editingLead.province}
                     onChange={(e) => setEditingLead({...editingLead, province: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-slate-900 dark:text-white"
                   >
                     {PROVINCES.filter(p => p !== 'Alle').map(p => (
                       <option key={p} value={p}>{p}</option>
@@ -354,11 +354,11 @@ export default function CallCenterPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Prioriteit</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Prioriteit</label>
                 <select
                   value={editingLead.priority}
                   onChange={(e) => setEditingLead({...editingLead, priority: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-slate-900 dark:text-white"
                 >
                   <option value="HIGH">High</option>
                   <option value="MEDIUM">Medium</option>
@@ -388,9 +388,9 @@ export default function CallCenterPage() {
       {/* Add Note Modal */}
       {showNoteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Notitie Toevoegen</h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Notitie Toevoegen</h2>
               <button onClick={() => setShowNoteModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
                 <X className="w-5 h-5" />
               </button>
@@ -399,7 +399,7 @@ export default function CallCenterPage() {
               placeholder="Schrijf je notitie hier..."
               value={newNote}
               onChange={(e) => setNewNote(e.target.value)}
-              className="w-full h-32 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 resize-none"
+              className="w-full h-32 px-4 py-3 border border-gray-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-orange-500 resize-none dark:bg-slate-900 dark:text-white"
             />
             <div className="flex gap-3 mt-4">
               <button
@@ -422,9 +422,9 @@ export default function CallCenterPage() {
       {/* Call Result Modal */}
       {showCallResultModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Gespreksresultaat</h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Gespreksresultaat</h2>
               <button onClick={() => setShowCallResultModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
                 <X className="w-5 h-5" />
               </button>
@@ -451,7 +451,7 @@ export default function CallCenterPage() {
               placeholder="Extra notities over het gesprek..."
               value={callNotes}
               onChange={(e) => setCallNotes(e.target.value)}
-              className="w-full h-24 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 resize-none"
+              className="w-full h-24 px-4 py-3 border border-gray-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-orange-500 resize-none dark:bg-slate-900 dark:text-white"
             />
             <div className="flex gap-3 mt-4">
               <button
@@ -477,24 +477,24 @@ export default function CallCenterPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Call Geschiedenis</h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Call Geschiedenis</h2>
               <button onClick={() => setShowHistoryModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="space-y-3">
               {currentLead.callHistory.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">Nog geen gesprekken</p>
+                <p className="text-gray-500 dark:text-gray-400 text-center py-8">Nog geen gesprekken</p>
               ) : (
                 currentLead.callHistory.map((call: any, idx: number) => (
-                  <div key={idx} className="p-4 bg-gray-50 rounded-xl">
+                  <div key={idx} className="p-4 bg-gray-50 dark:bg-slate-900 rounded-xl">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-900">{call.date}</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">{call.date}</span>
                       <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">
                         {getResultLabel(call.result)}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600">{call.notes}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">{call.notes}</p>
                   </div>
                 ))
               )}
@@ -523,21 +523,21 @@ export default function CallCenterPage() {
 
       {/* Stats Bar */}
       <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="bg-blue-50 dark:bg-blue-500/10 rounded-xl p-4 border border-blue-200 dark:border-blue-500/20">
-          <p className="text-sm text-blue-600 dark:text-blue-400">Totaal Leads</p>
-          <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{stats.total}</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700">
+          <p className="text-sm text-gray-500 dark:text-gray-400">Totaal Leads</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
         </div>
-        <div className="bg-green-50 dark:bg-green-500/10 rounded-xl p-4 border border-green-200 dark:border-green-500/20">
-          <p className="text-sm text-green-600 dark:text-green-400">Gebeld</p>
-          <p className="text-2xl font-bold text-green-900 dark:text-green-100">{stats.called}</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700">
+          <p className="text-sm text-gray-500 dark:text-gray-400">Gebeld</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.called}</p>
         </div>
-        <div className="bg-purple-50 dark:bg-purple-500/10 rounded-xl p-4 border border-purple-200 dark:border-purple-500/20">
-          <p className="text-sm text-purple-600 dark:text-purple-400">Interesse</p>
-          <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{stats.interested}</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700">
+          <p className="text-sm text-gray-500 dark:text-gray-400">Interesse</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.interested}</p>
         </div>
-        <div className="bg-orange-50 dark:bg-orange-500/10 rounded-xl p-4 border border-orange-200 dark:border-orange-500/20">
-          <p className="text-sm text-orange-600 dark:text-orange-400">Offertes</p>
-          <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{stats.offers}</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700">
+          <p className="text-sm text-gray-500 dark:text-gray-400">Offertes</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.offers}</p>
         </div>
       </div>
 
@@ -801,9 +801,9 @@ export default function CallCenterPage() {
 
         {/* Queue */}
         <div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Wachtrij ({filteredQueue.length})</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Wachtrij ({filteredQueue.length})</h2>
               <button 
                 onClick={() => setShowHistoryModal(true)}
                 className="text-sm text-orange-600 hover:text-orange-700"
@@ -818,12 +818,12 @@ export default function CallCenterPage() {
                   onClick={() => { setCurrentLead(lead); setIsCalling(false); }}
                   className={`w-full p-3 rounded-xl text-left transition-colors ${
                     currentLead.id === lead.id 
-                      ? 'bg-orange-50 border-2 border-orange-200' 
-                      : 'bg-gray-50 hover:bg-gray-100 border-2 border-transparent'
+                      ? 'bg-orange-50 dark:bg-orange-500/10 border-2 border-orange-200 dark:border-orange-500/30' 
+                      : 'bg-gray-50 dark:bg-slate-900 hover:bg-gray-100 dark:hover:bg-slate-800 border-2 border-transparent'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-semibold text-gray-900 text-sm">{lead.companyName}</span>
+                    <span className="font-semibold text-gray-900 dark:text-white text-sm">{lead.companyName}</span>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
                       lead.priority === 'HIGH' ? 'bg-red-100 text-red-700' :
                       lead.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700' :
@@ -832,9 +832,9 @@ export default function CallCenterPage() {
                       {lead.priority}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500">{lead.contactName}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{lead.contactName}</p>
                   <div className="flex items-center justify-between mt-2">
-                    <span className="text-xs text-gray-400 flex items-center gap-1">
+                    <span className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
                       <MapPin className="w-3 h-3" />
                       {lead.city}
                     </span>
