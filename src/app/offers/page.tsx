@@ -28,8 +28,8 @@ import { formatEuro, getCommissionStatusLabel } from '@/lib/commission';
 const STATUS_CONFIG = {
   DRAFT: { 
     label: 'Concept', 
-    color: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-500/20 dark:text-gray-400 dark:border-gray-500/30',
-    bgColor: 'bg-gray-50 dark:bg-gray-500/10'
+    color: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-700 dark:text-gray-300 dark:border-slate-600',
+    bgColor: 'bg-gray-50 dark:bg-slate-900'
   },
   SENT: { 
     label: 'Verstuurd', 
@@ -378,19 +378,19 @@ export default function OffersPage() {
 
       {/* Demo Badge */}
       {useMockData && (
-        <div className="mb-6 p-3 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 rounded-xl flex items-center gap-3">
+        <div className="mb-6 p-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl flex items-center gap-3">
           <span className="px-2 py-1 bg-blue-500 text-white text-xs font-bold rounded">DEMO</span>
-          <p className="text-blue-700 dark:text-blue-400 text-sm">Commissies worden automatisch berekend volgens SmartSN regels</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">Commissies worden automatisch berekend volgens SmartSN regels</p>
         </div>
       )}
 
       {/* Stats Grid - FIXED DARK MODE */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-blue-50 dark:bg-blue-500/10 rounded-xl p-4 border border-blue-200 dark:border-blue-500/20">
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Open Offertes</p>
-              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{totals.sentCount}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Open Offertes</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{totals.sentCount}</p>
             </div>
             <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
               <FileText className="w-6 h-6 text-white" />
@@ -398,11 +398,11 @@ export default function OffersPage() {
           </div>
         </div>
 
-        <div className="bg-purple-50 dark:bg-purple-500/10 rounded-xl p-4 border border-purple-200 dark:border-purple-500/20">
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">Geaccepteerd</p>
-              <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{totals.acceptedCount}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Geaccepteerd</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{totals.acceptedCount}</p>
             </div>
             <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
               <CheckCircle2 className="w-6 h-6 text-white" />
@@ -410,11 +410,11 @@ export default function OffersPage() {
           </div>
         </div>
 
-        <div className="bg-orange-50 dark:bg-orange-500/10 rounded-xl p-4 border border-orange-200 dark:border-orange-500/20">
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-orange-600 dark:text-orange-400 font-medium">Potentiële Commissie</p>
-              <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{formatEuro(totals.potentialCommission)}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Potentiële Commissie</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatEuro(totals.potentialCommission)}</p>
             </div>
             <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center">
               <TrendingUp className="w-6 h-6 text-white" />
@@ -422,11 +422,11 @@ export default function OffersPage() {
           </div>
         </div>
 
-        <div className="bg-green-50 dark:bg-green-500/10 rounded-xl p-4 border border-green-200 dark:border-green-500/20">
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-green-600 dark:text-green-400 font-medium">Effectieve Commissie</p>
-              <p className="text-2xl font-bold text-green-900 dark:text-green-100">{formatEuro(totals.effectiveCommission)}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Effectieve Commissie</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatEuro(totals.effectiveCommission)}</p>
             </div>
             <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
               <Euro className="w-6 h-6 text-white" />
@@ -549,7 +549,7 @@ export default function OffersPage() {
                           <button
                             key={opt.value}
                             onClick={() => updateStatus(offer.id, opt.value)}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 first:rounded-t-xl last:rounded-b-xl"
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 first:rounded-t-xl last:rounded-b-xl"
                           >
                             {opt.label}
                           </button>
@@ -562,14 +562,14 @@ export default function OffersPage() {
                   {(offer.potentialCommission || offer.effectiveCommission || offer.commissionBreakdown) && (
                     <div className={`mb-4 px-4 py-3 rounded-xl border ${
                       offer.effectiveCommission 
-                        ? 'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/20'
+                        ? 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'
                         : offer.potentialCommission
-                        ? 'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/20'
-                        : 'bg-gray-50 dark:bg-slate-700 border-gray-200 dark:border-slate-600'
+                        ? 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'
+                        : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'
                     }`}>
                       <div className="flex items-center justify-between">
                         <span className={`font-semibold ${
-                          offer.effectiveCommission ? 'text-green-700 dark:text-green-400' : offer.potentialCommission ? 'text-blue-700 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'
+                          offer.effectiveCommission ? 'text-gray-500 dark:text-gray-400' : offer.potentialCommission ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500 dark:text-gray-400'
                         }`}>
                           {offer.effectiveCommission 
                             ? `✓ Verkocht - Effectieve commissie: ${formatEuro(offer.effectiveCommission)}`
@@ -581,7 +581,7 @@ export default function OffersPage() {
                         {offer.commissionBreakdown && (
                           <button
                             onClick={() => setExpandedBreakdown(isBreakdownExpanded ? null : offer.id)}
-                            className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1"
+                            className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-400 flex items-center gap-1"
                           >
                             {isBreakdownExpanded ? 'Verberg' : 'Toon breakdown'}
                             <ChevronDown className={`w-3 h-3 transition-transform ${isBreakdownExpanded ? 'rotate-180' : ''}`} />
@@ -594,7 +594,7 @@ export default function OffersPage() {
                   {/* Commission Breakdown - FIXED DARK MODE */}
                   {offer.commissionBreakdown && (
                     <div className={`mb-4 overflow-hidden transition-all ${isBreakdownExpanded ? '' : 'max-h-24'}`}>
-                      <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-4 border border-gray-100 dark:border-slate-700">
+                      <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-4 border border-gray-200 dark:border-slate-700">
                         <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-3">Commissie Opbouw</p>
                         
                         {/* Table Header */}
@@ -624,7 +624,7 @@ export default function OffersPage() {
                         </div>
                         
                         {/* Total Row */}
-                        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-slate-600 grid grid-cols-5 gap-2 text-sm px-2">
+                        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-slate-700 grid grid-cols-5 gap-2 text-sm px-2">
                           <span className="font-semibold text-gray-700 dark:text-gray-300">TOTAAL</span>
                           <span className="text-center font-semibold text-gray-700 dark:text-gray-300">€{offer.commissionBreakdown.baseTotal}</span>
                           <span className="text-center font-semibold text-green-600 dark:text-green-400">+€{offer.commissionBreakdown.portabilityTotal}</span>
@@ -682,7 +682,7 @@ export default function OffersPage() {
                       )}
                       
                       {offer.status === 'SOLD' && (
-                        <span className="flex items-center gap-2 px-4 py-2 bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 rounded-lg font-medium">
+                        <span className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 text-gray-500 dark:text-gray-400 rounded-lg font-medium">
                           <CheckCircle2 className="w-4 h-4" />
                           Verkocht
                         </span>

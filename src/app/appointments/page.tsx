@@ -96,37 +96,37 @@ export default function AppointmentsPage() {
     <PremiumLayout user={{ name: 'Lenny De K.' }}>
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-blue-50 dark:bg-blue-500/10 rounded-xl border border-blue-200 dark:border-blue-500/20 p-4">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
           <div className="flex items-center gap-2 mb-2">
-            <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            <span className="text-sm text-blue-600 dark:text-blue-400">Totaal Afspraken</span>
+            <Calendar className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+            <span className="text-sm text-gray-500 dark:text-gray-400">Totaal Afspraken</span>
           </div>
-          <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{appointments.length}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{appointments.length}</p>
         </div>
-        <div className="bg-green-50 dark:bg-green-500/10 rounded-xl border border-green-200 dark:border-green-500/20 p-4">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
           <div className="flex items-center gap-2 mb-2">
-            <Clock className="w-5 h-5 text-green-600 dark:text-green-400" />
-            <span className="text-sm text-green-600 dark:text-green-400">Deze Maand</span>
+            <Clock className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+            <span className="text-sm text-gray-500 dark:text-gray-400">Deze Maand</span>
           </div>
-          <p className="text-2xl font-bold text-green-900 dark:text-green-100">
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">
             {appointments.filter(a => new Date(a.date).getMonth() === new Date().getMonth()).length}
           </p>
         </div>
-        <div className="bg-purple-50 dark:bg-purple-500/10 rounded-xl border border-purple-200 dark:border-purple-500/20 p-4">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
           <div className="flex items-center gap-2 mb-2">
-            <User className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-            <span className="text-sm text-purple-600 dark:text-purple-400">Fysiek</span>
+            <User className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+            <span className="text-sm text-gray-500 dark:text-gray-400">Fysiek</span>
           </div>
-          <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">
             {appointments.filter(a => a.type === 'PHYSICAL').length}
           </p>
         </div>
-        <div className="bg-orange-50 dark:bg-orange-500/10 rounded-xl border border-orange-200 dark:border-orange-500/20 p-4">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
           <div className="flex items-center gap-2 mb-2">
-            <Phone className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-            <span className="text-sm text-orange-600 dark:text-orange-400">Telefoon</span>
+            <Phone className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+            <span className="text-sm text-gray-500 dark:text-gray-400">Telefoon</span>
           </div>
-          <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">
             {appointments.filter(a => a.type === 'PHONE' || a.type === 'VIDEO').length}
           </p>
         </div>
@@ -247,7 +247,7 @@ export default function AppointmentsPage() {
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-gray-900 dark:text-white truncate">{apt.clientName}</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">{apt.company}</p>
-                        <div className="flex items-center gap-3 mt-2 text-sm text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center gap-3 mt-2 text-sm text-gray-700 dark:text-gray-300">
                           <span className="flex items-center gap-1">
                             <Clock className="w-4 h-4" />
                             {apt.time}
@@ -258,7 +258,7 @@ export default function AppointmentsPage() {
                           </span>
                         </div>
                         {apt.notes && (
-                          <p className="text-xs text-gray-500 dark:text-gray-500 mt-2 line-clamp-2">{apt.notes}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 line-clamp-2">{apt.notes}</p>
                         )}
                       </div>
                     </div>
@@ -321,13 +321,13 @@ export default function AppointmentsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                      <span className="text-gray-700 dark:text-gray-300 flex items-center gap-1">
                         <MapPin className="w-4 h-4" />
                         {apt.location}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate">{apt.notes || '-'}</p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 max-w-xs truncate">{apt.notes || '-'}</p>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
