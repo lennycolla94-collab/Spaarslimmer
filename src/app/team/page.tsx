@@ -33,34 +33,34 @@ import {
   Info
 } from 'lucide-react';
 
-// Persoonlijke fidelity vergoedingen (Level 0 - Jij)
-const PERSONAL_RATES = [
-  { product: 'Internet', rate: 0.35 },
-  { product: 'Energy', rate: 0.35 },
-  { product: 'Orange Mobile Child', rate: 0.25 },
-  { product: 'Orange Mobile Small', rate: 0.50 },
-  { product: 'Orange Mobile Medium', rate: 1.00 },
-  { product: 'Orange Mobile Large', rate: 1.25 },
-  { product: 'Orange Mobile Unlimited', rate: 1.50 },
-  { product: 'Go Light', rate: 0.40 },
-  { product: 'Go Plus', rate: 0.80 },
-  { product: 'Go Intense', rate: 1.00 },
-  { product: 'Go Extreme', rate: 1.75 },
-  { product: 'EasyInternet@Home', rate: 0.50 },
-  { product: 'Internet Everywhere', rate: 0.05 },
+// Fidelity = Maandelijkse bedragen die de KLANT aan Orange betaalt
+const ORANGE_RATES = [
+  { product: 'Internet Start (Pack)', rate: 49 },
+  { product: 'Internet Zen (Pack)', rate: 58 },
+  { product: 'Internet Giga (Pack)', rate: 68 },
+  { product: 'Internet Start (Standalone)', rate: 53 },
+  { product: 'Internet Zen (Standalone)', rate: 62 },
+  { product: 'Internet Giga (Standalone)', rate: 72 },
+  { product: 'Orange Mobile Child', rate: 11.99 },
+  { product: 'Orange Mobile Small', rate: 25 },
+  { product: 'Orange Mobile Medium', rate: 35 },
+  { product: 'Orange Mobile Large', rate: 45 },
+  { product: 'Orange Mobile Unlimited', rate: 50 },
+  { product: 'TV Life', rate: 19 },
+  { product: 'TV Plus', rate: 32 },
 ];
 
-// Mock data voor maandelijkse fidelity fees
+// Mock data - Maandbedragen die klanten aan Orange betalen
 const FIDELITY_CLIENTS = [
   {
     id: '1',
     companyName: 'Bakkerij De Lekkernij',
     contactName: 'Maria Peeters',
-    monthlyFee: 2.10,
-    products: ['Internet', 'TV', '2x Orange Mobile Small'],
+    monthlyFee: 119, // Zen Internet (58) + TV Life (19) + 2x Small (25x2) - 10 convergentie = 119
+    products: ['Zen Internet', 'TV Life', '2x Orange Mobile Small'],
     startDate: '2024-01-15',
     status: 'ACTIVE',
-    totalEarned: 29.40,
+    totalPaid: 1666, // 119 x 14 maanden
     lastPayment: '2025-02-01',
     contractDuration: 14,
     notes: 'Tevreden klant, altijd op tijd'
@@ -69,11 +69,11 @@ const FIDELITY_CLIENTS = [
     id: '2',
     companyName: 'Tech Solutions BV',
     contactName: 'Jan Janssen',
-    monthlyFee: 4.10,
-    products: ['Internet', 'TV Plus', '4x Orange Mobile Medium'],
+    monthlyFee: 198, // Giga (68) + TV Plus (32) + 4x Medium (35x4) - 20 convergentie = 198
+    products: ['Giga Internet', 'TV Plus', '4x Orange Mobile Medium'],
     startDate: '2024-03-20',
     status: 'ACTIVE',
-    totalEarned: 36.90,
+    totalPaid: 1782,
     lastPayment: '2025-02-01',
     contractDuration: 9,
     notes: 'Groot account, upsell mogelijk'
@@ -82,11 +82,11 @@ const FIDELITY_CLIENTS = [
     id: '3',
     companyName: 'NecmiCuts',
     contactName: 'Necmi Yildiz',
-    monthlyFee: 1.35,
-    products: ['Internet', 'Orange Mobile Small'],
+    monthlyFee: 83, // Start (49) + Small (25) - 5 convergentie = 69
+    products: ['Start Internet', 'Orange Mobile Small'],
     startDate: '2024-06-10',
     status: 'ACTIVE',
-    totalEarned: 9.45,
+    totalPaid: 483,
     lastPayment: '2025-02-01',
     contractDuration: 7,
     notes: ''
@@ -95,11 +95,11 @@ const FIDELITY_CLIENTS = [
     id: '4',
     companyName: 'Fashion Store',
     contactName: 'Lisa Dubois',
-    monthlyFee: 1.20,
-    products: ['Internet', 'Orange Mobile Small'],
+    monthlyFee: 72, // Start (53) + Small (25) - 6 convergentie = 72
+    products: ['Start Internet', 'Orange Mobile Small'],
     startDate: '2024-08-05',
     status: 'PAUSED',
-    totalEarned: 7.20,
+    totalPaid: 432,
     lastPayment: '2024-12-01',
     contractDuration: 6,
     notes: 'Tijdelijk gepauzeerd - seizoenswerk'
@@ -108,11 +108,11 @@ const FIDELITY_CLIENTS = [
     id: '5',
     companyName: 'Constructie Groep',
     contactName: 'Peter Willems',
-    monthlyFee: 3.60,
-    products: ['Internet', 'TV', '3x Orange Mobile Medium'],
+    monthlyFee: 167, // Zen (58) + TV (19) + 3x Medium (35x3) - 15 convergentie = 167
+    products: ['Zen Internet', 'TV Life', '3x Orange Mobile Medium'],
     startDate: '2024-02-28',
     status: 'ACTIVE',
-    totalEarned: 43.20,
+    totalPaid: 2004,
     lastPayment: '2025-02-01',
     contractDuration: 12,
     notes: 'Langlopend contract'
@@ -121,11 +121,11 @@ const FIDELITY_CLIENTS = [
     id: '6',
     companyName: 'Dental Care Plus',
     contactName: 'Dr. Sarah Vans',
-    monthlyFee: 2.70,
-    products: ['Internet', 'TV Life', '2x Orange Mobile Medium'],
+    monthlyFee: 108, // Zen (58) + TV Life (19) + 2x Medium (35x2) - 15 convergentie = 132
+    products: ['Zen Internet', 'TV Life', '2x Orange Mobile Medium'],
     startDate: '2024-09-15',
     status: 'ACTIVE',
-    totalEarned: 13.50,
+    totalPaid: 660,
     lastPayment: '2025-02-01',
     contractDuration: 5,
     notes: ''
@@ -150,7 +150,7 @@ export default function FidelityPage() {
   const stats = {
     totalClients: activeClients.length,
     totalMonthly: activeClients.reduce((sum, c) => sum + c.monthlyFee, 0),
-    totalEarned: FIDELITY_CLIENTS.reduce((sum, c) => sum + c.totalEarned, 0),
+    totalPaid: FIDELITY_CLIENTS.reduce((sum, c) => sum + c.totalPaid, 0),
     yearlyProjection: activeClients.reduce((sum, c) => sum + c.monthlyFee, 0) * 12,
   };
 
@@ -177,8 +177,8 @@ export default function FidelityPage() {
           <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full border border-gray-200 dark:border-slate-700">
             <div className="p-6 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Jouw Maandfee Tarieven</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Wat jij verdient per actieve klant per maand</p>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Orange Maandtarieven</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Wat klanten maandelijks aan Orange betalen</p>
               </div>
               <button 
                 onClick={() => setShowRatesModal(false)}
@@ -190,16 +190,16 @@ export default function FidelityPage() {
             
             <div className="p-6">
               <div className="space-y-2">
-                {PERSONAL_RATES.map((item) => (
+                {ORANGE_RATES.map((item) => (
                   <div key={item.product} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-slate-700 last:border-0">
                     <span className="text-gray-700 dark:text-gray-300">{item.product}</span>
-                    <span className="font-bold text-gray-500 dark:text-gray-400">€{item.rate.toFixed(2)}/maand</span>
+                    <span className="font-bold text-gray-500 dark:text-gray-400">€{item.rate.toFixed(0)}/maand</span>
                   </div>
                 ))}
               </div>
               <div className="mt-4 p-3 bg-gray-50 dark:bg-slate-900 rounded-lg">
                 <p className="text-xs text-gray-700 dark:text-gray-300 text-center">
-                  💡 JIJ verdient dit bedrag elke maand per actieve klant (jouw passief inkomen)
+                  💡 Dit is wat klanten maandelijks aan Orange betalen (inclusief convergentie korting)
                 </p>
               </div>
             </div>
@@ -210,8 +210,8 @@ export default function FidelityPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Fidelity - Passief Inkomen</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Maandelijkse terugkerende fees van je klanten</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Fidelity - Klanten Overzicht</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Maandbedragen die klanten aan Orange betalen</p>
         </div>
         <div className="flex gap-3">
           <button 
@@ -228,28 +228,28 @@ export default function FidelityPage() {
         </div>
       </div>
 
-      {/* Personal Commission Banner */}
+      {/* Orange Rates Banner */}
       <div className="bg-gradient-to-r from-orange-500 to-pink-600 rounded-2xl p-6 text-white mb-8">
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <Handshake className="w-5 h-5" />
-          Jouw Maandelijkse Vergoedingen
+          Orange Maandtarieven
         </h2>
         <p className="text-sm text-orange-100 mb-4">
-          Dit is wat JIJ elke maand verdient voor elke actieve klant. 
-          Passief inkomen zolang de klant actief blijft.
+          Dit zijn de maandbedragen die je klanten aan Orange betalen.
+          Inclusief convergentie korting bij meerdere producten.
         </p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
           <div className="bg-white/10 rounded-lg p-3">
-            <p className="text-orange-200 text-xs">Per Internet klant</p>
-            <p className="font-bold">€0.35/maand</p>
+            <p className="text-orange-200 text-xs">Internet Start</p>
+            <p className="font-bold">€49/maand</p>
           </div>
           <div className="bg-white/10 rounded-lg p-3">
-            <p className="text-orange-200 text-xs">Per Mobile Medium</p>
-            <p className="font-bold">€1.00/maand</p>
+            <p className="text-orange-200 text-xs">Mobile Medium</p>
+            <p className="font-bold">€35/maand</p>
           </div>
           <div className="bg-white/10 rounded-lg p-3">
-            <p className="text-orange-200 text-xs">Per Go Extreme</p>
-            <p className="font-bold">€1.75/maand</p>
+            <p className="text-orange-200 text-xs">TV Plus</p>
+            <p className="font-bold">€32/maand</p>
           </div>
           <div className="bg-white/10 rounded-lg p-3">
             <p className="text-orange-200 text-xs">Alle producten</p>
@@ -277,9 +277,9 @@ export default function FidelityPage() {
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
           <div className="flex items-center gap-2 mb-2">
             <Wallet className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-            <span className="text-sm text-gray-500 dark:text-gray-400">Totaal Verdiend</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">Totaal Betaald</span>
           </div>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">€{stats.totalEarned.toFixed(2)}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">€{stats.totalPaid.toFixed(0)}</p>
         </div>
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
           <div className="flex items-center gap-2 mb-2">
@@ -347,8 +347,8 @@ export default function FidelityPage() {
               <tr>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Klant</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Status</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-500 dark:text-gray-400">Jouw Maandfee</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Totaal Ontvangen</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-orange-600 dark:text-orange-400">Maandbedrag (Orange)</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Totaal Betaald</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Contract</th>
                 <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900 dark:text-white">Acties</th>
               </tr>
@@ -378,10 +378,10 @@ export default function FidelityPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="font-semibold text-gray-500 dark:text-gray-400">€{client.monthlyFee.toFixed(2)}/maand</p>
+                      <p className="font-semibold text-orange-600 dark:text-orange-400">€{client.monthlyFee.toFixed(0)}/maand</p>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="font-semibold text-gray-500 dark:text-gray-400">€{client.totalEarned.toFixed(2)}</p>
+                      <p className="font-semibold text-gray-500 dark:text-gray-400">€{client.totalPaid.toFixed(0)}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">{client.contractDuration} maanden</p>
                     </td>
                     <td className="px-6 py-4">
@@ -430,12 +430,12 @@ export default function FidelityPage() {
 
                 <div className="space-y-3 mb-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Jouw maandfee</span>
-                    <span className="font-bold text-gray-500 dark:text-gray-400">€{client.monthlyFee.toFixed(2)}</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">Maandbedrag (Orange)</span>
+                    <span className="font-bold text-orange-600 dark:text-orange-400">€{client.monthlyFee.toFixed(0)}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Totaal ontvangen</span>
-                    <span className="font-bold text-gray-500 dark:text-gray-400">€{client.totalEarned.toFixed(2)}</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">Totaal betaald</span>
+                    <span className="font-bold text-gray-500 dark:text-gray-400">€{client.totalPaid.toFixed(0)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-500 dark:text-gray-400">Contract</span>
