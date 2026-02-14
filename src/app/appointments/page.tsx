@@ -213,13 +213,13 @@ export default function AppointmentsPage() {
               Lijst
             </button>
           </div>
-          <Link
-            href="/appointments/new"
+          <button
+            onClick={() => openQuickAdd(new Date().getDate())}
             className="flex items-center gap-2 px-4 py-2 text-white bg-orange-500 hover:bg-orange-600 rounded-lg transition-colors"
           >
             <Plus className="w-4 h-4" />
             Nieuwe Afspraak
-          </Link>
+          </button>
         </div>
       </div>
 
@@ -418,9 +418,6 @@ export default function AppointmentsPage() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">Afspraak Toevoegen</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {new Date(selectedDate).toLocaleDateString('nl-BE', { weekday: 'long', day: 'numeric', month: 'long' })}
-                </p>
               </div>
               <button 
                 onClick={() => setShowQuickAdd(false)}
@@ -431,6 +428,17 @@ export default function AppointmentsPage() {
             </div>
             
             <form onSubmit={saveQuickAppointment} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Datum</label>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  required
+                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-lg dark:text-white"
+                />
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Klant</label>
                 <select
