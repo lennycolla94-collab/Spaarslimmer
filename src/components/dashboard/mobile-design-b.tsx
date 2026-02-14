@@ -27,7 +27,7 @@ const quickActions = [
   { icon: Phone, label: 'Nieuwe Call', color: 'bg-blue-500', href: '/call-center' },
   { icon: Plus, label: 'Lead Toevoegen', color: 'bg-green-500', href: '/leads/import' },
   { icon: Award, label: 'Offerte Maken', color: 'bg-purple-500', href: '/offers' },
-  { icon: Calendar, label: 'Afspraak', color: 'bg-orange-500', href: '#' },
+  { icon: Calendar, label: 'Afspraak', color: 'bg-orange-500', href: '/appointments/new' },
 ];
 
 const todayGoals = [
