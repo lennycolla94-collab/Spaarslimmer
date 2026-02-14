@@ -199,7 +199,7 @@ export default function FidelityPage() {
               </div>
               <div className="mt-4 p-3 bg-gray-50 dark:bg-slate-900 rounded-lg">
                 <p className="text-xs text-gray-700 dark:text-gray-300 text-center">
-                  💡 Dit verdien jij elke maand voor elke klant die actief blijft
+                  💡 JIJ verdient dit bedrag elke maand per actieve klant (jouw passief inkomen)
                 </p>
               </div>
             </div>
