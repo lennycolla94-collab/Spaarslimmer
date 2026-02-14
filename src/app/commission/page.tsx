@@ -73,7 +73,21 @@ function getFollowUpStatus(saleDate: string) {
 }
 
 // Mock sales data with clawback tracking
-const SALES_DATA = [
+// Sale type with optional clawbackAmount
+interface Sale {
+  id: string;
+  client: string;
+  amount: number;
+  status: string;
+  saleDate: string;
+  activationDate: string;
+  followUpDone: boolean;
+  followUpQueued: boolean;
+  products: string[];
+  clawbackAmount?: number;
+}
+
+const SALES_DATA: Sale[] = [
   { 
     id: '1', 
     client: 'Bakkerij De Lekkernij', 
@@ -160,8 +174,40 @@ const PIPELINE = [
 export default function CommissionPage() {
   const [timeFilter, setTimeFilter] = useState('MONTH');
   const [activeTab, setActiveTab] = useState('OVERVIEW');
-  const [sales, setSales] = useState(SALES_DATA);
+  const [sales, setSales] = useState<Sale[]>(SALES_DATA);
   const [showQueueModal, setShowQueueModal] = useState<string | null>(null);
+  
+  // Clawback editing state
+  const [editingSale, setEditingSale] = useState<string | null>(null);
+  const [editDays, setEditDays] = useState<number>(0);
+  const [showClawbackModal, setShowClawbackModal] = useState<string | null>(null);
+
+  const openEditModal = (saleId: string, currentDays: number) => {
+    setEditingSale(saleId);
+    setEditDays(currentDays);
+  };
+
+  const saveDayChange = () => {
+    if (!editingSale) return;
+    // Calculate new date based on days
+    const newDate = new Date();
+    newDate.setDate(newDate.getDate() - editDays);
+    setSales(prev => prev.map(s => 
+      s.id === editingSale 
+        ? { ...s, saleDate: newDate.toISOString().split('T')[0] }
+        : s
+    ));
+    setEditingSale(null);
+  };
+
+  const applyClawback = (saleId: string) => {
+    setSales(prev => prev.map(s => 
+      s.id === saleId 
+        ? { ...s, status: 'CLAWBACK', clawbackAmount: s.amount * 0.75 }
+        : s
+    ));
+    setShowClawbackModal(null);
+  };
 
   // Calculate clawback stats
   const clawbackStats = {
@@ -499,8 +545,10 @@ export default function CommissionPage() {
         <div className="space-y-4">
           {sales.map((sale) => {
             const clawback = getClawbackStatus(sale.saleDate);
+            const isClawbackApplied = sale.status === 'CLAWBACK';
             return (
               <div key={sale.id} className={`bg-white rounded-xl border-2 p-6 ${
+                isClawbackApplied ? 'border-red-400 bg-red-50' :
                 clawback.clawbackRisk === 'HIGH' ? 'border-red-200' :
                 clawback.clawbackRisk === 'MEDIUM' ? 'border-amber-200' :
                 'border-green-200'
@@ -508,30 +556,38 @@ export default function CommissionPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${
+                      isClawbackApplied ? 'bg-red-200' :
                       clawback.clawbackRisk === 'HIGH' ? 'bg-red-100' :
                       clawback.clawbackRisk === 'MEDIUM' ? 'bg-amber-100' :
                       'bg-green-100'
                     }`}>
-                      <Timer className={`w-7 h-7 ${
+                      {isClawbackApplied ? <TrendingDown className="w-7 h-7 text-red-700" /> :
+                       <Timer className={`w-7 h-7 ${
                         clawback.clawbackRisk === 'HIGH' ? 'text-red-600' :
                         clawback.clawbackRisk === 'MEDIUM' ? 'text-amber-600' :
                         'text-green-600'
-                      }`} />
+                      }`} />}
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-900 text-lg">{sale.client}</h3>
                       <p className="text-sm text-gray-500">
                         {clawback.daysSinceSale} dagen geleden • €{sale.amount} commissie
                       </p>
+                      {isClawbackApplied && (
+                        <p className="text-sm text-red-600 font-medium">
+                          Clawback toegepast: -€{sale.clawbackAmount?.toFixed(2)}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="text-right">
                     <p className={`text-2xl font-bold ${
+                      isClawbackApplied ? 'text-red-700' :
                       clawback.clawbackRisk === 'HIGH' ? 'text-red-600' :
                       clawback.clawbackRisk === 'MEDIUM' ? 'text-amber-600' :
                       'text-green-600'
                     }`}>
-                      {clawback.riskPercentage}% risico
+                      {isClawbackApplied ? 'CLAWBACK' : `${clawback.riskPercentage}% risico`}
                     </p>
                     <p className="text-sm text-gray-500">{clawback.statusText}</p>
                   </div>
@@ -546,6 +602,7 @@ export default function CommissionPage() {
                   <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
                     <div 
                       className={`h-full rounded-full transition-all ${
+                        isClawbackApplied ? 'bg-red-500' :
                         clawback.clawbackRisk === 'HIGH' ? 'bg-red-500' :
                         clawback.clawbackRisk === 'MEDIUM' ? 'bg-amber-500' :
                         'bg-green-500'
@@ -559,9 +616,136 @@ export default function CommissionPage() {
                     <span>6 maanden (100% veilig)</span>
                   </div>
                 </div>
+
+                {/* Action Buttons */}
+                {!isClawbackApplied && (
+                  <div className="mt-4 flex gap-3">
+                    <button
+                      onClick={() => openEditModal(sale.id, clawback.daysSinceSale)}
+                      className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                      <Calendar className="w-4 h-4" />
+                      Bewerk Dagen
+                    </button>
+                    <button
+                      onClick={() => setShowClawbackModal(sale.id)}
+                      className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                    >
+                      <TrendingDown className="w-4 h-4" />
+                      Clawback Toepassen
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Edit Days Modal */}
+      {editingSale && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Calendar className="w-8 h-8 text-blue-600" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 text-center mb-2">Dagen Aanpassen</h2>
+            <p className="text-gray-500 text-center mb-6">
+              Pas het aantal dagen sinds verkoop aan om de clawback status te wijzigen.
+            </p>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Aantal dagen sinds verkoop
+              </label>
+              <input
+                type="number"
+                value={editDays}
+                onChange={(e) => setEditDays(parseInt(e.target.value) || 0)}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-lg"
+                min="0"
+              />
+              <p className="text-sm text-gray-500 mt-2">
+                {(() => {
+                  const newDate = new Date();
+                  newDate.setDate(newDate.getDate() - editDays);
+                  const mockSale = { saleDate: newDate.toISOString().split('T')[0] };
+                  const status = getClawbackStatus(mockSale.saleDate);
+                  return `Huidige status: ${status.statusText} (${status.riskPercentage}% risico)`;
+                })()}
+              </p>
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => setEditingSale(null)}
+                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200"
+              >
+                Annuleren
+              </button>
+              <button
+                onClick={saveDayChange}
+                className="flex-1 py-3 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 flex items-center justify-center gap-2"
+              >
+                <CheckCircle2 className="w-5 h-5" />
+                Opslaan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clawback Confirmation Modal */}
+      {showClawbackModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="w-8 h-8 text-red-600" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 text-center mb-2">Clawback Bevestigen</h2>
+            <p className="text-gray-500 text-center mb-6">
+              Waarschuwing: Dit zal een clawback van 75% toepassen op deze commissie.
+            </p>
+            
+            <div className="bg-red-50 rounded-xl p-4 mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-gray-600">Originele commissie:</span>
+                <span className="font-semibold text-gray-900">
+                  €{sales.find(s => s.id === showClawbackModal)?.amount}
+                </span>
+              </div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-gray-600">Clawback (75%):</span>
+                <span className="font-semibold text-red-600">
+                  -€{((sales.find(s => s.id === showClawbackModal)?.amount || 0) * 0.75).toFixed(2)}
+                </span>
+              </div>
+              <div className="border-t border-red-200 pt-2 mt-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-gray-700">Netto commissie:</span>
+                  <span className="font-bold text-green-600">
+                    €{((sales.find(s => s.id === showClawbackModal)?.amount || 0) * 0.25).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowClawbackModal(null)}
+                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200"
+              >
+                Annuleren
+              </button>
+              <button
+                onClick={() => applyClawback(showClawbackModal)}
+                className="flex-1 py-3 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 flex items-center justify-center gap-2"
+              >
+                <TrendingDown className="w-5 h-5" />
+                Bevestigen
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
