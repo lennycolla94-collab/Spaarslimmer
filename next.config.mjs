@@ -9,6 +9,21 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Redirects for old dashboard routes
+  async redirects() {
+    return [
+      {
+        source: '/dashboard/v2-premium',
+        destination: '/dashboard',
+        permanent: true,
+      },
+      {
+        source: '/dashboard/v3-brand',
+        destination: '/dashboard',
+        permanent: true,
+      },
+    ];
+  },
   // Security Headers
   async headers() {
     return [
