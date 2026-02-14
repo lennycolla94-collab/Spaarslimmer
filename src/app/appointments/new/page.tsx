@@ -56,6 +56,26 @@ export default function NewAppointmentPage() {
     e.preventDefault();
     setIsSubmitting(true);
     
+    // Get lead info
+    const lead = MOCK_LEADS.find(l => l.id === formData.leadId);
+    
+    // Create appointment object
+    const newAppointment = {
+      id: Date.now().toString(),
+      clientName: lead?.contactName || formData.leadId,
+      company: lead?.companyName || 'Onbekend',
+      date: formData.date,
+      time: formData.time,
+      type: formData.type,
+      location: formData.location,
+      status: 'SCHEDULED',
+      notes: formData.notes
+    };
+    
+    // Save to localStorage
+    const existing = JSON.parse(localStorage.getItem('appointments') || '[]');
+    localStorage.setItem('appointments', JSON.stringify([...existing, newAppointment]));
+    
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     setIsSubmitting(false);

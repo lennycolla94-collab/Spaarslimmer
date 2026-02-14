@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { PremiumLayout } from '@/components/design-system/premium-layout';
 import { 
   Calendar, 
@@ -15,7 +16,9 @@ import {
   ChevronLeft,
   ChevronRight,
   List,
-  LayoutGrid
+  LayoutGrid,
+  X,
+  FileText
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -71,6 +74,57 @@ export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState(MOCK_APPOINTMENTS);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
+  
+  // Load appointments from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('appointments');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      setAppointments(prev => [...prev, ...parsed]);
+    }
+  }, []);
+  
+  // Quick add modal state
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [quickForm, setQuickForm] = useState({
+    clientName: '',
+    time: '09:00',
+    type: 'PHYSICAL',
+    location: '',
+    notes: ''
+  });
+
+  const MOCK_LEADS = [
+    { id: '1', companyName: 'Bakkerij De Lekkernij', contactName: 'Maria Peeters' },
+    { id: '2', companyName: 'Tech Solutions BV', contactName: 'Jan Janssen' },
+    { id: '3', companyName: 'NecmiCuts', contactName: 'Necmi Yildiz' },
+    { id: '4', companyName: 'Fashion Store', contactName: 'Lisa Dubois' },
+  ];
+
+  const openQuickAdd = (day: number) => {
+    const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+    setSelectedDate(date.toISOString().split('T')[0]);
+    setShowQuickAdd(true);
+  };
+
+  const saveQuickAppointment = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newAppointment = {
+      id: Date.now().toString(),
+      clientName: quickForm.clientName,
+      company: quickForm.clientName,
+      date: selectedDate,
+      time: quickForm.time,
+      type: quickForm.type,
+      location: quickForm.location,
+      status: 'SCHEDULED',
+      notes: quickForm.notes
+    };
+    setAppointments(prev => [...prev, newAppointment]);
+    setShowQuickAdd(false);
+    setQuickForm({ clientName: '', time: '09:00', type: 'PHYSICAL', location: '', notes: '' });
+  };
 
   const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
@@ -205,10 +259,15 @@ export default function AppointmentsPage() {
                     return date.getDate() === day && date.getMonth() === currentDate.getMonth();
                   });
                   const isToday = new Date().getDate() === day && new Date().getMonth() === currentDate.getMonth();
+                  const dayAppointments = appointments.filter(a => {
+                    const date = new Date(a.date);
+                    return date.getDate() === day && date.getMonth() === currentDate.getMonth();
+                  });
                   return (
                     <button
                       key={day}
-                      className={`aspect-square flex items-center justify-center rounded-lg text-sm font-medium transition-colors relative ${
+                      onClick={() => openQuickAdd(day)}
+                      className={`aspect-square flex flex-col items-center justify-center rounded-lg text-sm font-medium transition-colors relative ${
                         isToday
                           ? 'bg-orange-500 text-white'
                           : hasAppointment 
@@ -216,9 +275,14 @@ export default function AppointmentsPage() {
                             : 'hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300'
                       }`}
                     >
-                      {day}
+                      <span>{day}</span>
+                      {dayAppointments.length > 0 && (
+                        <span className="text-[10px] font-normal mt-0.5">
+                          {dayAppointments.length} afspr
+                        </span>
+                      )}
                       {hasAppointment && (
-                        <span className="absolute bottom-1.5 w-1.5 h-1.5 bg-orange-500 dark:bg-orange-400 rounded-full" />
+                        <span className="absolute bottom-1 w-1.5 h-1.5 bg-orange-500 dark:bg-orange-400 rounded-full" />
                       )}
                     </button>
                   );
@@ -343,6 +407,110 @@ export default function AppointmentsPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Add Modal */}
+      {showQuickAdd && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Afspraak Toevoegen</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {new Date(selectedDate).toLocaleDateString('nl-BE', { weekday: 'long', day: 'numeric', month: 'long' })}
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowQuickAdd(false)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            
+            <form onSubmit={saveQuickAppointment} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Klant</label>
+                <select
+                  value={quickForm.clientName}
+                  onChange={(e) => setQuickForm({ ...quickForm, clientName: e.target.value })}
+                  required
+                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-lg dark:text-white"
+                >
+                  <option value="">Selecteer een klant...</option>
+                  {MOCK_LEADS.map(lead => (
+                    <option key={lead.id} value={lead.contactName}>
+                      {lead.companyName} - {lead.contactName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tijd</label>
+                  <input
+                    type="time"
+                    value={quickForm.time}
+                    onChange={(e) => setQuickForm({ ...quickForm, time: e.target.value })}
+                    required
+                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-lg dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+                  <select
+                    value={quickForm.type}
+                    onChange={(e) => setQuickForm({ ...quickForm, type: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-lg dark:text-white"
+                  >
+                    <option value="PHYSICAL">Fysiek</option>
+                    <option value="PHONE">Telefoon</option>
+                    <option value="VIDEO">Video</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Locatie</label>
+                <input
+                  type="text"
+                  value={quickForm.location}
+                  onChange={(e) => setQuickForm({ ...quickForm, location: e.target.value })}
+                  placeholder={quickForm.type === 'PHONE' ? 'Telefoongesprek' : quickForm.type === 'VIDEO' ? 'Teams/Zoom' : 'Adres...'}
+                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-lg dark:text-white"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notities</label>
+                <textarea
+                  value={quickForm.notes}
+                  onChange={(e) => setQuickForm({ ...quickForm, notes: e.target.value })}
+                  placeholder="Optionele notities..."
+                  rows={3}
+                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-lg dark:text-white resize-none"
+                />
+              </div>
+              
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowQuickAdd(false)}
+                  className="flex-1 py-2.5 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600"
+                >
+                  Annuleren
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                >
+                  Afspraak Opslaan
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
