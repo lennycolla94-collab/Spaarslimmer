@@ -30,7 +30,8 @@ import {
   Crown,
   Target,
   Award,
-  Info
+  Info,
+  X
 } from 'lucide-react';
 
 // Fidelity = Maandelijkse bedragen die de KLANT aan Orange betaalt
@@ -144,18 +145,80 @@ export default function FidelityPage() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [showRatesModal, setShowRatesModal] = useState(false);
+  
+  // Modals
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingClient, setEditingClient] = useState<any>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingClient, setDeletingClient] = useState<any>(null);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [statusClient, setStatusClient] = useState<any>(null);
+  const [clients, setClients] = useState(FIDELITY_CLIENTS);
 
   // Stats
-  const activeClients = FIDELITY_CLIENTS.filter(c => c.status === 'ACTIVE');
+  const activeClients = clients.filter(c => c.status === 'ACTIVE');
   const stats = {
     totalClients: activeClients.length,
     totalMonthly: activeClients.reduce((sum, c) => sum + c.monthlyFee, 0),
-    totalPaid: FIDELITY_CLIENTS.reduce((sum, c) => sum + c.totalPaid, 0),
+    totalPaid: clients.reduce((sum, c) => sum + c.totalPaid, 0),
     yearlyProjection: activeClients.reduce((sum, c) => sum + c.monthlyFee, 0) * 12,
+  };
+  
+  // Actions
+  const openEditModal = (client: any) => {
+    setEditingClient({ ...client });
+    setShowEditModal(true);
+  };
+  
+  const saveEdit = () => {
+    if (!editingClient) return;
+    setClients(prev => prev.map(c => c.id === editingClient.id ? editingClient : c));
+    setShowEditModal(false);
+    setEditingClient(null);
+  };
+  
+  const openDeleteModal = (client: any) => {
+    setDeletingClient(client);
+    setShowDeleteModal(true);
+  };
+  
+  const confirmDelete = () => {
+    if (!deletingClient) return;
+    setClients(prev => prev.filter(c => c.id !== deletingClient.id));
+    setShowDeleteModal(false);
+    setDeletingClient(null);
+  };
+  
+  const openStatusModal = (client: any) => {
+    setStatusClient(client);
+    setShowStatusModal(true);
+  };
+  
+  const changeStatus = (newStatus: string) => {
+    if (!statusClient) return;
+    setClients(prev => prev.map(c => c.id === statusClient.id ? { ...c, status: newStatus } : c));
+    setShowStatusModal(false);
+    setStatusClient(null);
+  };
+  
+  const exportClients = () => {
+    const data = selectedClients.length > 0 
+      ? clients.filter(c => selectedClients.includes(c.id))
+      : clients;
+    const csv = [
+      ['Bedrijf', 'Contact', 'Maandbedrag', 'Status', 'Contract Start'].join(','),
+      ...data.map(c => [c.companyName, c.contactName, c.monthlyFee, c.status, c.startDate].join(','))
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'fidelity-klanten.csv';
+    a.click();
   };
 
   // Filter
-  const filteredClients = FIDELITY_CLIENTS.filter(client => {
+  const filteredClients = clients.filter(client => {
     const matchesSearch = 
       client.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       client.contactName.toLowerCase().includes(searchQuery.toLowerCase());
@@ -345,9 +408,23 @@ export default function FidelityPage() {
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700">
               <tr>
+                <th className="px-6 py-4 text-left">
+                  <input
+                    type="checkbox"
+                    checked={selectedClients.length === filteredClients.length && filteredClients.length > 0}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedClients(filteredClients.map(c => c.id));
+                      } else {
+                        setSelectedClients([]);
+                      }
+                    }}
+                    className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                  />
+                </th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Klant</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Status</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-orange-600 dark:text-orange-400">Maandbedrag (Orange)</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-orange-600 dark:text-orange-400">Maandbedrag</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Totaal Betaald</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Contract</th>
                 <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900 dark:text-white">Acties</th>
@@ -358,7 +435,15 @@ export default function FidelityPage() {
                 const status = STATUS_CONFIG[client.status as keyof typeof STATUS_CONFIG];
                 const StatusIcon = status.icon;
                 return (
-                  <tr key={client.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
+                  <tr key={client.id} className={`hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors ${selectedClients.includes(client.id) ? 'bg-orange-50 dark:bg-orange-500/10' : ''}`}>
+                    <td className="px-6 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedClients.includes(client.id)}
+                        onChange={() => toggleSelection(client.id)}
+                        className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                      />
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-pink-600 rounded-lg flex items-center justify-center text-white font-bold">
@@ -389,10 +474,16 @@ export default function FidelityPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/20 rounded-lg transition-colors">
+                        <button 
+                          onClick={() => openEditModal(client)}
+                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/20 rounded-lg transition-colors"
+                        >
                           <Edit3 className="w-4 h-4" />
                         </button>
-                        <button className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/20 rounded-lg transition-colors">
+                        <button 
+                          onClick={() => openDeleteModal(client)}
+                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/20 rounded-lg transition-colors"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -444,18 +535,194 @@ export default function FidelityPage() {
                 </div>
 
                 <div className="flex items-center gap-2 pt-4 border-t border-gray-100 dark:border-slate-700">
-                  <button className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm">
+                  <button 
+                    onClick={() => openEditModal(client)}
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                  >
                     <Edit3 className="w-4 h-4" />
                     Bewerk
                   </button>
-                  <button className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors text-sm">
-                    <FileText className="w-4 h-4" />
-                    Details
+                  <button 
+                    onClick={() => openDeleteModal(client)}
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors text-sm"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Verwijder
                   </button>
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Bulk Actions Bar */}
+      {selectedClients.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-gray-200 dark:border-slate-700 p-4 flex items-center gap-3 z-40">
+          <span className="text-sm text-gray-500 dark:text-gray-400">
+            {selectedClients.length} geselecteerd
+          </span>
+          <button 
+            onClick={exportClients}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-sm"
+          >
+            <Download className="w-4 h-4" />
+            Exporteren
+          </button>
+          <button 
+            onClick={() => {
+              if (selectedClients.length === 1) {
+                const client = clients.find(c => c.id === selectedClients[0]);
+                if (client) openStatusModal(client);
+              }
+            }}
+            disabled={selectedClients.length !== 1}
+            className="flex items-center gap-2 px-4 py-2 bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-400 rounded-lg hover:bg-orange-200 dark:hover:bg-orange-500/30 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <CheckCircle2 className="w-4 h-4" />
+            Status Wijzigen
+          </button>
+          <button 
+            onClick={() => setSelectedClients([])}
+            className="p-2 text-gray-400 hover:text-gray-600 rounded-lg"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && editingClient && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Klant Bewerken</h2>
+              <button onClick={() => setShowEditModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bedrijfsnaam</label>
+                <input
+                  type="text"
+                  value={editingClient.companyName}
+                  onChange={(e) => setEditingClient({ ...editingClient, companyName: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-lg dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contactpersoon</label>
+                <input
+                  type="text"
+                  value={editingClient.contactName}
+                  onChange={(e) => setEditingClient({ ...editingClient, contactName: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-lg dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Maandbedrag (€)</label>
+                <input
+                  type="number"
+                  value={editingClient.monthlyFee}
+                  onChange={(e) => setEditingClient({ ...editingClient, monthlyFee: parseFloat(e.target.value) })}
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-lg dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                <select
+                  value={editingClient.status}
+                  onChange={(e) => setEditingClient({ ...editingClient, status: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-lg dark:text-white"
+                >
+                  <option value="ACTIVE">Actief</option>
+                  <option value="PAUSED">Gepauzeerd</option>
+                  <option value="CANCELLED">Gestopt</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="flex-1 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600"
+              >
+                Annuleren
+              </button>
+              <button
+                onClick={saveEdit}
+                className="flex-1 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+              >
+                Opslaan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Modal */}
+      {showDeleteModal && deletingClient && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 text-center">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Trash2 className="w-8 h-8 text-red-600 dark:text-red-400" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Klant Verwijderen?</h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">
+              Weet je zeker dat je <strong>{deletingClient.companyName}</strong> wilt verwijderen? 
+              Deze actie kan niet ongedaan worden gemaakt.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600"
+              >
+                Annuleren
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex-1 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+              >
+                Verwijderen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Status Modal */}
+      {showStatusModal && statusClient && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Status Wijzigen</h2>
+              <button onClick={() => setShowStatusModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">
+              Wijzig de status van <strong>{statusClient.companyName}</strong>
+            </p>
+            <div className="space-y-2">
+              {Object.entries(STATUS_CONFIG).map(([key, config]) => (
+                <button
+                  key={key}
+                  onClick={() => changeStatus(key)}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-colors ${
+                    statusClient.status === key 
+                      ? 'border-orange-500 bg-orange-50 dark:bg-orange-500/20' 
+                      : 'border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <config.icon className="w-5 h-5" />
+                  <span className="font-medium text-gray-900 dark:text-white">{config.label}</span>
+                  {statusClient.status === key && (
+                    <CheckCircle2 className="w-5 h-5 text-orange-500 ml-auto" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
