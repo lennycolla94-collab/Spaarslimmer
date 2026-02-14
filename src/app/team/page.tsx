@@ -424,7 +424,7 @@ export default function TeamPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Mijn Team</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Mijn Netwerk</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">MLM netwerk, Infinity Bonus & Team groei</p>
         </div>
         <div className="flex items-center gap-3">
@@ -548,7 +548,7 @@ export default function TeamPage() {
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-1 mb-6 inline-flex">
         {[
           { id: 'fidelity', label: 'Fidelity', icon: Wallet },
-          { id: 'structure', label: 'Team', icon: Network },
+          { id: 'structure', label: 'Netwerk', icon: Network },
           { id: 'infinity', label: 'Infinity Bonus', icon: InfinityIcon },
           { id: 'criteria', label: 'MLM Criteria', icon: Award },
         ].map((tab) => (
