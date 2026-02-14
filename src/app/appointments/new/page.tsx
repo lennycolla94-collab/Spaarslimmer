@@ -45,7 +45,6 @@ export default function NewAppointmentPage() {
     notes: ''
   });
   
-  // Update form when URL param changes
   useEffect(() => {
     if (leadIdFromUrl) {
       setFormData(prev => ({ ...prev, leadId: leadIdFromUrl }));
@@ -56,10 +55,8 @@ export default function NewAppointmentPage() {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Get lead info
     const lead = MOCK_LEADS.find(l => l.id === formData.leadId);
     
-    // Create appointment object
     const newAppointment = {
       id: Date.now().toString(),
       clientName: lead?.contactName || formData.leadId,
@@ -72,7 +69,6 @@ export default function NewAppointmentPage() {
       notes: formData.notes
     };
     
-    // Save to localStorage
     const existing = JSON.parse(localStorage.getItem('appointments') || '[]');
     localStorage.setItem('appointments', JSON.stringify([...existing, newAppointment]));
     
@@ -104,7 +100,6 @@ export default function NewAppointmentPage() {
 
   return (
     <PremiumLayout user={{ name: 'Lenny De K.' }}>
-      {/* Header */}
       <div className="flex items-center gap-4 mb-8">
         <Link 
           href="/appointments" 
@@ -120,7 +115,6 @@ export default function NewAppointmentPage() {
 
       <div className="max-w-3xl">
         <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
-          {/* Lead Selection */}
           <div className="p-6 border-b border-gray-200 dark:border-slate-700">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <User className="w-5 h-5 text-orange-500" />
@@ -141,7 +135,6 @@ export default function NewAppointmentPage() {
             </select>
           </div>
 
-          {/* Date & Time */}
           <div className="p-6 border-b border-gray-200 dark:border-slate-700">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <Clock className="w-5 h-5 text-blue-500" />
@@ -149,9 +142,7 @@ export default function NewAppointmentPage() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Datum
-                </label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Datum</label>
                 <input
                   type="date"
                   required
@@ -161,9 +152,7 @@ export default function NewAppointmentPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Tijd
-                </label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tijd</label>
                 <input
                   type="time"
                   required
@@ -175,7 +164,6 @@ export default function NewAppointmentPage() {
             </div>
           </div>
 
-          {/* Type & Location */}
           <div className="p-6 border-b border-gray-200 dark:border-slate-700">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <Calendar className="w-5 h-5 text-purple-500" />
@@ -183,9 +171,7 @@ export default function NewAppointmentPage() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Type Afspraak
-                </label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type Afspraak</label>
                 <select
                   value={formData.type}
                   onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
@@ -197,9 +183,7 @@ export default function NewAppointmentPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Locatie
-                </label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Locatie</label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
@@ -214,7 +198,6 @@ export default function NewAppointmentPage() {
             </div>
           </div>
 
-          {/* Notes */}
           <div className="p-6 border-b border-gray-200 dark:border-slate-700">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <FileText className="w-5 h-5 text-gray-500" />
@@ -229,7 +212,6 @@ export default function NewAppointmentPage() {
             />
           </div>
 
-          {/* Actions */}
           <div className="p-6 bg-gray-50 dark:bg-slate-900 flex items-center justify-between">
             <Link
               href="/appointments"
