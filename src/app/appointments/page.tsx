@@ -20,7 +20,7 @@ import {
   X,
   FileText
 } from 'lucide-react';
-import Link from 'next/link';
+
 
 // Mock appointments
 const MOCK_APPOINTMENTS = [
