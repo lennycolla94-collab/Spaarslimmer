@@ -43,7 +43,7 @@ const navSections = [
     title: 'Overview',
     icon: '📊',
     items: [
-      { icon: Home, label: 'Dashboard', href: '/dashboard/v2-premium', badge: 'Live' },
+      { icon: Home, label: 'Dashboard', href: '/dashboard', badge: 'Live' },
     ]
   },
   {

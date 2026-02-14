@@ -361,7 +361,7 @@ export default function OffersPage() {
         </div>
         <div className="flex gap-3">
           <Link
-            href="/dashboard/v2-premium"
+            href="/dashboard"
             className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700"
           >
             Dashboard
